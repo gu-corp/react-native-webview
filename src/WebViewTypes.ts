@@ -250,7 +250,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   javaScriptEnabled?: boolean;
   mixedContentMode?: 'never' | 'always' | 'compatibility';
   onContentSizeChange?: (event: WebViewEvent) => void;
-  onCaptureScreen?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessageEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
   textZoom?: number;
@@ -463,7 +463,7 @@ export interface IOSWebViewProps extends WebViewSharedProps {
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
-  onCaptureScreen?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
    * https://developer.android.com/reference/android/view/View#OVER_SCROLL_NEVER

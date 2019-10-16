@@ -259,7 +259,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
-  onCaptureScreen = (event: NativeSyntheticEvent<any>) => {
+  onCaptureScreen = (event: WebViewMessageEvent) => {
     const { onCaptureScreen } = this.props;
     if (onCaptureScreen) {
       onCaptureScreen(event.nativeEvent);

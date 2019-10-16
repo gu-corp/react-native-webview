@@ -130,6 +130,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_FOCUS = 8;
   public static final int COMMAND_CAPTURE_SCREEN = 9;
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
+  public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
   protected static final String REACT_CLASS = "RNCWebView";
   protected static final String HTML_ENCODING = "UTF-8";
@@ -1201,10 +1202,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void captureScreen(String type) {
       final String fileName = System.currentTimeMillis() + ".jpg";
+      String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
 
-      File d = new File(DOWNLOAD_DIRECTORY);
+      File d = new File(directory);
       d.mkdirs();
-      final String localFilePath = DOWNLOAD_DIRECTORY + fileName;
+      final String localFilePath = directory + fileName;
       boolean success = false;
       try {
         Picture picture = this.capturePicture();
@@ -1226,6 +1228,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         WritableMap event = Arguments.createMap();
         event.putDouble("target", this.getId());
         event.putBoolean("result", success);
+        event.putString("type", type);
         if (success) {
           event.putString("data", localFilePath);
         }
