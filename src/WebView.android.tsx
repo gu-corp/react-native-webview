@@ -108,6 +108,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  captureScreen = (type: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().captureScreen,
+      [String(type)],
+    );
+  };
+
   requestFocus = () => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
@@ -251,6 +259,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onCaptureScreen = (event: NativeSyntheticEvent<any>) => {
+    const { onCaptureScreen } = this.props;
+    if (onCaptureScreen) {
+      onCaptureScreen(event.nativeEvent);
+    }
+  };
+
   render() {
     const {
       onMessage,
@@ -317,6 +332,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onMessage={this.onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onCreateNewWindow={this.onCreateNewWindow}
+        onCaptureScreen={this.onCaptureScreen}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
