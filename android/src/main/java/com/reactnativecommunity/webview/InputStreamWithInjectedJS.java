@@ -47,7 +47,7 @@ public class InputStreamWithInjectedJS extends InputStream {
         }
         return new ByteArrayInputStream(js.getBytes(charset));
     }
-    InputStreamWithInjectedJS(InputStream is, String js, Charset charset, Context c) {
+    InputStreamWithInjectedJS(InputStream is, String js, Charset charset) {
         if (js == null) {
             this.pageIS = is;
         } else {

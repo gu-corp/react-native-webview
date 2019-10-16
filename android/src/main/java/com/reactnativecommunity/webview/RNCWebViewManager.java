@@ -73,7 +73,6 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -84,11 +83,12 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.OkHttpClient.Builder;
 import okhttp3.Request;
 import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
@@ -565,7 +565,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new RNCWebViewClient(view.getSettings().getUserAgentString()));
+    view.setWebViewClient(new RNCWebViewClient());
   }
 
   @Override
@@ -722,19 +722,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   protected static class RNCWebViewClient extends WebViewClient {
-    private String userAgentString;
     private OkHttpClient httpClient;
 
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
 
-    public RNCWebViewClient(String userAgentString) {
-      this.userAgentString = userAgentString;
+    public RNCWebViewClient() {
 
       httpClient = new okhttp3.OkHttpClient.Builder()
         .followRedirects(false)
         .followSslRedirects(false)
+        .cookieJar(new RNCWebViewCookieJar())
         .build();
     }
 
@@ -785,39 +784,82 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-        Uri url = request.getUrl();
-        String urlStr = url.toString();
+      Uri url = request.getUrl();
+      String urlStr = url.toString();
 
-        if (!request.isForMainFrame()) {
+      if (!request.isForMainFrame()) {
+        return null;
+      }
+
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (request.isRedirect()) {
           return null;
         }
+      }
 
-        try {
-            Request req = new Request.Builder()
-                    .header("User-Agent", userAgentString)
-                    .url(urlStr)
-                    .build();
+      if (!TextUtils.equals(request.getMethod(), "GET")) {
+        return null;
+      }
 
-            Response response = httpClient.newCall(req).execute();
+      try {
+        Map<String, String> requestHeaders = request.getRequestHeaders();
+        Request req = new Request.Builder()
+          .headers(Headers.of(requestHeaders))
+          .url(urlStr)
+          .build();
 
-            if (response.isRedirect()) {
-              return null;
-            }
+        Response response = httpClient.newCall(req).execute();
 
-            if (!response.header("Content-Type", "").startsWith("text/html")) {
-                return null;
-            }
-
-            InputStream is = response.body().byteStream();
-            MediaType contentType = response.body().contentType();
-            Charset charset = contentType != null ? contentType.charset(UTF_8) : UTF_8;
-            if (response.code() == HttpURLConnection.HTTP_OK) {
-                is = new InputStreamWithInjectedJS(is, ((RNCWebView)view).injectedJSBeforeDocumentLoad, charset, view.getContext());
-            }
-            return new WebResourceResponse("text/html", charset.name(), is);
-        } catch (IOException e) {
-            return null;
+        ResponseBody body = response.body();
+        MediaType type = body != null ? body.contentType() : null;
+        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
+        Charset charset = type != null ? type.charset(UTF_8) : null;
+        String encoding = charset != null ? charset.displayName() : null;
+        InputStream bis = body != null ? body.byteStream() : null;
+        HashMap<String, String> map = new HashMap<>();
+        Headers headers = response.headers();
+        for (String key : headers.names()) {
+          map.put(key, headers.get(key));
         }
+        int statusCode = response.code();
+        String message = response.message();
+        if (TextUtils.isEmpty(message)) {
+          message = "Unknown";
+        }
+
+        if (response.isRedirect()) {
+          String location = response.header("Location");
+          if (location != null) {
+            view.post(new Runnable() {
+              @Override
+              public void run() {
+                view.loadUrl(location, requestHeaders);
+              }
+            });
+          }
+          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
+            @Override
+            public int read() throws IOException {
+              return 0;
+            }
+          });
+        }
+
+        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
+          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+        }
+
+        if (!response.isSuccessful()) {
+          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+        }
+
+        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
+          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
+
+        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
+      } catch (IOException e) {
+        return null;
+      }
     }
 
     @Override
