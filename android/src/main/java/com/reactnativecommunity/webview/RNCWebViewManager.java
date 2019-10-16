@@ -8,8 +8,10 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.Manifest;
+import android.graphics.Picture;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -65,10 +67,15 @@ import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.events.TopCreateNewWindowEvent;
+import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -121,6 +128,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_INJECT_JAVASCRIPT = 6;
   public static final int COMMAND_LOAD_URL = 7;
   public static final int COMMAND_FOCUS = 8;
+  public static final int COMMAND_CAPTURE_SCREEN = 9;
+  public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
+  public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
+
   protected static final String REACT_CLASS = "RNCWebView";
   protected static final String HTML_ENCODING = "UTF-8";
   protected static final String HTML_MIME_TYPE = "text/html";
@@ -563,6 +574,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCreateNewWindow"));
+    export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     return export;
   }
 
@@ -579,6 +591,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       "loadUrl", COMMAND_LOAD_URL
     );
     map.put("requestFocus", COMMAND_FOCUS);
+    map.put("captureScreen", COMMAND_CAPTURE_SCREEN);
     return map;
   }
 
@@ -629,6 +642,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_FOCUS:
         root.requestFocus();
+        break;
+      case COMMAND_CAPTURE_SCREEN:
+        ((RNCWebView) root).captureScreen(args.getString(0));
         break;
     }
   }
@@ -1181,6 +1197,42 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       @JavascriptInterface
       public void postMessage(String message) {
         mContext.onMessage(message);
+      }
+    }
+
+    public void captureScreen(String type) {
+      final String fileName = System.currentTimeMillis() + ".jpg";
+      String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
+
+      File d = new File(directory);
+      d.mkdirs();
+      final String localFilePath = directory + fileName;
+      boolean success = false;
+      try {
+        Picture picture = this.capturePicture();
+        int width = type.equals("CAPTURE_SCREEN") ? this.getWidth() : picture.getWidth();
+        int height = type.equals("CAPTURE_SCREEN") ? this.getHeight() : picture.getHeight();
+        Bitmap b = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        picture.draw(c);
+
+        FileOutputStream fos = new FileOutputStream(localFilePath);
+        if (fos != null) {
+          b.compress(Bitmap.CompressFormat.JPEG, 80, fos);
+          fos.close();
+        }
+        success = true;
+      } catch (Throwable t) {
+        System.out.println(t);
+      } finally {
+        WritableMap event = Arguments.createMap();
+        event.putDouble("target", this.getId());
+        event.putBoolean("result", success);
+        event.putString("type", type);
+        if (success) {
+          event.putString("data", localFilePath);
+        }
+        dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
       }
     }
   }
