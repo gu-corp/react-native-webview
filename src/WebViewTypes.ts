@@ -710,4 +710,6 @@ export interface WebViewSharedProps extends ViewProps {
    * Should caching be enabled. Default is true.
    */
   cacheEnabled?: boolean;
+
+  injectedJavaScriptBeforeDocumentLoad?: string;
 }
