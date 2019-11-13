@@ -257,6 +257,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
+  adBlockRules?: string;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {

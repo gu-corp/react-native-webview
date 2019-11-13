@@ -73,6 +73,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -101,6 +102,9 @@ import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
 import android.widget.RelativeLayout;
+
+import com.brave.adblock.BlockerResult;
+import com.brave.adblock.Engine;
 
 /**
  * Manages instances of {@link WebView}
@@ -572,6 +576,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView) view).setHasScrollEvent(hasScrollEvent);
   }
 
+  @ReactProp(name = "adblockRules")
+  public void setAdblockRules(WebView view, @Nullable String rules) {
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if (client != null) {
+      client.setAdblockRules(rules);
+    }
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -738,13 +750,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
   protected static class RNCWebViewClient extends WebViewClient {
     private OkHttpClient httpClient;
+    private Engine adblockEngine;
 
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
 
     public RNCWebViewClient() {
-
       httpClient = new okhttp3.OkHttpClient.Builder()
         .followRedirects(false)
         .followSslRedirects(false)
@@ -801,6 +813,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
       Uri url = request.getUrl();
       String urlStr = url.toString();
+
+      if (adblockEngine != null) {
+        BlockerResult blockerResult = adblockEngine.match(url.toString(), url.getHost(), "", false, "");
+        if (blockerResult.matched) {
+          return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+        }
+      }
 
       if (!request.isForMainFrame()) {
         return null;
@@ -942,6 +961,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setUrlPrefixesForDefaultIntent(ReadableArray specialUrls) {
       mUrlPrefixesForDefaultIntent = specialUrls;
+    }
+
+    public void setAdblockRules(String rules) {
+      adblockEngine = rules != null ? new Engine(rules) : null;
     }
   }
 
