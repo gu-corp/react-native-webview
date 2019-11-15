@@ -19,6 +19,7 @@ export interface WebViewCommands {
   injectJavaScript: number;
   loadUrl: number;
   requestFocus: number;
+  captureScreen: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -216,6 +217,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   cacheEnabled?: boolean;
   incognito?: boolean;
   injectedJavaScript?: string;
+  injectedJavaScriptBeforeDocumentLoad?: string;
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
   onScroll?: (event: NativeScrollEvent) => void;
@@ -249,6 +251,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   javaScriptEnabled?: boolean;
   mixedContentMode?: 'never' | 'always' | 'compatibility';
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessageEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
   textZoom?: number;
@@ -461,6 +464,7 @@ export interface IOSWebViewProps extends WebViewSharedProps {
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
    * https://developer.android.com/reference/android/view/View#OVER_SCROLL_NEVER
