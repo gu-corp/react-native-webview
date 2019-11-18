@@ -803,6 +803,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       String urlStr = url.toString();
       String scheme = url.getScheme();
 
+      // Only supports http and https
       if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
         return null;
       }
