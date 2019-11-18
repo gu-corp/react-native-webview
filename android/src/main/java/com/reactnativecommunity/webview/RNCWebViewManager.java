@@ -801,6 +801,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
       Uri url = request.getUrl();
       String urlStr = url.toString();
+      String scheme = url.getScheme();
+
+      if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+        return null;
+      }
 
       if (!request.isForMainFrame()) {
         return null;
