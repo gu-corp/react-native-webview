@@ -32,6 +32,7 @@
 		E91B351A21446E6C00F9801F /* RNCWebView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNCWebView.h; sourceTree = "<group>"; };
 		E91B351B21446E6C00F9801F /* RNCWebViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNCWebViewManager.m; sourceTree = "<group>"; };
 		E91B351C21446E6C00F9801F /* RNCWebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNCWebView.m; sourceTree = "<group>"; };
+		FA9E728C2383D2D100FE9C15 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +63,7 @@
 				E91B351B21446E6C00F9801F /* RNCWebViewManager.m */,
 				3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */,
 				3515965F21A3C87E00623BFA /* RNCWKProcessPoolManager.h */,
+				FA9E728C2383D2D100FE9C15 /* Settings.bundle */,
 				134814211AA4EA7D00B7C361 /* Products */,
 			);
 			sourceTree = "<group>";
