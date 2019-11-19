@@ -133,7 +133,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     );
   };
 
-  evaluateJavaScript = (js) => {
+  evaluateJavaScript = (js: string) => {
     return UIManager.evaluateJavaScript(this.getWebViewHandle(), js);
   };
 
@@ -149,7 +149,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     return UIManager.printContent(this.getWebViewHandle());
   }
 
-  findInPage = (searchString) => {
+  findInPage = (searchString: string) => {
     return UIManager.findInPage(this.getWebViewHandle(), searchString);
   }
 

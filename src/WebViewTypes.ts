@@ -28,6 +28,11 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   ) => {
     Commands: WebViewCommands;
   };
+  evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
+  findInPage: (viewTag: number, js: string) => Promise<number>;
+  captureScreen: (viewTag: number) => Promise<string>;
+  capturePage: (viewTag: number) => Promise<string>;
+  printContent: (viewTag: number) => void;
 }
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
