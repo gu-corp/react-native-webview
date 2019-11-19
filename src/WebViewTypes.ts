@@ -191,6 +191,11 @@ export type WebViewSource = WebViewSourceUri | WebViewSourceHtml;
 
 export interface ViewManager {
   startLoadWithResult: Function;
+  evaluateJavaScript: Function;
+  captureScreen: Function;
+  capturePage: Function;
+  findInPage: Function;
+  printContent: Function;
 }
 
 export interface WebViewNativeConfig {

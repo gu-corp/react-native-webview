@@ -134,23 +134,23 @@ class WebView extends React.Component<IOSWebViewProps, State> {
   };
 
   evaluateJavaScript = (js: string) => {
-    return UIManager.evaluateJavaScript(this.getWebViewHandle(), js);
+    return RNCWebViewManager.evaluateJavaScript(this.getWebViewHandle(), js);
   };
 
   captureScreen = () => {
-    return UIManager.captureScreen(this.getWebViewHandle());
+    return RNCWebViewManager.captureScreen(this.getWebViewHandle());
   }
 
   capturePage = () => {
-    return UIManager.capturePage(this.getWebViewHandle());
+    return RNCWebViewManager.capturePage(this.getWebViewHandle());
   }
 
   printContent = () => {
-    return UIManager.printContent(this.getWebViewHandle());
+    return RNCWebViewManager.printContent(this.getWebViewHandle());
   }
 
   findInPage = (searchString: string) => {
-    return UIManager.findInPage(this.getWebViewHandle(), searchString);
+    return RNCWebViewManager.findInPage(this.getWebViewHandle(), searchString);
   }
 
   /**
