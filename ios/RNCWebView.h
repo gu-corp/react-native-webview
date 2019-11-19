@@ -8,6 +8,7 @@
 #import <React/RCTView.h>
 #import <React/RCTDefines.h>
 #import <WebKit/WebKit.h>
+#import <React/RCTBridge.h>
 
 @class RNCWebView;
 
@@ -61,5 +62,11 @@
 - (void)goBack;
 - (void)reload;
 - (void)stopLoading;
+
+- (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
+- (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
+- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
+- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
+- (void)printContent;
 
 @end

@@ -10,6 +10,9 @@
 		3515965E21A3C86000623BFA /* RNCWKProcessPoolManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */; };
 		E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351B21446E6C00F9801F /* RNCWebViewManager.m */; };
 		E91B351E21446E6C00F9801F /* RNCWebView.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351C21446E6C00F9801F /* RNCWebView.m */; };
+		FA9E72A02383D81900FE9C15 /* WKWebView+BrowserHack.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9E729B2383D81900FE9C15 /* WKWebView+BrowserHack.m */; };
+		FA9E72A12383D81900FE9C15 /* WKWebView+Capture.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9E729C2383D81900FE9C15 /* WKWebView+Capture.m */; };
+		FA9E72A22383D81900FE9C15 /* WKWebView+Highlight.m in Sources */ = {isa = PBXBuildFile; fileRef = FA9E729E2383D81900FE9C15 /* WKWebView+Highlight.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +36,12 @@
 		E91B351B21446E6C00F9801F /* RNCWebViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNCWebViewManager.m; sourceTree = "<group>"; };
 		E91B351C21446E6C00F9801F /* RNCWebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RNCWebView.m; sourceTree = "<group>"; };
 		FA9E728C2383D2D100FE9C15 /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
+		FA9E729A2383D81800FE9C15 /* WKWebView+Capture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "WKWebView+Capture.h"; sourceTree = "<group>"; };
+		FA9E729B2383D81900FE9C15 /* WKWebView+BrowserHack.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "WKWebView+BrowserHack.m"; sourceTree = "<group>"; };
+		FA9E729C2383D81900FE9C15 /* WKWebView+Capture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "WKWebView+Capture.m"; sourceTree = "<group>"; };
+		FA9E729D2383D81900FE9C15 /* WKWebView+BrowserHack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "WKWebView+BrowserHack.h"; sourceTree = "<group>"; };
+		FA9E729E2383D81900FE9C15 /* WKWebView+Highlight.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "WKWebView+Highlight.m"; sourceTree = "<group>"; };
+		FA9E729F2383D81900FE9C15 /* WKWebView+Highlight.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "WKWebView+Highlight.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +72,12 @@
 				E91B351B21446E6C00F9801F /* RNCWebViewManager.m */,
 				3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */,
 				3515965F21A3C87E00623BFA /* RNCWKProcessPoolManager.h */,
+				FA9E729D2383D81900FE9C15 /* WKWebView+BrowserHack.h */,
+				FA9E729B2383D81900FE9C15 /* WKWebView+BrowserHack.m */,
+				FA9E729A2383D81800FE9C15 /* WKWebView+Capture.h */,
+				FA9E729C2383D81900FE9C15 /* WKWebView+Capture.m */,
+				FA9E729F2383D81900FE9C15 /* WKWebView+Highlight.h */,
+				FA9E729E2383D81900FE9C15 /* WKWebView+Highlight.m */,
 				FA9E728C2383D2D100FE9C15 /* Settings.bundle */,
 				134814211AA4EA7D00B7C361 /* Products */,
 			);
@@ -124,9 +139,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA9E72A22383D81900FE9C15 /* WKWebView+Highlight.m in Sources */,
 				E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */,
+				FA9E72A12383D81900FE9C15 /* WKWebView+Capture.m in Sources */,
 				E91B351E21446E6C00F9801F /* RNCWebView.m in Sources */,
 				3515965E21A3C86000623BFA /* RNCWKProcessPoolManager.m in Sources */,
+				FA9E72A02383D81900FE9C15 /* WKWebView+BrowserHack.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

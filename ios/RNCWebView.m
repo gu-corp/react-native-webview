@@ -13,6 +13,12 @@
 
 #import "objc/runtime.h"
 
+#import "WKWebView+BrowserHack.h"
+#import "WKWebView+Highlight.h"
+#import "WKWebView+Capture.h"
+
+#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
+
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
@@ -71,6 +77,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
   UIScrollViewContentInsetAdjustmentBehavior _savedContentInsetAdjustmentBehavior;
 #endif
+
+  BOOL longPress;
+  NSBundle* resourceBundle;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -117,6 +126,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
                                                    name:UIWindowDidBecomeHiddenNotification
                                                  object:nil];
   }
+    
+  NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
+  resourceBundle = [NSBundle bundleWithPath:bundlePath];
 
   return self;
 }
@@ -277,6 +289,10 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       _webView.scrollView.contentInsetAdjustmentBehavior = _savedContentInsetAdjustmentBehavior;
     }
 #endif
+      
+    UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
+    longGesture.delegate = self;
+    [_webView addGestureRecognizer:longGesture];
 
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
@@ -833,6 +849,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       @(WKNavigationTypeOther): @"other",
     };
   });
+    
+  if (longPress) {
+    longPress = NO;
+    return decisionHandler(WKNavigationActionPolicyCancel);
+  }
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
@@ -965,6 +986,14 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (void)      webView:(WKWebView *)webView
   didFinishNavigation:(WKNavigation *)navigation
 {
+  if (resourceBundle) {
+    NSString *jsFile = @"_webview";
+
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+  }
   if (_injectedJavaScript) {
     [self evaluateJS: _injectedJavaScript thenCall: ^(NSString *jsEvaluationValue) {
       NSMutableDictionary *event = [self baseEvent];
@@ -1039,6 +1068,105 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     }
   }
   return request;
+}
+
+#pragma mark - Custom Lunascape functions
+
+- (void)setScrollToTop:(BOOL)scrollToTop {
+  _webView.scrollView.scrollsToTop = scrollToTop;
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString
+         completionHandler:(void (^)(id, NSError *error))completionHandler
+{
+  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+}
+
+- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
+  if (searchString && searchString.length > 0) {
+    [_webView removeAllHighlights];
+    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
+    [_webView scrollToHighlightTop];
+    callback(results);
+  } else {
+    callback(0);
+  }
+}
+
+- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentFrameCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else { // Error while capturing the screen
+      callback(nil);
+    };
+  }];
+}
+
+- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentScrollCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else {
+      callback(nil);
+    }
+  }];
+}
+
+- (void)printContent {
+  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
+  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
+  printInfo.outputType = UIPrintInfoOutputGeneral;
+  printInfo.jobName = _webView.URL.absoluteString;
+  printInfo.duplex = UIPrintInfoDuplexLongEdge;
+  controller.printInfo = printInfo;
+  controller.showsPageRange = YES;
+  
+  UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
+  viewFormatter.startPage = 0;
+  viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
+  controller.printFormatter = viewFormatter;
+  
+  [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
+    if (!completed || error) {
+      NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
+    }
+  }];
+}
+
+- (void)longPressed:(UILongPressGestureRecognizer*)sender {
+  if (sender.state == UIGestureRecognizerStateBegan) {
+    longPress = YES;
+    sender.enabled = NO;
+    
+    NSUInteger touchCount = [sender numberOfTouches];
+    if (touchCount) {
+      CGPoint point = [sender locationOfTouch:0 inView:sender.view];
+      if ([_webView respondsToSelector:@selector(respondToTapAndHoldAtLocation:)]) {
+        NSDictionary* urlResult = [_webView respondToTapAndHoldAtLocation:point];
+        if (urlResult.allKeys.count == 0) {
+          longPress = NO;
+        }
+        _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"contextMenu", @"data":urlResult}});
+      }
+    }
+  } else if (sender.state == UIGestureRecognizerStateCancelled) {
+    sender.enabled = YES;
+  }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+  return YES;
 }
 
 @end

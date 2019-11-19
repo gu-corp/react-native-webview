@@ -133,6 +133,26 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     );
   };
 
+  evaluateJavaScript = (js) => {
+    return UIManager.evaluateJavaScript(this.getWebViewHandle(), js);
+  };
+
+  captureScreen = () => {
+    return UIManager.captureScreen(this.getWebViewHandle());
+  }
+
+  capturePage = () => {
+    return UIManager.capturePage(this.getWebViewHandle());
+  }
+
+  printContent = () => {
+    return UIManager.printContent(this.getWebViewHandle());
+  }
+
+  findInPage = (searchString) => {
+    return UIManager.findInPage(this.getWebViewHandle(), searchString);
+  }
+
   /**
    * Posts a message to the web view, which will emit a `message` event.
    * Accepts one argument, `data`, which must be a string.
