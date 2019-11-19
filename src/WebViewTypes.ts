@@ -477,6 +477,8 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   lockScroll?: number;
   adjustOffset?: object;
+  openNewWindowInWebView: boolean;
+  customUserAgent: string;
   onShouldCreateNewWindow?: (event: WebViewNativeEvent) => boolean;
 }
 
