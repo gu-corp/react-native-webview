@@ -464,11 +464,20 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    */
   allowingReadAccessToURL?: string;
 
+  
   /**
    * Function that is invoked when the WebKit WebView content process gets terminated.
    * @platform ios
    */
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
+
+  /**
+   * Lunascape custom props
+   */
+  scrollToTop?: boolean;
+  lockScroll?: number;
+  adjustOffset?: object;
+  onShouldCreateNewWindow?: (event: WebViewNativeEvent) => boolean;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
