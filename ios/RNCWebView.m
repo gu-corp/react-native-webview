@@ -254,6 +254,14 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         [wkWebViewConfig.userContentController addUserScript:script];
     }
 
+    if (_contentRuleList) {
+      if (@available(iOS 11.0, *)) {
+        [WKContentRuleListStore.defaultStore compileContentRuleListForIdentifier:@"my rule list 1" encodedContentRuleList:_contentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+            [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+        }];
+      }
+    }
+
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
@@ -905,7 +913,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         _onHttpError(event);
       }
     }
-  }  
+  }
 
   decisionHandler(WKNavigationResponsePolicyAllow);
 }
