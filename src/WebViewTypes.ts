@@ -227,6 +227,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingStart: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
+  onLsMessage?: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
   onCreateNewWindow?: (event: WebViewEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
@@ -712,4 +713,5 @@ export interface WebViewSharedProps extends ViewProps {
   cacheEnabled?: boolean;
 
   injectedJavaScriptBeforeDocumentLoad?: string;
+  onLsMessage?: (event: WebViewMessageEvent) => void;
 }

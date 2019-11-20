@@ -590,6 +590,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
+    export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLsMessage"));
     return export;
   }
 

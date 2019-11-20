@@ -223,6 +223,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onLsMessage = (event: WebViewMessageEvent) => {
+    const { onLsMessage } = this.props;
+    if (onLsMessage) {
+      onLsMessage(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
@@ -269,6 +276,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   render() {
     const {
       onMessage,
+      onLsMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
       renderError,
@@ -330,6 +338,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onLoadingStart={this.onLoadingStart}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
+        onLsMessage={this.onLsMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onCreateNewWindow={this.onCreateNewWindow}
         onCaptureScreen={this.onCaptureScreen}
