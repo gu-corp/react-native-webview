@@ -331,6 +331,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onMessage={this.onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onShouldCreateNewWindow={this.onCreateNewWindow}
+        onNavigationStateChange={this.updateNavigationState}
         onCaptureScreen={this.onCaptureScreen}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
