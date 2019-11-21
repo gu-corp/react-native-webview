@@ -330,6 +330,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       nativeConfig = {},
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      onShouldCreateNewWindow: onShouldCreateNewWindowProp,
       originWhitelist,
       renderError,
       renderLoading,
@@ -367,7 +368,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
       this.onShouldCreateNewWindowCallback,
       // casting cause it's in the default props
-      onShouldStartLoadWithRequestProp,
+      onShouldCreateNewWindowProp,
     );
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);

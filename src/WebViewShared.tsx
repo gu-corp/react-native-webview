@@ -4,6 +4,7 @@ import { Linking, View, ActivityIndicator, Text } from 'react-native';
 import {
   WebViewNavigationEvent,
   OnShouldStartLoadWithRequest,
+  OnShouldCreateNewWindow,
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
@@ -62,7 +63,7 @@ const createOnShouldCreateNewWindow = (
     url: string,
     lockIdentifier: number,
   ) => void,
-  onShouldCreateNewWindow?: OnShouldStartLoadWithRequest,
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow,
 ) => {
   return ({ nativeEvent }: WebViewNavigationEvent) => {
     let shouldStart = true;
