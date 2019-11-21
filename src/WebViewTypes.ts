@@ -191,6 +191,7 @@ export type WebViewSource = WebViewSourceUri | WebViewSourceHtml;
 
 export interface ViewManager {
   startLoadWithResult: Function;
+  createNewWindowWithResult: Function;
   evaluateJavaScript: Function;
   captureScreen: Function;
   capturePage: Function;
@@ -219,6 +220,10 @@ export type OnShouldStartLoadWithRequest = (
   event: WebViewNavigation,
 ) => boolean;
 
+export type OnShouldCreateNewWindow = (
+  event: WebViewNavigation,
+) => boolean;
+
 export type OnCreateNewWindow = (
   event: WebViewEvent,
 ) => void;
@@ -238,6 +243,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
+  onShouldCreateNewWindow?: (event: WebViewNavigationEvent) => void;
   onCreateNewWindow?: (event: WebViewEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
@@ -719,6 +725,7 @@ export interface WebViewSharedProps extends ViewProps {
    * Allows custom handling of window.open() by a JS handler
    */
   onCreateNewWindow?: OnCreateNewWindow;
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow;
 
   /**
    * Override the native component used to render the WebView. Enables a custom native

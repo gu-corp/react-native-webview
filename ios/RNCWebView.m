@@ -55,6 +55,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldStartLoadWithRequest;
+@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
@@ -80,6 +81,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
   BOOL longPress;
   NSBundle* resourceBundle;
+  WKWebViewConfiguration *wkWebViewConfig;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -133,6 +135,10 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   return self;
 }
 
+- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
+    wkWebViewConfig = configuration;
+}
+
 - (void)dealloc
 {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -143,8 +149,26 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
  */
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
-  if (!navigationAction.targetFrame.isMainFrame) {
+  NSString *scheme = navigationAction.request.URL.scheme;
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
+    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
+                                       @"navigationType": @(navigationAction.navigationType)
+    }];
+    RNCWebView* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
+    if (!wkWebView) {
+      [webView loadRequest:navigationAction.request];
+    } else {
+      return wkWebView.webview;
+    }
+  } else if (!navigationAction.targetFrame.isMainFrame) {
     [webView loadRequest:navigationAction.request];
+  } else {
+    UIApplication *app = [UIApplication sharedApplication];
+    NSURL *url = navigationAction.request.URL;
+    if ([app canOpenURL:url]) {
+      [app openURL:url];
+    }
   }
   return nil;
 }
@@ -152,7 +176,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (void)didMoveToWindow
 {
   if (self.window != nil && _webView == nil) {
-    WKWebViewConfiguration *wkWebViewConfig = [WKWebViewConfiguration new];
+    if (wkWebViewConfig == nil) {
+      wkWebViewConfig = [WKWebViewConfiguration new];
+    }
     WKPreferences *prefs = [[WKPreferences alloc]init];
     if (!_javaScriptEnabled) {
       prefs.javaScriptEnabled = NO;
@@ -1105,6 +1131,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 }
 
 #pragma mark - Custom Lunascape functions
+- (WKWebView*)webview {
+  return _webView;
+}
 
 - (void)setScrollToTop:(BOOL)scrollToTop {
   _webView.scrollView.scrollsToTop = scrollToTop;

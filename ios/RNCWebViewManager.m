@@ -31,14 +31,18 @@ RCT_ENUM_CONVERTER(UIScrollViewContentInsetAdjustmentBehavior, (@{
 {
   NSConditionLock *_shouldStartLoadLock;
   BOOL _shouldStartLoad;
+  NSConditionLock* createNewWindowCondition;
+  BOOL createNewWindowResult;
+  RNCWebView* newWindow;
 }
 
 RCT_EXPORT_MODULE()
 
 - (UIView *)view
 {
-  RNCWebView *webView = [RNCWebView new];
+  RNCWebView *webView = newWindow ? newWindow : [RNCWebView new];
   webView.delegate = self;
+  newWindow = nil;
   return webView;
 }
 
@@ -301,6 +305,44 @@ RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)loc
   } else {
     RCTLogWarn(@"startLoadWithResult invoked with invalid lockIdentifier: "
                "got %lld, expected %lld", (long long)lockIdentifier, (long long)_shouldStartLoadLock.condition);
+  }
+}
+
+- (RNCWebView*)webView:(__unused RNCWebView *)webView
+ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id> *)request
+     withConfiguration:(WKWebViewConfiguration*)configuration
+          withCallback:(RCTDirectEventBlock)callback
+{
+  createNewWindowCondition = [[NSConditionLock alloc] initWithCondition:arc4random()];
+  createNewWindowResult = YES;
+  request[@"lockIdentifier"] = @(createNewWindowCondition.condition);
+  callback(request);
+  
+  // Block the main thread for a maximum of 250ms until the JS thread returns
+  if ([createNewWindowCondition lockWhenCondition:0 beforeDate:[NSDate dateWithTimeIntervalSinceNow:.25]]) {
+    [createNewWindowCondition unlock];
+    createNewWindowCondition = nil;
+    if (createNewWindowResult) {
+      newWindow = [RNCWebView new];
+      [newWindow setupConfiguration:configuration];
+      return newWindow;
+    } else {
+      return nil;
+    }
+  } else {
+    RCTLogWarn(@"Did not receive response to shouldCreateNewWindow in time, defaulting to YES");
+    return nil;
+  }
+}
+
+RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteger)lockIdentifier)
+{
+  if (createNewWindowCondition && [createNewWindowCondition tryLockWhenCondition:lockIdentifier]) {
+    createNewWindowResult = result;
+    [createNewWindowCondition unlockWithCondition:0];
+  } else {
+    RCTLogWarn(@"createNewWindowWithResult invoked with invalid lockIdentifier: "
+               "got %zd, expected %zd", lockIdentifier, createNewWindowCondition.condition);
   }
 }
 

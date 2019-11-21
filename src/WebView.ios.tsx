@@ -13,6 +13,7 @@ import invariant from 'invariant';
 import {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
+  createOnShouldCreateNewWindow,
   defaultRenderError,
   defaultRenderLoading,
 } from './WebViewShared';
@@ -286,6 +287,18 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     viewManager.startLoadWithResult(!!shouldStart, lockIdentifier);
   };
 
+  onShouldCreateNewWindowCallback = (
+    shouldCreate: boolean,
+    _url: string,
+    lockIdentifier: number,
+  ) => {
+    const viewManager
+      = (this.props.nativeConfig && this.props.nativeConfig.viewManager)
+      || RNCWebViewManager;
+
+    viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
+  };
+
   onContentProcessDidTerminate = (event: WebViewTerminatedEvent) => {
     const { onContentProcessDidTerminate } = this.props;
     if (onContentProcessDidTerminate) {
@@ -351,6 +364,12 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       onShouldStartLoadWithRequestProp,
     );
 
+    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+      this.onShouldCreateNewWindowCallback,
+      // casting cause it's in the default props
+      onShouldStartLoadWithRequestProp,
+    );
+
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
     const NativeWebView
@@ -371,6 +390,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         onMessage={this.onMessage}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

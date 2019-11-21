@@ -17,6 +17,8 @@
 - (BOOL)webView:(RNCWebView *_Nonnull)webView
    shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *_Nonnull)request
    withCallback:(RCTDirectEventBlock _Nonnull)callback;
+- (RNCWebView* _Nullable)webView:(RNCWebView* _Nonnull)webView
+shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
 
 @end
 
@@ -54,6 +56,7 @@
 @property (nonatomic, assign) BOOL directionalLockEnabled;
 @property (nonatomic, copy) NSString * _Nullable allowingReadAccessToURL;
 @property (nonatomic, assign) BOOL scrollToTop;
+@property (nonatomic, assign) BOOL openNewWindowInWebView;
 
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
@@ -64,6 +67,7 @@
 - (void)reload;
 - (void)stopLoading;
 
+- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
 - (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
