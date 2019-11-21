@@ -435,6 +435,13 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   }
 }
 
+- (void)setUserAgent:(NSString *)userAgent {
+  _userAgent = userAgent;
+  if (_webView != nil) {
+    _webView.customUserAgent = userAgent;
+  }
+}
+
 - (void)setAllowingReadAccessToURL:(NSString *)allowingReadAccessToURL
 {
   if (![_allowingReadAccessToURL isEqualToString:allowingReadAccessToURL]) {

@@ -133,6 +133,16 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     );
   };
 
+  setNativeProps = (nativeProps: Partial<IOSWebViewProps>) => {
+    try {
+      if (this.webViewRef.current) {
+        this.webViewRef.current.setNativeProps(nativeProps);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   evaluateJavaScript = (js: string) => {
     return RNCWebViewManager.evaluateJavaScript(this.getWebViewHandle(), js);
   };
