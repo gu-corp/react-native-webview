@@ -235,6 +235,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   injectedJavaScriptBeforeDocumentLoad?: string;
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
+  openNewWindowInWebView?: boolean;
   onScroll?: (event: NativeScrollEvent) => void;
   onLoadingError: (event: WebViewErrorEvent) => void;
   onLoadingFinish: (event: WebViewNavigationEvent) => void;
@@ -483,8 +484,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   lockScroll?: number;
   adjustOffset?: object;
-  openNewWindowInWebView?: boolean;
-  onShouldCreateNewWindow?: (event: WebViewNativeEvent) => boolean;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
