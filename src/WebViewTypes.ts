@@ -83,6 +83,8 @@ export interface WebViewNativeEvent {
   canGoBack: boolean;
   canGoForward: boolean;
   lockIdentifier: number;
+  progress?: number;
+  error?: object;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
@@ -237,6 +239,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingFinish: (event: WebViewNavigationEvent) => void;
   onLoadingProgress: (event: WebViewProgressEvent) => void;
   onLoadingStart: (event: WebViewNavigationEvent) => void;
+  onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
