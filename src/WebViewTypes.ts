@@ -732,4 +732,5 @@ export interface WebViewSharedProps extends ViewProps {
   cacheEnabled?: boolean;
 
   injectedJavaScriptBeforeDocumentLoad?: string;
+  openNewWindowInWebView?: boolean;
 }
