@@ -367,7 +367,6 @@ class WebView extends React.Component<IOSWebViewProps, State> {
 
     const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
       this.onShouldCreateNewWindowCallback,
-      // casting cause it's in the default props
       onShouldCreateNewWindowProp,
     );
 

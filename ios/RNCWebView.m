@@ -136,7 +136,8 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 }
 
 - (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
-    wkWebViewConfig = configuration;
+  wkWebViewConfig = configuration;
+  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 }
 
 - (void)dealloc
@@ -175,7 +176,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
+  if (self.window != nil) {
     if (wkWebViewConfig == nil) {
       wkWebViewConfig = [WKWebViewConfiguration new];
     }
@@ -292,7 +293,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         [wkWebViewConfig.userContentController addUserScript:script];
     }
 
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    if (_webView == nil) {
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    }
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;

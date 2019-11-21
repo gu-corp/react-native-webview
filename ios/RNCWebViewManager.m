@@ -335,7 +335,9 @@ RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)loc
     }
   } else {
     RCTLogWarn(@"Did not receive response to shouldCreateNewWindow in time, defaulting to YES");
-    return nil;
+    newWindow = [RNCWebView new];
+    [newWindow setupConfiguration:configuration];
+    return newWindow;
   }
 }
 
