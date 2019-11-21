@@ -197,7 +197,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     settings.setDomStorageEnabled(true);
     settings.setSupportMultipleWindows(true);
 
-    settings.setAllowFileAccess(false);
+    settings.setAllowFileAccess(true);
     settings.setAllowContentAccess(false);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       settings.setAllowFileAccessFromFileURLs(false);
