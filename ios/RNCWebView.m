@@ -711,9 +711,36 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     if (webView.URL != nil) {
         host = webView.URL.host;
     }
-    if ([[challenge protectionSpace] authenticationMethod] == NSURLAuthenticationMethodClientCertificate) {
+    NSString* authMethod = challenge.protectionSpace.authenticationMethod;
+    if (authMethod == NSURLAuthenticationMethodClientCertificate) {
         completionHandler(NSURLSessionAuthChallengeUseCredential, clientAuthenticationCredential);
         return;
+    } else if ([authMethod isEqualToString:NSURLAuthenticationMethodHTTPBasic]) {
+      UIAlertController* alertView = [UIAlertController alertControllerWithTitle:[LocalizeString(@"Login_title") stringByReplacingOccurrencesOfString:@"%s" withString:challenge.protectionSpace.host] message:@"" preferredStyle:UIAlertControllerStyleAlert];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Username");
+      }];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Password");
+        textField.secureTextEntry = YES;
+      }];
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Cancel") style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
+      }]];
+      
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Login") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *userField = alertView.textFields.firstObject;
+        UITextField *passField = alertView.textFields.lastObject;
+        NSURLCredential* credential = [NSURLCredential credentialWithUser:userField.text password:passField.text persistence:NSURLCredentialPersistenceForSession];
+        @try {
+          [challenge.sender useCredential:credential forAuthenticationChallenge:challenge];
+        } @catch (NSException *exception) {
+          NSLog(@"%@", exception.description);
+        } @finally {
+          completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+        }
+      }]];
+      return [[[UIApplication sharedApplication].delegate window].rootViewController presentViewController:alertView animated:YES completion:nil];
     }
     if ([[challenge protectionSpace] serverTrust] != nil && customCertificatesForHost != nil && host != nil) {
         SecCertificateRef localCertificate = (__bridge SecCertificateRef)([customCertificatesForHost objectForKey:host]);
