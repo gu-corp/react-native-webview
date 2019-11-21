@@ -78,6 +78,10 @@ RCT_EXPORT_VIEW_PROPERTY(allowingReadAccessToURL, NSString)
 RCT_EXPORT_VIEW_PROPERTY(contentInsetAdjustmentBehavior, UIScrollViewContentInsetAdjustmentBehavior)
 #endif
 
+RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
+
 /**
  * Expose methods to enable messaging the webview.
  */
