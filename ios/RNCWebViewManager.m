@@ -31,14 +31,18 @@ RCT_ENUM_CONVERTER(UIScrollViewContentInsetAdjustmentBehavior, (@{
 {
   NSConditionLock *_shouldStartLoadLock;
   BOOL _shouldStartLoad;
+  NSConditionLock* createNewWindowCondition;
+  BOOL createNewWindowResult;
+  RNCWebView* newWindow;
 }
 
 RCT_EXPORT_MODULE()
 
 - (UIView *)view
 {
-  RNCWebView *webView = [RNCWebView new];
+  RNCWebView *webView = newWindow ? newWindow : [RNCWebView new];
   webView.delegate = self;
+  newWindow = nil;
   return webView;
 }
 
@@ -73,6 +77,11 @@ RCT_EXPORT_VIEW_PROPERTY(allowingReadAccessToURL, NSString)
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
 RCT_EXPORT_VIEW_PROPERTY(contentInsetAdjustmentBehavior, UIScrollViewContentInsetAdjustmentBehavior)
 #endif
+
+RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 
 /**
  * Expose methods to enable messaging the webview.
@@ -189,6 +198,87 @@ RCT_EXPORT_METHOD(stopLoading:(nonnull NSNumber *)reactTag)
   }];
 }
 
+RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
+                  js:(NSString *)js
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view evaluateJavaScript:js completionHandler:^(id result, NSError *error) {
+        if (error) {
+          reject(@"js_error", @"Error occurred while evaluating Javascript", error);
+        } else {
+          resolve(result);
+        }
+      }];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(captureScreen:(nonnull NSNumber *)reactTag
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+        [view captureScreen:^(NSString * _Nullable path) {
+            resolve(path);
+        }];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(capturePage:(nonnull NSNumber *)reactTag
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view capturePage:^(NSString * _Nullable path) {
+          resolve(path);
+      }];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(findInPage:(nonnull NSNumber *)reactTag searchString:(NSString *)searchString
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      NSLog(@"Search webview with string: %@", searchString);
+        [view findInPage:searchString completed:^(NSInteger count) {
+            resolve(@(count));
+        }];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(printContent:(nonnull NSNumber *)reactTag) {
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view printContent];
+    }
+  }];
+}
+
 #pragma mark - Exported synchronous methods
 
 - (BOOL)          webView:(RNCWebView *)webView
@@ -220,6 +310,46 @@ RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)loc
   } else {
     RCTLogWarn(@"startLoadWithResult invoked with invalid lockIdentifier: "
                "got %lld, expected %lld", (long long)lockIdentifier, (long long)_shouldStartLoadLock.condition);
+  }
+}
+
+- (RNCWebView*)webView:(__unused RNCWebView *)webView
+ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id> *)request
+     withConfiguration:(WKWebViewConfiguration*)configuration
+          withCallback:(RCTDirectEventBlock)callback
+{
+  createNewWindowCondition = [[NSConditionLock alloc] initWithCondition:arc4random()];
+  createNewWindowResult = YES;
+  request[@"lockIdentifier"] = @(createNewWindowCondition.condition);
+  callback(request);
+  
+  // Block the main thread for a maximum of 250ms until the JS thread returns
+  if ([createNewWindowCondition lockWhenCondition:0 beforeDate:[NSDate dateWithTimeIntervalSinceNow:.25]]) {
+    [createNewWindowCondition unlock];
+    createNewWindowCondition = nil;
+    if (createNewWindowResult) {
+      newWindow = [RNCWebView new];
+      [newWindow setupConfiguration:configuration];
+      return newWindow;
+    } else {
+      return nil;
+    }
+  } else {
+    RCTLogWarn(@"Did not receive response to shouldCreateNewWindow in time, defaulting to YES");
+    newWindow = [RNCWebView new];
+    [newWindow setupConfiguration:configuration];
+    return newWindow;
+  }
+}
+
+RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteger)lockIdentifier)
+{
+  if (createNewWindowCondition && [createNewWindowCondition tryLockWhenCondition:lockIdentifier]) {
+    createNewWindowResult = result;
+    [createNewWindowCondition unlockWithCondition:0];
+  } else {
+    RCTLogWarn(@"createNewWindowWithResult invoked with invalid lockIdentifier: "
+               "got %zd, expected %zd", lockIdentifier, createNewWindowCondition.condition);
   }
 }
 

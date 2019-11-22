@@ -8,7 +8,6 @@ import {
   NativeModules,
   ImageSourcePropType,
   findNodeHandle,
-  NativeSyntheticEvent,
 } from 'react-native';
 
 import invariant from 'invariant';
@@ -253,9 +252,9 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
    * Allows custom handling of window.open() by a JS handler. Return true
    * or false from this method to use default behavior.
   */
-  onCreateNewWindow = (event: NativeSyntheticEvent<any>) => {
-    if (this.props.onCreateNewWindow) {
-      this.props.onCreateNewWindow(event.nativeEvent);
+  onCreateNewWindow = (event: WebViewNavigationEvent) => {
+    if (this.props.onShouldCreateNewWindow) {
+      this.props.onShouldCreateNewWindow(event.nativeEvent);
     }
   };
 
@@ -331,7 +330,8 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onCreateNewWindow={this.onCreateNewWindow}
+        onShouldCreateNewWindow={this.onCreateNewWindow}
+        onNavigationStateChange={this.updateNavigationState}
         onCaptureScreen={this.onCaptureScreen}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

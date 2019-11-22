@@ -13,6 +13,12 @@
 
 #import "objc/runtime.h"
 
+#import "WKWebView+BrowserHack.h"
+#import "WKWebView+Highlight.h"
+#import "WKWebView+Capture.h"
+
+#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
+
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
@@ -49,6 +55,8 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldStartLoadWithRequest;
+@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
+@property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
@@ -71,6 +79,10 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
   UIScrollViewContentInsetAdjustmentBehavior _savedContentInsetAdjustmentBehavior;
 #endif
+
+  BOOL longPress;
+  NSBundle* resourceBundle;
+  WKWebViewConfiguration *wkWebViewConfig;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -117,8 +129,16 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
                                                    name:UIWindowDidBecomeHiddenNotification
                                                  object:nil];
   }
+    
+  NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
+  resourceBundle = [NSBundle bundleWithPath:bundlePath];
 
   return self;
+}
+
+- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
+  wkWebViewConfig = configuration;
+  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 }
 
 - (void)dealloc
@@ -131,16 +151,36 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
  */
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
-  if (!navigationAction.targetFrame.isMainFrame) {
+  NSString *scheme = navigationAction.request.URL.scheme;
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
+    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
+                                       @"navigationType": @(navigationAction.navigationType)
+    }];
+    RNCWebView* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
+    if (!wkWebView) {
+      [webView loadRequest:navigationAction.request];
+    } else {
+      return wkWebView.webview;
+    }
+  } else if (!navigationAction.targetFrame.isMainFrame) {
     [webView loadRequest:navigationAction.request];
+  } else {
+    UIApplication *app = [UIApplication sharedApplication];
+    NSURL *url = navigationAction.request.URL;
+    if ([app canOpenURL:url]) {
+      [app openURL:url];
+    }
   }
   return nil;
 }
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
-    WKWebViewConfiguration *wkWebViewConfig = [WKWebViewConfiguration new];
+  if (self.window != nil) {
+    if (wkWebViewConfig == nil) {
+      wkWebViewConfig = [WKWebViewConfiguration new];
+    }
     WKPreferences *prefs = [[WKPreferences alloc]init];
     if (!_javaScriptEnabled) {
       prefs.javaScriptEnabled = NO;
@@ -254,7 +294,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         [wkWebViewConfig.userContentController addUserScript:script];
     }
 
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    if (_webView == nil) {
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    }
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;
@@ -267,6 +309,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     _webView.scrollView.directionalLockEnabled = _directionalLockEnabled;
     _webView.allowsLinkPreview = _allowsLinkPreview;
     [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
     _webView.allowsBackForwardNavigationGestures = _allowsBackForwardNavigationGestures;
 
     if (_userAgent) {
@@ -277,6 +324,10 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       _webView.scrollView.contentInsetAdjustmentBehavior = _savedContentInsetAdjustmentBehavior;
     }
 #endif
+      
+    UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
+    longGesture.delegate = self;
+    [_webView addGestureRecognizer:longGesture];
 
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
@@ -297,6 +348,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     if (_webView) {
         [_webView.configuration.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
         [_webView removeObserver:self forKeyPath:@"estimatedProgress"];
+        [_webView removeObserver:self forKeyPath:@"title"];
+        [_webView removeObserver:self forKeyPath:@"loading"];
+        [_webView removeObserver:self forKeyPath:@"canGoBack"];
+        [_webView removeObserver:self forKeyPath:@"canGoForward"];
+        [_webView removeObserver:self forKeyPath:@"URL"];
         [_webView removeFromSuperview];
         _webView.scrollView.delegate = nil;
         _webView = nil;
@@ -360,7 +416,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
             [event addEntriesFromDictionary:@{@"progress":[NSNumber numberWithDouble:self.webView.estimatedProgress]}];
             _onLoadingProgress(event);
         }
-    }else{
+    } else if ([keyPath isEqualToString:@"title"] || [keyPath isEqualToString:@"loading"] || [keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"] || [keyPath isEqualToString:@"URL"]) {
+      if (_onNavigationStateChange) {
+        _onNavigationStateChange([self baseEvent]);
+      }
+    } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
@@ -416,6 +476,13 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     if (_webView != nil) {
       [self visitSource];
     }
+  }
+}
+
+- (void)setUserAgent:(NSString *)userAgent {
+  _userAgent = userAgent;
+  if (_webView != nil) {
+    _webView.customUserAgent = userAgent;
   }
 }
 
@@ -674,6 +741,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     @"title": _webView.title ?: @"",
     @"loading" : @(_webView.loading),
     @"canGoBack": @(_webView.canGoBack),
+    @"progress" : @(_webView.estimatedProgress),
     @"canGoForward" : @(_webView.canGoForward)
   };
   return [[NSMutableDictionary alloc] initWithDictionary: event];
@@ -695,9 +763,36 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     if (webView.URL != nil) {
         host = webView.URL.host;
     }
-    if ([[challenge protectionSpace] authenticationMethod] == NSURLAuthenticationMethodClientCertificate) {
+    NSString* authMethod = challenge.protectionSpace.authenticationMethod;
+    if (authMethod == NSURLAuthenticationMethodClientCertificate) {
         completionHandler(NSURLSessionAuthChallengeUseCredential, clientAuthenticationCredential);
         return;
+    } else if ([authMethod isEqualToString:NSURLAuthenticationMethodHTTPBasic]) {
+      UIAlertController* alertView = [UIAlertController alertControllerWithTitle:[LocalizeString(@"Login_title") stringByReplacingOccurrencesOfString:@"%s" withString:challenge.protectionSpace.host] message:@"" preferredStyle:UIAlertControllerStyleAlert];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Username");
+      }];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Password");
+        textField.secureTextEntry = YES;
+      }];
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Cancel") style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
+      }]];
+      
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Login") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *userField = alertView.textFields.firstObject;
+        UITextField *passField = alertView.textFields.lastObject;
+        NSURLCredential* credential = [NSURLCredential credentialWithUser:userField.text password:passField.text persistence:NSURLCredentialPersistenceForSession];
+        @try {
+          [challenge.sender useCredential:credential forAuthenticationChallenge:challenge];
+        } @catch (NSException *exception) {
+          NSLog(@"%@", exception.description);
+        } @finally {
+          completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+        }
+      }]];
+      return [[[UIApplication sharedApplication].delegate window].rootViewController presentViewController:alertView animated:YES completion:nil];
     }
     if ([[challenge protectionSpace] serverTrust] != nil && customCertificatesForHost != nil && host != nil) {
         SecCertificateRef localCertificate = (__bridge SecCertificateRef)([customCertificatesForHost objectForKey:host]);
@@ -833,6 +928,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       @(WKNavigationTypeOther): @"other",
     };
   });
+    
+  if (longPress) {
+    longPress = NO;
+    return decisionHandler(WKNavigationActionPolicyCancel);
+  }
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
@@ -965,6 +1065,14 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (void)      webView:(WKWebView *)webView
   didFinishNavigation:(WKNavigation *)navigation
 {
+  if (resourceBundle) {
+    NSString *jsFile = @"_webview";
+
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+  }
   if (_injectedJavaScript) {
     [self evaluateJS: _injectedJavaScript thenCall: ^(NSString *jsEvaluationValue) {
       NSMutableDictionary *event = [self baseEvent];
@@ -1039,6 +1147,108 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     }
   }
   return request;
+}
+
+#pragma mark - Custom Lunascape functions
+- (WKWebView*)webview {
+  return _webView;
+}
+
+- (void)setScrollToTop:(BOOL)scrollToTop {
+  _webView.scrollView.scrollsToTop = scrollToTop;
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString
+         completionHandler:(void (^)(id, NSError *error))completionHandler
+{
+  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+}
+
+- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
+  if (searchString && searchString.length > 0) {
+    [_webView removeAllHighlights];
+    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
+    [_webView scrollToHighlightTop];
+    callback(results);
+  } else {
+    callback(0);
+  }
+}
+
+- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentFrameCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else { // Error while capturing the screen
+      callback(nil);
+    };
+  }];
+}
+
+- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentScrollCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else {
+      callback(nil);
+    }
+  }];
+}
+
+- (void)printContent {
+  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
+  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
+  printInfo.outputType = UIPrintInfoOutputGeneral;
+  printInfo.jobName = _webView.URL.absoluteString;
+  printInfo.duplex = UIPrintInfoDuplexLongEdge;
+  controller.printInfo = printInfo;
+  controller.showsPageRange = YES;
+  
+  UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
+  viewFormatter.startPage = 0;
+  viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
+  controller.printFormatter = viewFormatter;
+  
+  [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
+    if (!completed || error) {
+      NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
+    }
+  }];
+}
+
+- (void)longPressed:(UILongPressGestureRecognizer*)sender {
+  if (sender.state == UIGestureRecognizerStateBegan) {
+    longPress = YES;
+    sender.enabled = NO;
+    
+    NSUInteger touchCount = [sender numberOfTouches];
+    if (touchCount) {
+      CGPoint point = [sender locationOfTouch:0 inView:sender.view];
+      if ([_webView respondsToSelector:@selector(respondToTapAndHoldAtLocation:)]) {
+        NSDictionary* urlResult = [_webView respondToTapAndHoldAtLocation:point];
+        if (urlResult.allKeys.count == 0) {
+          longPress = NO;
+        }
+        _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"contextMenu", @"data":urlResult}});
+      }
+    }
+  } else if (sender.state == UIGestureRecognizerStateCancelled) {
+    sender.enabled = YES;
+  }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+  return YES;
 }
 
 @end
