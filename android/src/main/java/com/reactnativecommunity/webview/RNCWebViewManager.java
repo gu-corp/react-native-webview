@@ -859,6 +859,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           message = "Unknown";
         }
 
+        if (statusCode == 401) {
+          return null;
+        }
+
         if (response.isRedirect()) {
           String location = response.header("Location");
           if (location != null) {
