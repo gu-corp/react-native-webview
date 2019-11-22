@@ -22,6 +22,13 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 
 @end
 
+typedef enum {
+    NoLock = 0,
+    LockDirectionUp,
+    LockDirectionDown,
+    LockDirectionBoth
+} LockScroll;
+
 @interface RNCWebView : RCTView
 
 @property (nonatomic, weak) id<RNCWebViewDelegate> _Nullable delegate;
@@ -57,6 +64,8 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, copy) NSString * _Nullable allowingReadAccessToURL;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
+@property (nonatomic, assign) LockScroll lockScroll;
+@property (nonatomic, assign) CGPoint adjustOffset;
 
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;

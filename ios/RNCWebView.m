@@ -83,6 +83,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   BOOL longPress;
   NSBundle* resourceBundle;
   WKWebViewConfiguration *wkWebViewConfig;
+    
+  CGPoint lastOffset;
+  BOOL decelerating;
+  BOOL dragging;
+  BOOL scrollingToTop;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -657,6 +662,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
   scrollView.decelerationRate = _decelerationRate;
+    
+  decelerating = NO;
+  dragging = YES;
+    
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollBeginDrag", @"data":event}});
 }
 
 - (void)setScrollEnabled:(BOOL)scrollEnabled
@@ -695,6 +706,74 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       };
     _onScroll(event);
   }
+    
+    CGPoint offset = scrollView.contentOffset;
+    if (!decelerating && !dragging && !scrollingToTop) {
+      NSLog(@"scrollViewDidScroll dont fire event");
+      lastOffset = offset;
+      return;
+    }
+    
+    CGFloat dy = offset.y - lastOffset.y;
+    lastOffset = offset;
+    
+    CGSize frameSize = scrollView.frame.size;
+    CGFloat offsetMin = 0;
+    CGFloat offsetMax = scrollView.contentSize.height - frameSize.height;
+    if ((lastOffset.y <= offsetMin && dy > 0) || (lastOffset.y >= offsetMax && dy < 0)) {
+      return;
+    }
+    
+    NSDictionary *event = [self onScrollEvent:offset moveDistance:CGPointMake(offset.x - lastOffset.x, dy)];
+    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScroll", @"data":event}});
+}
+
+- (NSDictionary*)onScrollEvent:(CGPoint)currentOffset moveDistance:(CGPoint)distance {
+  UIScrollView* scrollView = _webView.scrollView;
+  CGSize frameSize = scrollView.frame.size;
+  
+  NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+  [event addEntriesFromDictionary:@{@"contentOffset": @{@"x": @(currentOffset.x),@"y": @(currentOffset.y)}}];
+  [event addEntriesFromDictionary:@{@"scroll": @{@"decelerating":@(decelerating || scrollingToTop), @"width": @(frameSize.width), @"height": @(frameSize.height)}}];
+  [event addEntriesFromDictionary:@{@"contentSize": @{@"width" : @(scrollView.contentSize.width), @"height": @(scrollView.contentSize.height)}}];
+  
+  [event addEntriesFromDictionary:@{@"offset": @{@"dx": @(distance.x),@"dy": @(distance.y)}}];
+  return event;
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+  decelerating = decelerate;
+  dragging = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDrag", @"data":event}});
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+  decelerating = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+}
+
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+  scrollingToTop = _webView.scrollView.scrollsToTop;
+  return _webView.scrollView.scrollsToTop;
+}
+
+- (void)setAdjustOffset:(CGPoint)adjustOffset {
+  CGRect scrollBounds = _webView.scrollView.bounds;
+  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);;
+  _webView.scrollView.bounds = scrollBounds;
+  
+  lastOffset = _webView.scrollView.contentOffset;
+}
+
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView {
+  scrollingToTop = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
 }
 
 - (void)setDirectionalLockEnabled:(BOOL)directionalLockEnabled
@@ -936,6 +1015,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
+    
+  if ([self decisionHandlerURL:request.URL]) {
+    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onOpenExternalApp", @"data":@{@"url": request.URL.absoluteString}}});
+    return decisionHandler(WKNavigationActionPolicyCancel);
+  }
 
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1249,6 +1333,28 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
   return YES;
+}
+
+- (BOOL)decisionHandlerURL:(NSURL *)url {
+  if (([url.scheme isEqualToString:@"https"] || [url.scheme isEqualToString:@"http"]) && [url.host isEqualToString:@"itunes.apple.com"]) {
+    NSString *newURLString = [url.absoluteString stringByReplacingOccurrencesOfString:url.scheme withString:@"itms-appss"];
+    NSURL *newURL = [NSURL URLWithString:newURLString];
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                if (self->_onLoadingFinish) {
+                    self->_onLoadingFinish([self baseEvent]);
+                }
+                NSLog(@"Launching %@ was successfull", url);
+            }
+        }];
+    } else {
+        // Fallback on earlier versions
+        [[UIApplication sharedApplication] openURL:newURL];
+    }
+    return YES;
+  }
+  return NO;
 }
 
 @end
