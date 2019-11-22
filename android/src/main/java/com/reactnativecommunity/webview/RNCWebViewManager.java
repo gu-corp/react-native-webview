@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -27,6 +29,7 @@ import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
+import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
@@ -37,6 +40,8 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 
 import com.facebook.react.views.scroll.ScrollEvent;
@@ -74,6 +79,7 @@ import org.json.JSONObject;
 
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -101,6 +107,7 @@ import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
 
 /**
  * Manages instances of {@link WebView}
@@ -952,6 +959,37 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setUrlPrefixesForDefaultIntent(ReadableArray specialUrls) {
       mUrlPrefixesForDefaultIntent = specialUrls;
+    }
+
+    @Override
+    public void onReceivedHttpAuthRequest(WebView view, final HttpAuthHandler handler, String host, String realm) {
+      AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+      LayoutInflater inflater = LayoutInflater.from(view.getContext());
+      builder.setView(inflater.inflate(R.layout.authenticate, null));
+
+      final AlertDialog alertDialog = builder.create();
+      alertDialog.getWindow().setLayout(600, 400);
+      alertDialog.show();
+      TextView titleTv = alertDialog.findViewById(R.id.tv_login);
+      titleTv.setText(view.getResources().getString(R.string.login_title).replace("%s", host));
+      Button btnLogin = alertDialog.findViewById(R.id.btn_login);
+      Button btnCancel = alertDialog.findViewById(R.id.btn_cancel);
+      final EditText userField = alertDialog.findViewById(R.id.edt_username);
+      final EditText passField = alertDialog.findViewById(R.id.edt_password);
+      btnCancel.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+          alertDialog.dismiss();
+          handler.cancel();
+        }
+      });
+      btnLogin.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+          alertDialog.dismiss();
+          handler.proceed(userField.getText().toString(), passField.getText().toString());
+        }
+      });
     }
   }
 
