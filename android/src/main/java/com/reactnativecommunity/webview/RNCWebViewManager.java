@@ -139,6 +139,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_LOAD_URL = 7;
   public static final int COMMAND_FOCUS = 8;
   public static final int COMMAND_CAPTURE_SCREEN = 9;
+  public static final int COMMAND_SEARCH_IN_PAGE = 10;
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
@@ -607,6 +608,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     );
     map.put("requestFocus", COMMAND_FOCUS);
     map.put("captureScreen", COMMAND_CAPTURE_SCREEN);
+    map.put("findInPage", COMMAND_SEARCH_IN_PAGE);
     return map;
   }
 
@@ -660,6 +662,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_CAPTURE_SCREEN:
         ((RNCWebView) root).captureScreen(args.getString(0));
+        break;
+      case COMMAND_SEARCH_IN_PAGE:
+        ((RNCWebView) root).searchInPage(args.getString(0));
         break;
     }
   }
@@ -1349,6 +1354,34 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           event.putString("data", localFilePath);
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
+      }
+    }
+
+    public void searchInPage(String keyword) {
+      String[] words = keyword.split(" |　");
+      String[] highlightColors = {
+        "yellow", "cyan", "magenta", "greenyellow", "tomato", "lightskyblue"
+      };
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        String jsString = new String(readBytes);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("MyApp_RemoveAllHighlights();");
+        for (int i = 0; i < words.length; i++) {
+          String color = i < highlightColors.length ? highlightColors[i] : highlightColors[highlightColors.length - 1];
+          sb.append("MyApp_HighlightAllOccurencesOfString('" + words[i] + "','" + color + "');");
+        }
+        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
+        sb.append("MyApp_ScrollToHighlightTop();");
+        this.loadUrl("javascript:" + jsString + sb.toString());
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
   }
