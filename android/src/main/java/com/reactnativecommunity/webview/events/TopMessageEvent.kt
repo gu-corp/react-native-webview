@@ -9,7 +9,7 @@ import com.facebook.react.uimanager.events.RCTEventEmitter
  */
 class TopMessageEvent(viewId: Int, private val mEventData: WritableMap) : Event<TopMessageEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "topMessage"
+    const val EVENT_NAME = "onLsMessage"
   }
 
   override fun getEventName(): String = EVENT_NAME
