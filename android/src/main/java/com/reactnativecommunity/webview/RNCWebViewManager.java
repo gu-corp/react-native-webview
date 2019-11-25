@@ -1014,6 +1014,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           handler.proceed(userField.getText().toString(), passField.getText().toString());
         }
       });
+    }
 
     public void setAdblockRules(String rules) {
       adblockEngine = rules != null ? new Engine(rules) : null;
