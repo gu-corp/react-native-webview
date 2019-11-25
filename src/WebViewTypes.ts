@@ -20,6 +20,7 @@ export interface WebViewCommands {
   loadUrl: number;
   requestFocus: number;
   captureScreen: number;
+  findInPage: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
