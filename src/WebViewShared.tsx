@@ -4,6 +4,7 @@ import { Linking, View, ActivityIndicator, Text } from 'react-native';
 import {
   WebViewNavigationEvent,
   OnShouldStartLoadWithRequest,
+  OnShouldCreateNewWindow,
 } from './WebViewTypes';
 import styles from './WebView.styles';
 
@@ -56,6 +57,26 @@ const createOnShouldStartLoadWithRequest = (
   };
 };
 
+const createOnShouldCreateNewWindow = (
+  createNewWindow: (
+    shouldCreate: boolean,
+    url: string,
+    lockIdentifier: number,
+  ) => void,
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow,
+) => {
+  return ({ nativeEvent }: WebViewNavigationEvent) => {
+    let shouldStart = true;
+    const { url, lockIdentifier } = nativeEvent;
+
+    if (onShouldCreateNewWindow) {
+      shouldStart = onShouldCreateNewWindow(nativeEvent);
+    }
+
+    createNewWindow(shouldStart, url, lockIdentifier);
+  };
+};
+
 const defaultRenderLoading = () => (
   <View style={styles.loadingOrErrorView}>
     <ActivityIndicator />
@@ -77,6 +98,7 @@ const defaultRenderError = (
 export {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
+  createOnShouldCreateNewWindow,
   defaultRenderLoading,
   defaultRenderError,
 };

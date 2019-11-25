@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -27,6 +29,7 @@ import android.webkit.ConsoleMessage;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.GeolocationPermissions;
+import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.URLUtil;
@@ -37,6 +40,8 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 
 import com.facebook.react.views.scroll.ScrollEvent;
@@ -73,7 +78,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
@@ -101,6 +108,10 @@ import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+
+import com.brave.adblock.BlockerResult;
+import com.brave.adblock.Engine;
 
 /**
  * Manages instances of {@link WebView}
@@ -139,6 +150,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_LOAD_URL = 7;
   public static final int COMMAND_FOCUS = 8;
   public static final int COMMAND_CAPTURE_SCREEN = 9;
+  public static final int COMMAND_SEARCH_IN_PAGE = 10;
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
@@ -572,6 +584,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView) view).setHasScrollEvent(hasScrollEvent);
   }
 
+  @ReactProp(name = "adblockRules")
+  public void setAdblockRules(WebView view, @Nullable String rules) {
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if (client != null) {
+      client.setAdblockRules(rules);
+    }
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -588,7 +608,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopShouldStartLoadWithRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldStartLoadWithRequest"));
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
-    export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCreateNewWindow"));
+    export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLsMessage"));
     return export;
@@ -608,6 +628,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     );
     map.put("requestFocus", COMMAND_FOCUS);
     map.put("captureScreen", COMMAND_CAPTURE_SCREEN);
+    map.put("findInPage", COMMAND_SEARCH_IN_PAGE);
     return map;
   }
 
@@ -661,6 +682,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_CAPTURE_SCREEN:
         ((RNCWebView) root).captureScreen(args.getString(0));
+        break;
+      case COMMAND_SEARCH_IN_PAGE:
+        ((RNCWebView) root).searchInPage(args.getString(0));
         break;
     }
   }
@@ -739,13 +763,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
   protected static class RNCWebViewClient extends WebViewClient {
     private OkHttpClient httpClient;
+    private Engine adblockEngine;
 
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
 
     public RNCWebViewClient() {
-
       httpClient = new okhttp3.OkHttpClient.Builder()
         .followRedirects(false)
         .followSslRedirects(false)
@@ -808,6 +832,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         return null;
       }
 
+      if (adblockEngine != null) {
+        BlockerResult blockerResult = adblockEngine.match(url.toString(), url.getHost(), "", false, "");
+        if (blockerResult.matched) {
+          return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+        }
+      }
+
       if (!request.isForMainFrame()) {
         return null;
       }
@@ -846,6 +877,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         String message = response.message();
         if (TextUtils.isEmpty(message)) {
           message = "Unknown";
+        }
+
+        if (statusCode == 401) {
+          return null;
         }
 
         if (response.isRedirect()) {
@@ -948,6 +983,40 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setUrlPrefixesForDefaultIntent(ReadableArray specialUrls) {
       mUrlPrefixesForDefaultIntent = specialUrls;
+    }
+
+    @Override
+    public void onReceivedHttpAuthRequest(WebView view, final HttpAuthHandler handler, String host, String realm) {
+      AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+      LayoutInflater inflater = LayoutInflater.from(view.getContext());
+      builder.setView(inflater.inflate(R.layout.authenticate, null));
+
+      final AlertDialog alertDialog = builder.create();
+      alertDialog.getWindow().setLayout(600, 400);
+      alertDialog.show();
+      TextView titleTv = alertDialog.findViewById(R.id.tv_login);
+      titleTv.setText(view.getResources().getString(R.string.login_title).replace("%s", host));
+      Button btnLogin = alertDialog.findViewById(R.id.btn_login);
+      Button btnCancel = alertDialog.findViewById(R.id.btn_cancel);
+      final EditText userField = alertDialog.findViewById(R.id.edt_username);
+      final EditText passField = alertDialog.findViewById(R.id.edt_password);
+      btnCancel.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+          alertDialog.dismiss();
+          handler.cancel();
+        }
+      });
+      btnLogin.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+          alertDialog.dismiss();
+          handler.proceed(userField.getText().toString(), passField.getText().toString());
+        }
+      });
+
+    public void setAdblockRules(String rules) {
+      adblockEngine = rules != null ? new Engine(rules) : null;
     }
   }
 
@@ -1350,6 +1419,34 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           event.putString("data", localFilePath);
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
+      }
+    }
+
+    public void searchInPage(String keyword) {
+      String[] words = keyword.split(" |　");
+      String[] highlightColors = {
+        "yellow", "cyan", "magenta", "greenyellow", "tomato", "lightskyblue"
+      };
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        String jsString = new String(readBytes);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("MyApp_RemoveAllHighlights();");
+        for (int i = 0; i < words.length; i++) {
+          String color = i < highlightColors.length ? highlightColors[i] : highlightColors[highlightColors.length - 1];
+          sb.append("MyApp_HighlightAllOccurencesOfString('" + words[i] + "','" + color + "');");
+        }
+        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
+        sb.append("MyApp_ScrollToHighlightTop();");
+        this.loadUrl("javascript:" + jsString + sb.toString());
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
       }
     }
   }
