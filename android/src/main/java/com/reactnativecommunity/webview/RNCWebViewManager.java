@@ -1217,6 +1217,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       super(reactContext);
     }
 
+    @Override
+    public int getContentHeight() {
+      return computeVerticalScrollRange();
+    }
+
     public void setSendContentSizeChangeEvents(boolean sendContentSizeChangeEvents) {
       this.sendContentSizeChangeEvents = sendContentSizeChangeEvents;
     }
