@@ -61,6 +61,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
+@property (nonatomic, copy) RCTDirectEventBlock onWebViewClose;
 @property (nonatomic, copy) WKWebView *webView;
 @end
 
@@ -178,6 +179,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     }
   }
   return nil;
+}
+
+- (void)webViewDidClose:(WKWebView *)webView {
+  if (_onWebViewClose) {
+    _onWebViewClose([self baseEvent]);
+  }
 }
 
 - (void)didMoveToWindow
@@ -763,7 +770,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (void)setAdjustOffset:(CGPoint)adjustOffset {
   CGRect scrollBounds = _webView.scrollView.bounds;
-  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);;
+  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);
   _webView.scrollView.bounds = scrollBounds;
   
   lastOffset = _webView.scrollView.contentOffset;

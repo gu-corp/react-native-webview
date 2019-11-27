@@ -112,6 +112,7 @@ import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.events.TopWebViewCloseEvent;
 
 /**
  * Manages instances of {@link WebView}
@@ -611,6 +612,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLsMessage"));
+    export.put(TopWebViewCloseEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClose"));
     return export;
   }
 
@@ -750,13 +752,41 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
           mReactContext.removeLifecycleEventListener(this);
         }
+
+        @Override
+        public void onCloseWindow(WebView window) {
+          super.onCloseWindow(window);
+
+          String url = webView.getUrl();
+          WritableMap event = Arguments.createMap();
+          event.putDouble("target", webView.getId());
+          event.putString("title", webView.getTitle());
+          event.putString("url", url);
+          event.putBoolean("canGoBack", webView.canGoBack());
+          event.putBoolean("canGoForward", webView.canGoForward());
+          dispatchEvent(webView, new TopWebViewCloseEvent(webView.getId(), event));
+        }
       };
       webView.setWebChromeClient(mWebChromeClient);
     } else {
       if (mWebChromeClient != null) {
         mWebChromeClient.onHideCustomView();
       }
-      mWebChromeClient = new RNCWebChromeClient(reactContext, webView);
+      mWebChromeClient = new RNCWebChromeClient(reactContext, webView) {
+        @Override
+        public void onCloseWindow(WebView window) {
+          super.onCloseWindow(window);
+
+          String url = webView.getUrl();
+          WritableMap event = Arguments.createMap();
+          event.putDouble("target", webView.getId());
+          event.putString("title", webView.getTitle());
+          event.putString("url", url);
+          event.putBoolean("canGoBack", webView.canGoBack());
+          event.putBoolean("canGoForward", webView.canGoForward());
+          dispatchEvent(webView, new TopWebViewCloseEvent(webView.getId(), event));
+        }
+      };
       webView.setWebChromeClient(mWebChromeClient);
     }
   }

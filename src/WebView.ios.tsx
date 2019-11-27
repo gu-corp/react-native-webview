@@ -261,6 +261,12 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     this.updateNavigationState(event);
   };
 
+  onWebViewClose = (event: WebViewNavigationEvent) => {
+    if (this.props.onClose) {
+      this.props.onClose(event);
+    }
+  }
+
   onMessage = (event: WebViewMessageEvent) => {
     const { onMessage } = this.props;
     if (onMessage) {
@@ -393,6 +399,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
+        onWebViewClose={this.onWebViewClose}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}

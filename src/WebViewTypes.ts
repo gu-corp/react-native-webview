@@ -246,6 +246,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLsMessage?: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
+  onWebViewClose?: (event: WebViewNavigationEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
   // TODO: find a better way to type this.
@@ -740,4 +741,8 @@ export interface WebViewSharedProps extends ViewProps {
   injectedJavaScriptBeforeDocumentLoad?: string;
   openNewWindowInWebView?: boolean;
   onLsMessage?: (event: WebViewMessageEvent) => void;
+  /**
+   * Function that is invoked when the `WebView` is closed
+   */
+  onClose?: (event: WebViewNavigationEvent) => void;
 }

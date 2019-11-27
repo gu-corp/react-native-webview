@@ -222,6 +222,12 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onWebViewClose = (event: WebViewNavigationEvent) => {
+    if (this.props.onClose) {
+      this.props.onClose(event);
+    }
+  }
+
   onLsMessage = (event: WebViewMessageEvent) => {
     const { onLsMessage } = this.props;
     if (onLsMessage) {
@@ -350,6 +356,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onShouldCreateNewWindow={this.onCreateNewWindow}
         onNavigationStateChange={this.updateNavigationState}
         onCaptureScreen={this.onCaptureScreen}
+        onWebViewClose={this.onWebViewClose}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
