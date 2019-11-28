@@ -274,7 +274,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
-  adBlockRules?: string;
+  adblockRules?: string;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -298,6 +298,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
+  contentRuleList?: string;
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
