@@ -839,6 +839,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         }
       }
 
+      if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
+        return null;
+      }
+
       if (!request.isForMainFrame()) {
         return null;
       }

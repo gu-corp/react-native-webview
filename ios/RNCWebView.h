@@ -66,6 +66,7 @@ typedef enum {
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) LockScroll lockScroll;
 @property (nonatomic, assign) CGPoint adjustOffset;
+@property (nonatomic, copy) NSString * _Nullable contentRuleList;
 
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
