@@ -486,6 +486,7 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   lockScroll?: number;
   adjustOffset?: object;
+  contentRuleList?: string;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
@@ -597,6 +598,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
+  adblockRules?: string;
 }
 
 export interface WebViewSharedProps extends ViewProps {
