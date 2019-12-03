@@ -328,6 +328,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       [_webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:nil];
       [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
     _webView.allowsBackForwardNavigationGestures = _allowsBackForwardNavigationGestures;
+      
+    // add pull down to reload feature in scrollview of webview
+    UIRefreshControl *refreshControl = [[UIRefreshControl alloc] init];
+    [refreshControl addTarget:self action:@selector(handleRefresh:) forControlEvents:UIControlEventValueChanged];
+    [_webView.scrollView addSubview:refreshControl];
 
     if (_userAgent) {
       _webView.customUserAgent = _userAgent;
@@ -1363,6 +1368,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     return YES;
   }
   return NO;
+}
+
+-(void)handleRefresh:(UIRefreshControl *)refresh {
+  // reload webview
+  [_webView reload];
+  [refresh endRefreshing];
 }
 
 @end
