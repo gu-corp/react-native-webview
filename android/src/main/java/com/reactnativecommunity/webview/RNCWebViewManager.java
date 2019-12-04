@@ -833,7 +833,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
 
       if (adblockEngine != null) {
-        BlockerResult blockerResult = adblockEngine.match(url.toString(), url.getHost(), "", false, "");
+        BlockerResult blockerResult;
+
+        synchronized (adblockEngine) {
+          blockerResult = adblockEngine.match(url.toString(), url.getHost(), "", false, "");
+        }
+
         if (blockerResult.matched) {
           return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
         }
