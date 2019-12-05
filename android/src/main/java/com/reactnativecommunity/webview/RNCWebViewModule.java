@@ -6,6 +6,7 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -31,6 +32,7 @@ import com.facebook.react.modules.core.PermissionListener;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import static android.app.Activity.RESULT_OK;
@@ -45,6 +47,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private ValueCallback<Uri> filePathCallbackLegacy;
   private ValueCallback<Uri[]> filePathCallback;
   private Uri outputFileUri;
+  private String adblockRules = null;
   private DownloadManager.Request downloadRequest;
   private PermissionListener webviewFileDownloaderPermissionListener = new PermissionListener() {
     @Override
@@ -125,6 +128,39 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   }
 
   public void onNewIntent(Intent intent) {
+  }
+
+  @ReactMethod
+  public void loadAdblockRules(String assetName, Promise promise) {
+    InputStream stream = null;
+    try {
+      // ensure isn't a directory
+      AssetManager assetManager = getReactApplicationContext().getAssets();
+      stream = assetManager.open(assetName, 0);
+      if (stream == null) {
+        promise.reject(new Exception("Failed to open file"));
+        return;
+      }
+
+      byte[] buffer = new byte[stream.available()];
+      stream.read(buffer);
+      this.adblockRules = new String(buffer);
+      promise.resolve(true);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      promise.reject(ex);
+    } finally {
+      if (stream != null) {
+        try {
+          stream.close();
+        } catch (IOException ignored) {
+        }
+      }
+    }
+  }
+
+  public String getAdblockRules() {
+    return this.adblockRules;
   }
 
   private Uri[] getSelectedFiles(Intent data, int resultCode) {

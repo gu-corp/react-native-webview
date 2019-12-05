@@ -584,18 +584,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ((RNCWebView) view).setHasScrollEvent(hasScrollEvent);
   }
 
-  @ReactProp(name = "adblockRules")
-  public void setAdblockRules(WebView view, @Nullable String rules) {
-    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
-    if (client != null) {
-      client.setAdblockRules(rules);
-    }
-  }
-
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new RNCWebViewClient());
+    RNCWebViewClient client = new RNCWebViewClient();
+    client.setAdblockRules(getModule(reactContext).getAdblockRules());
+    view.setWebViewClient(client);
   }
 
   @Override

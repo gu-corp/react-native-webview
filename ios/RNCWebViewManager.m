@@ -35,6 +35,7 @@ RCT_ENUM_CONVERTER(UIScrollViewContentInsetAdjustmentBehavior, (@{
   NSConditionLock* createNewWindowCondition;
   BOOL createNewWindowResult;
   RNCWebView* newWindow;
+  NSString* contentRuleList;
 }
 
 RCT_EXPORT_MODULE()
@@ -43,6 +44,7 @@ RCT_EXPORT_MODULE()
 {
   RNCWebView *webView = newWindow ? newWindow : [RNCWebView new];
   webView.delegate = self;
+  webView.contentRuleList = contentRuleList;
   newWindow = nil;
   return webView;
 }
@@ -91,8 +93,6 @@ RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(messagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onMessage, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
-
-RCT_EXPORT_VIEW_PROPERTY(contentRuleList, NSString)
 
 RCT_EXPORT_METHOD(postMessage:(nonnull NSNumber *)reactTag message:(NSString *)message)
 {
@@ -361,6 +361,20 @@ RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteg
     RCTLogWarn(@"createNewWindowWithResult invoked with invalid lockIdentifier: "
                "got %zd, expected %zd", lockIdentifier, createNewWindowCondition.condition);
   }
+}
+
+RCT_EXPORT_METHOD(loadContentRules:(nonnull NSString *)path
+resolver:(RCTPromiseResolveBlock)resolve
+rejecter:(RCTPromiseRejectBlock)reject)
+{
+    NSURL *jsURL = [NSURL fileURLWithPath:path];
+    NSError* error;
+    contentRuleList = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:&error];
+    if (error) {
+        reject(@"js_error", @"Error occurred while load content rule list", error);
+    } else {
+        resolve(@(TRUE));
+    }
 }
 
 @end

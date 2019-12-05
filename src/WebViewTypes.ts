@@ -274,7 +274,6 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
-  adblockRules?: string;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -298,7 +297,6 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
-  contentRuleList?: string;
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
@@ -486,7 +484,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   lockScroll?: number;
   adjustOffset?: object;
-  contentRuleList?: string;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
@@ -598,7 +595,6 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
-  adblockRules?: string;
 }
 
 export interface WebViewSharedProps extends ViewProps {
