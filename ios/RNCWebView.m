@@ -1182,6 +1182,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   } else if (_onLoadingFinish) {
     _onLoadingFinish([self baseEvent]);
   }
+
+  // Disable default long press menu
+  [webView evaluateJavaScript:@"document.body.style.webkitTouchCallout='none';" completionHandler:nil];
 }
 
 - (void)injectJavaScript:(NSString *)script
