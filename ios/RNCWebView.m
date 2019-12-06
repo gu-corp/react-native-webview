@@ -125,7 +125,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     // Workaround for StatusBar appearance bug for iOS 12
     // https://github.com/react-native-community/react-native-webview/issues/62
       [[NSNotificationCenter defaultCenter] addObserver:self
-                                               selector:@selector(showFullScreenVideoStatusBars)
+                                               selector:@selector(showFullScreenVideoStatusBars:)
                                                    name:UIWindowDidBecomeVisibleNotification
                                                  object:nil];
 
@@ -379,8 +379,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     [super removeFromSuperview];
 }
 
--(void)showFullScreenVideoStatusBars
+-(void)showFullScreenVideoStatusBars:(NSNotification*)notification
 {
+    if ([notification.object class] != [UIWindow class]) {
+      return;
+    }
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _isFullScreenVideoOpen = YES;
     RCTUnsafeExecuteOnMainQueueSync(^{
