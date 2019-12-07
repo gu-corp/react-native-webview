@@ -12,6 +12,7 @@
 #import <UIKit/UIKit.h>
 
 #import "objc/runtime.h"
+#import <CommonCrypto/CommonDigest.h>
 
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
@@ -301,8 +302,31 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
     if (_contentRuleList) {
       if (@available(iOS 11.0, *)) {
-        [WKContentRuleListStore.defaultStore compileContentRuleListForIdentifier:@"my rule list 1" encodedContentRuleList:_contentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-            [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+        unsigned char output[CC_SHA1_DIGEST_LENGTH];
+    
+        CC_SHA1(_contentRuleList.UTF8String, (CC_LONG)[_contentRuleList lengthOfBytesUsingEncoding:NSUTF8StringEncoding], output);
+
+        NSMutableString* hash = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
+        for (unsigned int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
+          [hash appendFormat:@"%02x", output[i]];
+        }
+
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+          if ([identifiers containsObject:hash]) {
+            [contentRuleListStore lookUpContentRuleListForIdentifier:hash completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+              if (!error) {
+                  [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+              }
+            }];
+          } else {
+            [contentRuleListStore compileContentRuleListForIdentifier:hash encodedContentRuleList:self->_contentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+              if (!error) {
+                [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+              }
+            }];
+          }
         }];
       }
     }
