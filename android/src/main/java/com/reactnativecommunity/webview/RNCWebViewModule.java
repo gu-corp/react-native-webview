@@ -49,10 +49,10 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private static final int CAMERA_PERMISSION_REQUEST = 2;
 
   final String DEFAULT_MIME_TYPES = "*/*";
-  final String TAKE_PHOTO = "Take a photo…";
-  final String TAKE_VIDEO = "Record a video…";
-  final String CHOOSE_FILE = "Choose an existing file…";
-  final String CANCEL = "Cancel";
+  final String TAKE_PHOTO = getString(R.string.take_photo);
+  final String TAKE_VIDEO = getString(R.string.record_video);
+  final String CHOOSE_FILE = getString(R.string.choose_file);
+  final String CANCEL = getString(R.string.cancel);
 
   private ValueCallback<Uri> filePathCallbackLegacy;
   private ValueCallback<Uri[]> filePathCallback;
