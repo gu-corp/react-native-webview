@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="username">ユーザ名</string>
+    <string name="password">パスワード</string>
+    <string name="login">ログイン</string>
+    <string name="cancel">キャンセル</string>
+    <string name="login_title">%sにログイン</string>
+    <string name="allow">Allow</string>
+    <string name="dont_allow">Don\'t Allow</string>
+    <string name="locations">Locations</string>
+    <string name="locations_ask_permission">Would like to use your Current Location</string>
+    <string name="dialog_title_find_in_page">ページ内検索</string>
+    <string name="dialog_found">検索結果</string>
+    <string name="image_select">Image Chooser</string>
+    <string name="video_select">Video Chooser</string>
     <string name="take_photo">写真を撮る</string>
     <string name="record_video">動画を撮る</string>
     <string name="choose_file">ファイルから選択</string>

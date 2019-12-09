@@ -107,6 +107,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  captureScreen = (type: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().captureScreen,
+      [String(type)],
+    );
+  };
+
   requestFocus = () => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
@@ -214,6 +222,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onLsMessage = (event: WebViewMessageEvent) => {
+    const { onLsMessage } = this.props;
+    if (onLsMessage) {
+      onLsMessage(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
@@ -240,9 +255,35 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  /**
+   * Allows custom handling of window.open() by a JS handler. Return true
+   * or false from this method to use default behavior.
+  */
+  onCreateNewWindow = (event: WebViewNavigationEvent) => {
+    if (this.props.onShouldCreateNewWindow) {
+      this.props.onShouldCreateNewWindow(event.nativeEvent);
+    }
+  };
+
+  onCaptureScreen = (event: WebViewMessageEvent) => {
+    const { onCaptureScreen } = this.props;
+    if (onCaptureScreen) {
+      onCaptureScreen(event.nativeEvent);
+    }
+  };
+
+  findInPage = (data: string, callback: any) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().findInPage,
+      [String(data), callback]
+    );
+  };
+
   render() {
     const {
       onMessage,
+      onLsMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       originWhitelist,
       renderError,
@@ -304,7 +345,11 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onLoadingStart={this.onLoadingStart}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
+        onLsMessage={this.onLsMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onShouldCreateNewWindow={this.onCreateNewWindow}
+        onNavigationStateChange={this.updateNavigationState}
+        onCaptureScreen={this.onCaptureScreen}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}

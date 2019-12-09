@@ -13,6 +13,7 @@ import invariant from 'invariant';
 import {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
+  createOnShouldCreateNewWindow,
   defaultRenderError,
   defaultRenderLoading,
 } from './WebViewShared';
@@ -132,6 +133,36 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       undefined,
     );
   };
+
+  setNativeProps = (nativeProps: Partial<IOSWebViewProps>) => {
+    try {
+      if (this.webViewRef.current) {
+        this.webViewRef.current.setNativeProps(nativeProps);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  evaluateJavaScript = (js: string) => {
+    return RNCWebViewManager.evaluateJavaScript(this.getWebViewHandle(), js);
+  };
+
+  captureScreen = () => {
+    return RNCWebViewManager.captureScreen(this.getWebViewHandle());
+  }
+
+  capturePage = () => {
+    return RNCWebViewManager.capturePage(this.getWebViewHandle());
+  }
+
+  printContent = () => {
+    return RNCWebViewManager.printContent(this.getWebViewHandle());
+  }
+
+  findInPage = (searchString: string) => {
+    return RNCWebViewManager.findInPage(this.getWebViewHandle(), searchString);
+  }
 
   /**
    * Posts a message to the web view, which will emit a `message` event.
@@ -256,6 +287,18 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     viewManager.startLoadWithResult(!!shouldStart, lockIdentifier);
   };
 
+  onShouldCreateNewWindowCallback = (
+    shouldCreate: boolean,
+    _url: string,
+    lockIdentifier: number,
+  ) => {
+    const viewManager
+      = (this.props.nativeConfig && this.props.nativeConfig.viewManager)
+      || RNCWebViewManager;
+
+    viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
+  };
+
   onContentProcessDidTerminate = (event: WebViewTerminatedEvent) => {
     const { onContentProcessDidTerminate } = this.props;
     if (onContentProcessDidTerminate) {
@@ -287,6 +330,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       nativeConfig = {},
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      onShouldCreateNewWindow: onShouldCreateNewWindowProp,
       originWhitelist,
       renderError,
       renderLoading,
@@ -321,6 +365,11 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       onShouldStartLoadWithRequestProp,
     );
 
+    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+      this.onShouldCreateNewWindowCallback,
+      onShouldCreateNewWindowProp,
+    );
+
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
     const NativeWebView
@@ -337,10 +386,12 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         onLoadingFinish={this.onLoadingFinish}
         onLoadingProgress={this.onLoadingProgress}
         onLoadingStart={this.onLoadingStart}
+        onNavigationStateChange={this.updateNavigationState}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

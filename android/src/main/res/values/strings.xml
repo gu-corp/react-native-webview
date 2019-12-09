@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="login">Login</string>
+    <string name="cancel">Cancel</string>
+    <string name="login_title">Login to %s</string>
+    <string name="allow">Allow</string>
+    <string name="dont_allow">Don\'t Allow</string>
+    <string name="locations">Locations</string>
+    <string name="locations_ask_permission">Would like to use your Current Location</string>
+    <string name="dialog_title_find_in_page">Find In Page</string>
+    <string name="dialog_found">Search Results</string>
+    <string name="image_select">Image Chooser</string>
+    <string name="video_select">Video Chooser</string>
     <string name="take_photo">Take a photo</string>
     <string name="record_video">Record a video</string>
     <string name="choose_file">Choose an existing file</string>
     <string name="cancel">Cancel </string>
+
 </resources>

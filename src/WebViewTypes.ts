@@ -19,6 +19,8 @@ export interface WebViewCommands {
   injectJavaScript: number;
   loadUrl: number;
   requestFocus: number;
+  captureScreen: number;
+  findInPage: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -27,6 +29,11 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   ) => {
     Commands: WebViewCommands;
   };
+  evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
+  findInPage: (viewTag: number, js: string) => Promise<number>;
+  captureScreen: (viewTag: number) => Promise<string>;
+  capturePage: (viewTag: number) => Promise<string>;
+  printContent: (viewTag: number) => void;
 }
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
@@ -77,6 +84,8 @@ export interface WebViewNativeEvent {
   canGoBack: boolean;
   canGoForward: boolean;
   lockIdentifier: number;
+  progress?: number;
+  error?: object;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
@@ -185,6 +194,12 @@ export type WebViewSource = WebViewSourceUri | WebViewSourceHtml;
 
 export interface ViewManager {
   startLoadWithResult: Function;
+  createNewWindowWithResult: Function;
+  evaluateJavaScript: Function;
+  captureScreen: Function;
+  capturePage: Function;
+  findInPage: Function;
+  printContent: Function;
 }
 
 export interface WebViewNativeConfig {
@@ -208,20 +223,29 @@ export type OnShouldStartLoadWithRequest = (
   event: WebViewNavigation,
 ) => boolean;
 
+export type OnShouldCreateNewWindow = (
+  event: WebViewNavigation,
+) => boolean;
+
 export interface CommonNativeWebViewProps extends ViewProps {
   cacheEnabled?: boolean;
   incognito?: boolean;
   injectedJavaScript?: string;
+  injectedJavaScriptBeforeDocumentLoad?: string;
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
+  openNewWindowInWebView?: boolean;
   onScroll?: (event: NativeScrollEvent) => void;
   onLoadingError: (event: WebViewErrorEvent) => void;
   onLoadingFinish: (event: WebViewNavigationEvent) => void;
   onLoadingProgress: (event: WebViewProgressEvent) => void;
   onLoadingStart: (event: WebViewNavigationEvent) => void;
+  onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
+  onLsMessage?: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
+  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
   // TODO: find a better way to type this.
@@ -244,11 +268,13 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   javaScriptEnabled?: boolean;
   mixedContentMode?: 'never' | 'always' | 'compatibility';
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessageEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
+  adblockRules?: string;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -272,6 +298,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
+  contentRuleList?: string;
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
@@ -446,16 +473,26 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    */
   allowingReadAccessToURL?: string;
 
+  
   /**
    * Function that is invoked when the WebKit WebView content process gets terminated.
    * @platform ios
    */
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
+
+  /**
+   * Lunascape custom props
+   */
+  scrollToTop?: boolean;
+  lockScroll?: number;
+  adjustOffset?: object;
+  contentRuleList?: string;
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
    * https://developer.android.com/reference/android/view/View#OVER_SCROLL_NEVER
@@ -561,6 +598,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
+  adblockRules?: string;
 }
 
 export interface WebViewSharedProps extends ViewProps {
@@ -687,6 +725,11 @@ export interface WebViewSharedProps extends ViewProps {
   onShouldStartLoadWithRequest?: OnShouldStartLoadWithRequest;
 
   /**
+   * Allows custom handling of window.open() by a JS handler
+   */
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow;
+
+  /**
    * Override the native component used to render the WebView. Enables a custom native
    * WebView which uses the same JavaScript as the original WebView.
    */
@@ -696,4 +739,8 @@ export interface WebViewSharedProps extends ViewProps {
    * Should caching be enabled. Default is true.
    */
   cacheEnabled?: boolean;
+
+  injectedJavaScriptBeforeDocumentLoad?: string;
+  openNewWindowInWebView?: boolean;
+  onLsMessage?: (event: WebViewMessageEvent) => void;
 }

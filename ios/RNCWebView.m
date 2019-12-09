@@ -12,32 +12,43 @@
 #import <UIKit/UIKit.h>
 
 #import "objc/runtime.h"
+#import <CommonCrypto/CommonDigest.h>
+
+#import "WKWebView+BrowserHack.h"
+#import "WKWebView+Highlight.h"
+#import "WKWebView+Capture.h"
+
+#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
 
+// TODO: remove later after remove WKWebviewReborn
+NSString *const RNCJSNavigationScheme = @"react-js-navigation";
+
 // runtime trick to remove WKWebView keyboard default toolbar
 // see: http://stackoverflow.com/questions/19033292/ios-7-uiwebview-keyboard-issue/19042279#19042279
-@interface _SwizzleHelperWK : UIView
-@property (nonatomic, copy) WKWebView *webView;
-@end
-@implementation _SwizzleHelperWK
--(id)inputAccessoryView
-{
-    if (_webView == nil) {
-        return nil;
-    }
-
-    if ([_webView respondsToSelector:@selector(inputAssistantItem)]) {
-        UITextInputAssistantItem *inputAssistantItem = [_webView inputAssistantItem];
-        inputAssistantItem.leadingBarButtonGroups = @[];
-        inputAssistantItem.trailingBarButtonGroups = @[];
-    }
-    return nil;
-}
-@end
+// TODO: recover later after remove WKWebviewReborn
+//@interface _SwizzleHelperWK : UIView
+//@property (nonatomic, copy) WKWebView *webView;
+//@end
+//@implementation _SwizzleHelperWK
+//-(id)inputAccessoryView
+//{
+//    if (_webView == nil) {
+//        return nil;
+//    }
+//
+//    if ([_webView respondsToSelector:@selector(inputAssistantItem)]) {
+//        UITextInputAssistantItem *inputAssistantItem = [_webView inputAssistantItem];
+//        inputAssistantItem.leadingBarButtonGroups = @[];
+//        inputAssistantItem.trailingBarButtonGroups = @[];
+//    }
+//    return nil;
+//}
+//@end
 
 @interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingStart;
@@ -45,6 +56,8 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldStartLoadWithRequest;
+@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
+@property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
@@ -67,6 +80,15 @@ static NSDictionary* customCertificatesForHost;
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
   UIScrollViewContentInsetAdjustmentBehavior _savedContentInsetAdjustmentBehavior;
 #endif
+
+  BOOL longPress;
+  NSBundle* resourceBundle;
+  WKWebViewConfiguration *wkWebViewConfig;
+    
+  CGPoint lastOffset;
+  BOOL decelerating;
+  BOOL dragging;
+  BOOL scrollingToTop;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -104,7 +126,7 @@ static NSDictionary* customCertificatesForHost;
     // Workaround for StatusBar appearance bug for iOS 12
     // https://github.com/react-native-community/react-native-webview/issues/62
       [[NSNotificationCenter defaultCenter] addObserver:self
-                                               selector:@selector(showFullScreenVideoStatusBars)
+                                               selector:@selector(showFullScreenVideoStatusBars:)
                                                    name:UIWindowDidBecomeVisibleNotification
                                                  object:nil];
 
@@ -113,8 +135,16 @@ static NSDictionary* customCertificatesForHost;
                                                    name:UIWindowDidBecomeHiddenNotification
                                                  object:nil];
   }
+    
+  NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
+  resourceBundle = [NSBundle bundleWithPath:bundlePath];
 
   return self;
+}
+
+- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
+  wkWebViewConfig = configuration;
+  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 }
 
 - (void)dealloc
@@ -127,16 +157,36 @@ static NSDictionary* customCertificatesForHost;
  */
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
-  if (!navigationAction.targetFrame.isMainFrame) {
+  NSString *scheme = navigationAction.request.URL.scheme;
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
+    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
+                                       @"navigationType": @(navigationAction.navigationType)
+    }];
+    RNCWebView* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
+    if (!wkWebView) {
+      [webView loadRequest:navigationAction.request];
+    } else {
+      return wkWebView.webview;
+    }
+  } else if (!navigationAction.targetFrame.isMainFrame) {
     [webView loadRequest:navigationAction.request];
+  } else {
+    UIApplication *app = [UIApplication sharedApplication];
+    NSURL *url = navigationAction.request.URL;
+    if ([app canOpenURL:url]) {
+      [app openURL:url];
+    }
   }
   return nil;
 }
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
-    WKWebViewConfiguration *wkWebViewConfig = [WKWebViewConfiguration new];
+  if (self.window != nil) {
+    if (wkWebViewConfig == nil) {
+      wkWebViewConfig = [WKWebViewConfiguration new];
+    }
     WKPreferences *prefs = [[WKPreferences alloc]init];
     if (!_javaScriptEnabled) {
       prefs.javaScriptEnabled = NO;
@@ -243,7 +293,47 @@ static NSDictionary* customCertificatesForHost;
       }
     }
 
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    if (_injectedJavaScriptBeforeDocumentLoad) {
+        WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
+                                                              injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                           forMainFrameOnly:YES];
+        [wkWebViewConfig.userContentController addUserScript:script];
+    }
+
+    if (_contentRuleList) {
+      if (@available(iOS 11.0, *)) {
+        unsigned char output[CC_SHA1_DIGEST_LENGTH];
+    
+        CC_SHA1(_contentRuleList.UTF8String, (CC_LONG)[_contentRuleList lengthOfBytesUsingEncoding:NSUTF8StringEncoding], output);
+
+        NSMutableString* hash = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
+        for (unsigned int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
+          [hash appendFormat:@"%02x", output[i]];
+        }
+
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+          if ([identifiers containsObject:hash]) {
+            [contentRuleListStore lookUpContentRuleListForIdentifier:hash completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+              if (!error) {
+                  [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+              }
+            }];
+          } else {
+            [contentRuleListStore compileContentRuleListForIdentifier:hash encodedContentRuleList:self->_contentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+              if (!error) {
+                [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+              }
+            }];
+          }
+        }];
+      }
+    }
+
+    if (_webView == nil) {
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    }
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;
@@ -256,7 +346,17 @@ static NSDictionary* customCertificatesForHost;
     _webView.scrollView.directionalLockEnabled = _directionalLockEnabled;
     _webView.allowsLinkPreview = _allowsLinkPreview;
     [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:nil];
+      [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
     _webView.allowsBackForwardNavigationGestures = _allowsBackForwardNavigationGestures;
+      
+    // add pull down to reload feature in scrollview of webview
+    UIRefreshControl *refreshControl = [[UIRefreshControl alloc] init];
+    [refreshControl addTarget:self action:@selector(handleRefresh:) forControlEvents:UIControlEventValueChanged];
+    [_webView.scrollView addSubview:refreshControl];
 
     if (_userAgent) {
       _webView.customUserAgent = _userAgent;
@@ -266,6 +366,10 @@ static NSDictionary* customCertificatesForHost;
       _webView.scrollView.contentInsetAdjustmentBehavior = _savedContentInsetAdjustmentBehavior;
     }
 #endif
+      
+    UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
+    longGesture.delegate = self;
+    [_webView addGestureRecognizer:longGesture];
 
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
@@ -286,6 +390,11 @@ static NSDictionary* customCertificatesForHost;
     if (_webView) {
         [_webView.configuration.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
         [_webView removeObserver:self forKeyPath:@"estimatedProgress"];
+        [_webView removeObserver:self forKeyPath:@"title"];
+        [_webView removeObserver:self forKeyPath:@"loading"];
+        [_webView removeObserver:self forKeyPath:@"canGoBack"];
+        [_webView removeObserver:self forKeyPath:@"canGoForward"];
+        [_webView removeObserver:self forKeyPath:@"URL"];
         [_webView removeFromSuperview];
         _webView.scrollView.delegate = nil;
         _webView = nil;
@@ -294,8 +403,11 @@ static NSDictionary* customCertificatesForHost;
     [super removeFromSuperview];
 }
 
--(void)showFullScreenVideoStatusBars
+-(void)showFullScreenVideoStatusBars:(NSNotification*)notification
 {
+    if ([notification.object class] != [UIWindow class]) {
+      return;
+    }
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _isFullScreenVideoOpen = YES;
     RCTUnsafeExecuteOnMainQueueSync(^{
@@ -349,7 +461,11 @@ static NSDictionary* customCertificatesForHost;
             [event addEntriesFromDictionary:@{@"progress":[NSNumber numberWithDouble:self.webView.estimatedProgress]}];
             _onLoadingProgress(event);
         }
-    }else{
+    } else if ([keyPath isEqualToString:@"title"] || [keyPath isEqualToString:@"loading"] || [keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"] || [keyPath isEqualToString:@"URL"]) {
+      if (_onNavigationStateChange) {
+        _onNavigationStateChange([self baseEvent]);
+      }
+    } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
@@ -405,6 +521,13 @@ static NSDictionary* customCertificatesForHost;
     if (_webView != nil) {
       [self visitSource];
     }
+  }
+}
+
+- (void)setUserAgent:(NSString *)userAgent {
+  _userAgent = userAgent;
+  if (_webView != nil) {
+    _webView.customUserAgent = userAgent;
   }
 }
 
@@ -565,7 +688,9 @@ static NSDictionary* customCertificatesForHost;
         newClass = objc_allocateClassPair(subview.class, [name cStringUsingEncoding:NSASCIIStringEncoding], 0);
         if(!newClass) return;
 
-        Method method = class_getInstanceMethod([_SwizzleHelperWK class], @selector(inputAccessoryView));
+        // TODO: recover later after remove WKWebviewReborn
+        // Method method = class_getInstanceMethod([_SwizzleHelperWK class], @selector(inputAccessoryView));
+        Method method = class_getInstanceMethod(newClass, @selector(inputAccessoryView));
         class_addMethod(newClass, @selector(inputAccessoryView), method_getImplementation(method), method_getTypeEncoding(method));
 
         objc_registerClassPair(newClass);
@@ -577,6 +702,12 @@ static NSDictionary* customCertificatesForHost;
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
   scrollView.decelerationRate = _decelerationRate;
+    
+  decelerating = NO;
+  dragging = YES;
+    
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollBeginDrag", @"data":event}});
 }
 
 - (void)setScrollEnabled:(BOOL)scrollEnabled
@@ -615,6 +746,74 @@ static NSDictionary* customCertificatesForHost;
       };
     _onScroll(event);
   }
+    
+    CGPoint offset = scrollView.contentOffset;
+    if (!decelerating && !dragging && !scrollingToTop) {
+      NSLog(@"scrollViewDidScroll dont fire event");
+      lastOffset = offset;
+      return;
+    }
+    
+    CGFloat dy = offset.y - lastOffset.y;
+    lastOffset = offset;
+    
+    CGSize frameSize = scrollView.frame.size;
+    CGFloat offsetMin = 0;
+    CGFloat offsetMax = scrollView.contentSize.height - frameSize.height;
+    if ((lastOffset.y <= offsetMin && dy > 0) || (lastOffset.y >= offsetMax && dy < 0)) {
+      return;
+    }
+    
+    NSDictionary *event = [self onScrollEvent:offset moveDistance:CGPointMake(offset.x - lastOffset.x, dy)];
+    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScroll", @"data":event}});
+}
+
+- (NSDictionary*)onScrollEvent:(CGPoint)currentOffset moveDistance:(CGPoint)distance {
+  UIScrollView* scrollView = _webView.scrollView;
+  CGSize frameSize = scrollView.frame.size;
+  
+  NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+  [event addEntriesFromDictionary:@{@"contentOffset": @{@"x": @(currentOffset.x),@"y": @(currentOffset.y)}}];
+  [event addEntriesFromDictionary:@{@"scroll": @{@"decelerating":@(decelerating || scrollingToTop), @"width": @(frameSize.width), @"height": @(frameSize.height)}}];
+  [event addEntriesFromDictionary:@{@"contentSize": @{@"width" : @(scrollView.contentSize.width), @"height": @(scrollView.contentSize.height)}}];
+  
+  [event addEntriesFromDictionary:@{@"offset": @{@"dx": @(distance.x),@"dy": @(distance.y)}}];
+  return event;
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+  decelerating = decelerate;
+  dragging = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDrag", @"data":event}});
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+  decelerating = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+}
+
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+  scrollingToTop = _webView.scrollView.scrollsToTop;
+  return _webView.scrollView.scrollsToTop;
+}
+
+- (void)setAdjustOffset:(CGPoint)adjustOffset {
+  CGRect scrollBounds = _webView.scrollView.bounds;
+  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);;
+  _webView.scrollView.bounds = scrollBounds;
+  
+  lastOffset = _webView.scrollView.contentOffset;
+}
+
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView {
+  scrollingToTop = NO;
+  
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
 }
 
 - (void)setDirectionalLockEnabled:(BOOL)directionalLockEnabled
@@ -661,6 +860,7 @@ static NSDictionary* customCertificatesForHost;
     @"title": _webView.title ?: @"",
     @"loading" : @(_webView.loading),
     @"canGoBack": @(_webView.canGoBack),
+    @"progress" : @(_webView.estimatedProgress),
     @"canGoForward" : @(_webView.canGoForward)
   };
   return [[NSMutableDictionary alloc] initWithDictionary: event];
@@ -682,9 +882,36 @@ static NSDictionary* customCertificatesForHost;
     if (webView.URL != nil) {
         host = webView.URL.host;
     }
-    if ([[challenge protectionSpace] authenticationMethod] == NSURLAuthenticationMethodClientCertificate) {
+    NSString* authMethod = challenge.protectionSpace.authenticationMethod;
+    if (authMethod == NSURLAuthenticationMethodClientCertificate) {
         completionHandler(NSURLSessionAuthChallengeUseCredential, clientAuthenticationCredential);
         return;
+    } else if ([authMethod isEqualToString:NSURLAuthenticationMethodHTTPBasic]) {
+      UIAlertController* alertView = [UIAlertController alertControllerWithTitle:[LocalizeString(@"Login_title") stringByReplacingOccurrencesOfString:@"%s" withString:challenge.protectionSpace.host] message:@"" preferredStyle:UIAlertControllerStyleAlert];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Username");
+      }];
+      [alertView addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        textField.placeholder = LocalizeString(@"Password");
+        textField.secureTextEntry = YES;
+      }];
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Cancel") style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, nil);
+      }]];
+      
+      [alertView addAction:[UIAlertAction actionWithTitle:LocalizeString(@"Login") style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UITextField *userField = alertView.textFields.firstObject;
+        UITextField *passField = alertView.textFields.lastObject;
+        NSURLCredential* credential = [NSURLCredential credentialWithUser:userField.text password:passField.text persistence:NSURLCredentialPersistenceForSession];
+        @try {
+          [challenge.sender useCredential:credential forAuthenticationChallenge:challenge];
+        } @catch (NSException *exception) {
+          NSLog(@"%@", exception.description);
+        } @finally {
+          completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
+        }
+      }]];
+      return [[[UIApplication sharedApplication].delegate window].rootViewController presentViewController:alertView animated:YES completion:nil];
     }
     if ([[challenge protectionSpace] serverTrust] != nil && customCertificatesForHost != nil && host != nil) {
         SecCertificateRef localCertificate = (__bridge SecCertificateRef)([customCertificatesForHost objectForKey:host]);
@@ -820,9 +1047,19 @@ static NSDictionary* customCertificatesForHost;
       @(WKNavigationTypeOther): @"other",
     };
   });
+    
+  if (longPress) {
+    longPress = NO;
+    return decisionHandler(WKNavigationActionPolicyCancel);
+  }
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
+    
+  if ([self decisionHandlerURL:request.URL]) {
+    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onOpenExternalApp", @"data":@{@"url": request.URL.absoluteString}}});
+    return decisionHandler(WKNavigationActionPolicyCancel);
+  }
 
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -892,7 +1129,7 @@ static NSDictionary* customCertificatesForHost;
         _onHttpError(event);
       }
     }
-  }  
+  }
 
   decisionHandler(WKNavigationResponsePolicyAllow);
 }
@@ -952,6 +1189,14 @@ static NSDictionary* customCertificatesForHost;
 - (void)      webView:(WKWebView *)webView
   didFinishNavigation:(WKNavigation *)navigation
 {
+  if (resourceBundle) {
+    NSString *jsFile = @"_webview";
+
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+  }
   if (_injectedJavaScript) {
     [self evaluateJS: _injectedJavaScript thenCall: ^(NSString *jsEvaluationValue) {
       NSMutableDictionary *event = [self baseEvent];
@@ -964,6 +1209,9 @@ static NSDictionary* customCertificatesForHost;
   } else if (_onLoadingFinish) {
     _onLoadingFinish([self baseEvent]);
   }
+
+  // Disable default long press menu
+  [webView evaluateJavaScript:@"document.body.style.webkitTouchCallout='none';" completionHandler:nil];
 }
 
 - (void)injectJavaScript:(NSString *)script
@@ -1026,6 +1274,136 @@ static NSDictionary* customCertificatesForHost;
     }
   }
   return request;
+}
+
+#pragma mark - Custom Lunascape functions
+- (WKWebView*)webview {
+  return _webView;
+}
+
+- (void)setScrollToTop:(BOOL)scrollToTop {
+  _webView.scrollView.scrollsToTop = scrollToTop;
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString
+         completionHandler:(void (^)(id, NSError *error))completionHandler
+{
+  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+}
+
+- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
+  if (searchString && searchString.length > 0) {
+    [_webView removeAllHighlights];
+    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
+    [_webView scrollToHighlightTop];
+    callback(results);
+  } else {
+    callback(0);
+  }
+}
+
+- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentFrameCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else { // Error while capturing the screen
+      callback(nil);
+    };
+  }];
+}
+
+- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentScrollCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else {
+      callback(nil);
+    }
+  }];
+}
+
+- (void)printContent {
+  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
+  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
+  printInfo.outputType = UIPrintInfoOutputGeneral;
+  printInfo.jobName = _webView.URL.absoluteString;
+  printInfo.duplex = UIPrintInfoDuplexLongEdge;
+  controller.printInfo = printInfo;
+  controller.showsPageRange = YES;
+  
+  UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
+  viewFormatter.startPage = 0;
+  viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
+  controller.printFormatter = viewFormatter;
+  
+  [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
+    if (!completed || error) {
+      NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
+    }
+  }];
+}
+
+- (void)longPressed:(UILongPressGestureRecognizer*)sender {
+  if (sender.state == UIGestureRecognizerStateBegan) {
+    longPress = YES;
+    sender.enabled = NO;
+    
+    NSUInteger touchCount = [sender numberOfTouches];
+    if (touchCount) {
+      CGPoint point = [sender locationOfTouch:0 inView:sender.view];
+      if ([_webView respondsToSelector:@selector(respondToTapAndHoldAtLocation:)]) {
+        NSDictionary* urlResult = [_webView respondToTapAndHoldAtLocation:point];
+        if (urlResult.allKeys.count == 0) {
+          longPress = NO;
+        }
+        _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"contextMenu", @"data":urlResult}});
+      }
+    }
+  } else if (sender.state == UIGestureRecognizerStateCancelled) {
+    sender.enabled = YES;
+  }
+}
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+  return YES;
+}
+
+- (BOOL)decisionHandlerURL:(NSURL *)url {
+  if (([url.scheme isEqualToString:@"https"] || [url.scheme isEqualToString:@"http"]) && [url.host isEqualToString:@"itunes.apple.com"]) {
+    NSString *newURLString = [url.absoluteString stringByReplacingOccurrencesOfString:url.scheme withString:@"itms-appss"];
+    NSURL *newURL = [NSURL URLWithString:newURLString];
+    if (@available(iOS 10.0, *)) {
+        [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                if (self->_onLoadingFinish) {
+                    self->_onLoadingFinish([self baseEvent]);
+                }
+                NSLog(@"Launching %@ was successfull", url);
+            }
+        }];
+    } else {
+        // Fallback on earlier versions
+        [[UIApplication sharedApplication] openURL:newURL];
+    }
+    return YES;
+  }
+  return NO;
+}
+
+-(void)handleRefresh:(UIRefreshControl *)refresh {
+  // reload webview
+  [_webView reload];
+  [refresh endRefreshing];
 }
 
 @end

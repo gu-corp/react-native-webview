@@ -12,7 +12,6 @@ interface Styles {
 const styles = StyleSheet.create<Styles>({
   container: {
     flex: 1,
-    overflow: 'hidden',
   },
   loadingOrErrorView: {
     position: 'absolute',
