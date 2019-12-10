@@ -32,8 +32,12 @@ import com.facebook.react.modules.core.PermissionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import static android.app.Activity.RESULT_OK;
+
+import com.brave.adblock.Engine;
 
 @ReactModule(name = RNCWebViewModule.MODULE_NAME)
 public class RNCWebViewModule extends ReactContextBaseJavaModule implements ActivityEventListener {
@@ -397,5 +401,25 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
       throw new IllegalStateException("Tried to use permissions API but the host Activity doesn't implement PermissionAwareActivity.");
     }
     return (PermissionAwareActivity) activity;
+  }
+
+  private Map<String, Engine> engines = new HashMap<String, Engine>();
+
+  @ReactMethod
+  public void addAdblockRules(String name, String rules, final Promise promise) {
+    engines.put(name, new Engine(rules));
+
+    promise.resolve(null);
+  }
+
+  @ReactMethod
+  public void removeAdblockRules(String name, String rules, final Promise promise) {
+    engines.remove(name);
+
+    promise.resolve(null);
+  }
+
+  public Engine getAdblockEngine(String name) {
+    return engines.get(name);
   }
 }
