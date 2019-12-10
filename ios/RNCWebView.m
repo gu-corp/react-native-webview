@@ -126,7 +126,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     // Workaround for StatusBar appearance bug for iOS 12
     // https://github.com/react-native-community/react-native-webview/issues/62
       [[NSNotificationCenter defaultCenter] addObserver:self
-                                               selector:@selector(showFullScreenVideoStatusBars)
+                                               selector:@selector(showFullScreenVideoStatusBars:)
                                                    name:UIWindowDidBecomeVisibleNotification
                                                  object:nil];
 
@@ -352,6 +352,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       [_webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:nil];
       [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
     _webView.allowsBackForwardNavigationGestures = _allowsBackForwardNavigationGestures;
+      
+    // add pull down to reload feature in scrollview of webview
+    UIRefreshControl *refreshControl = [[UIRefreshControl alloc] init];
+    [refreshControl addTarget:self action:@selector(handleRefresh:) forControlEvents:UIControlEventValueChanged];
+    [_webView.scrollView addSubview:refreshControl];
 
     if (_userAgent) {
       _webView.customUserAgent = _userAgent;
@@ -398,8 +403,11 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     [super removeFromSuperview];
 }
 
--(void)showFullScreenVideoStatusBars
+-(void)showFullScreenVideoStatusBars:(NSNotification*)notification
 {
+    if ([notification.object class] != [UIWindow class]) {
+      return;
+    }
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     _isFullScreenVideoOpen = YES;
     RCTUnsafeExecuteOnMainQueueSync(^{
@@ -1201,6 +1209,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   } else if (_onLoadingFinish) {
     _onLoadingFinish([self baseEvent]);
   }
+
+  // Disable default long press menu
+  [webView evaluateJavaScript:@"document.body.style.webkitTouchCallout='none';" completionHandler:nil];
 }
 
 - (void)injectJavaScript:(NSString *)script
@@ -1387,6 +1398,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     return YES;
   }
   return NO;
+}
+
+-(void)handleRefresh:(UIRefreshControl *)refresh {
+  // reload webview
+  [_webView reload];
+  [refresh endRefreshing];
 }
 
 @end
