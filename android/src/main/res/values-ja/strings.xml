@@ -16,5 +16,4 @@
     <string name="take_photo">写真を撮る</string>
     <string name="record_video">動画を撮る</string>
     <string name="choose_file">ファイルから選択</string>
-    <string name="cancel">キャンセル </string>
 </resources>
