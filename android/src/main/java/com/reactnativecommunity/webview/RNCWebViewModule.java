@@ -93,11 +93,6 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   public RNCWebViewModule(ReactApplicationContext reactContext) {
     super(reactContext);
     reactContext.addActivityEventListener(this);
-
-    TAKE_PHOTO = getCurrentActivity().getApplicationContext().getResources().getString(R.string.take_photo);
-    TAKE_VIDEO = getCurrentActivity().getApplicationContext().getResources().getString(R.string.record_video);
-    CHOOSE_FILE = getCurrentActivity().getApplicationContext().getResources().getString(R.string.choose_file);
-    CANCEL = getCurrentActivity().getApplicationContext().getResources().getString(R.string.cancel);
   }
 
   @Override
@@ -279,12 +274,16 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     List<String> listItems = new ArrayList<String>();
 
     if (acceptsImages(types)) {
+      TAKE_PHOTO = getCurrentActivity().getApplicationContext().getResources().getString(R.string.take_photo);
       listItems.add(TAKE_PHOTO);
     }
     if (acceptsVideo(types)) {
+      TAKE_VIDEO = getCurrentActivity().getApplicationContext().getResources().getString(R.string.record_video);
       listItems.add(TAKE_VIDEO);
     }
 
+    CHOOSE_FILE = getCurrentActivity().getApplicationContext().getResources().getString(R.string.choose_file);
+    CANCEL = getCurrentActivity().getApplicationContext().getResources().getString(R.string.cancel);
     listItems.add(CHOOSE_FILE);
     listItems.add(CANCEL);
 
