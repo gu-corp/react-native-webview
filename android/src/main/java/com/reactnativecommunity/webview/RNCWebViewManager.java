@@ -585,7 +585,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   @ReactProp(name = "adblockRules")
-  public void setAdblockRules(WebView view, @Nullable String rules) {
+  public void setAdblockRules(WebView view, @Nullable ReadableArray rules) {
     RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
     if (client != null) {
       client.setAdblockRules(rules);
@@ -595,7 +595,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new RNCWebViewClient());
+    view.setWebViewClient(new RNCWebViewClient(reactContext));
   }
 
   @Override
@@ -762,14 +762,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   protected static class RNCWebViewClient extends WebViewClient {
+    protected ReactContext mReactContext;
+
     private OkHttpClient httpClient;
-    private Engine adblockEngine;
+    private ArrayList<Engine> adblockEngines;
 
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
 
-    public RNCWebViewClient() {
+    public RNCWebViewClient(ReactContext reactContext) {
+      this.mReactContext = reactContext;
+
       httpClient = new okhttp3.OkHttpClient.Builder()
         .followRedirects(false)
         .followSslRedirects(false)
@@ -832,15 +836,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         return null;
       }
 
-      if (adblockEngine != null) {
+      if (adblockEngines != null) {
         BlockerResult blockerResult;
 
-        synchronized (adblockEngine) {
-          blockerResult = adblockEngine.match(url.toString(), url.getHost(), "", false, "");
-        }
+        for (Engine engine : adblockEngines) {
+          synchronized (engine) {
+            blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+          }
 
-        if (blockerResult.matched) {
-          return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+          if (blockerResult.matched) {
+            return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+          }
         }
       }
 
@@ -1025,8 +1031,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       });
     }
 
-    public void setAdblockRules(String rules) {
-      adblockEngine = rules != null ? new Engine(rules) : null;
+    public void setAdblockRules(ReadableArray rules) {
+      if (rules != null) {
+        adblockEngines = new ArrayList<Engine>();
+        for (int i = 0; i < rules.size(); i++) {
+          adblockEngines.add(((RNCWebViewModule)getModule(mReactContext)).getAdblockEngine(rules.getString(i)));
+        }
+      } else {
+        adblockEngines = null;
+      }
     }
   }
 
