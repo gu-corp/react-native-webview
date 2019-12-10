@@ -50,10 +50,10 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
 
   final String DEFAULT_MIME_TYPES = "*/*";
 
-  private String TAKE_PHOTO = '';
-  private String TAKE_VIDEO = '';
-  private String CHOOSE_FILE = '';
-  private String CANCEL = '';
+  private String TAKE_PHOTO = "";
+  private String TAKE_VIDEO = "";
+  private String CHOOSE_FILE = "";
+  private String CANCEL = "";
 
   private ValueCallback<Uri> filePathCallbackLegacy;
   private ValueCallback<Uri[]> filePathCallback;
