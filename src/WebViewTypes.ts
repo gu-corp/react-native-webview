@@ -274,7 +274,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
-  adblockRules?: string;
+  adblockRules?: string[];
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -598,7 +598,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
-  adblockRules?: string;
+  adblockRules?: string[];
 }
 
 export interface WebViewSharedProps extends ViewProps {
