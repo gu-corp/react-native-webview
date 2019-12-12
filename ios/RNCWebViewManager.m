@@ -92,7 +92,7 @@ RCT_EXPORT_VIEW_PROPERTY(messagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onMessage, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
 
-RCT_EXPORT_VIEW_PROPERTY(contentRuleList, NSString)
+RCT_EXPORT_VIEW_PROPERTY(contentRuleLists, NSArray<NSString>)
 
 RCT_EXPORT_METHOD(postMessage:(nonnull NSNumber *)reactTag message:(NSString *)message)
 {
@@ -361,6 +361,51 @@ RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteg
     RCTLogWarn(@"createNewWindowWithResult invoked with invalid lockIdentifier: "
                "got %zd, expected %zd", lockIdentifier, createNewWindowCondition.condition);
   }
+}
+
+RCT_REMAP_METHOD(addContentRuleList,
+                 addContentRuleList:(nonnull NSString *)name
+                 contentRuleList:(NSString *)encodedContentRuleList
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+  WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+  [contentRuleListStore compileContentRuleListForIdentifier:name encodedContentRuleList:encodedContentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+      if (error) {
+          reject(RCTErrorUnspecified, nil, error);
+      } else {
+          resolve(nil);
+      }
+  }];
+}
+
+RCT_REMAP_METHOD(getContentRuleListNames,
+                 getContentRuleListNamesWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+
+  WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+  [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+    resolve(identifiers);
+  }];
+}
+
+RCT_REMAP_METHOD(removeContentRuleList,
+                 removeContentRuleList:(nonnull NSString *)name
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+  WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+  [contentRuleListStore removeContentRuleListForIdentifier:name completionHandler:^(NSError *error) {
+      if (error) {
+          reject(RCTErrorUnspecified, nil, error);
+      } else {
+          resolve(nil);
+      }
+  }];
 }
 
 @end

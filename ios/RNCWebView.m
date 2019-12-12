@@ -300,35 +300,20 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         [wkWebViewConfig.userContentController addUserScript:script];
     }
 
-    if (_contentRuleList) {
-      if (@available(iOS 11.0, *)) {
-        unsigned char output[CC_SHA1_DIGEST_LENGTH];
-    
-        CC_SHA1(_contentRuleList.UTF8String, (CC_LONG)[_contentRuleList lengthOfBytesUsingEncoding:NSUTF8StringEncoding], output);
+    if (_contentRuleLists) {
+      WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
 
-        NSMutableString* hash = [NSMutableString stringWithCapacity:CC_SHA1_DIGEST_LENGTH * 2];
-        for (unsigned int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++) {
-          [hash appendFormat:@"%02x", output[i]];
-        }
-
-        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-          if ([identifiers containsObject:hash]) {
-            [contentRuleListStore lookUpContentRuleListForIdentifier:hash completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+      [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+        for (NSString *identifier in identifiers) {
+          if ([_contentRuleLists containsObject:identifier]) {
+            [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
               if (!error) {
                   [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
               }
             }];
-          } else {
-            [contentRuleListStore compileContentRuleListForIdentifier:hash encodedContentRuleList:self->_contentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-              if (!error) {
-                [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
-              }
-            }];
           }
-        }];
-      }
+        }
+      }];
     }
 
     if (_webView == nil) {

@@ -298,7 +298,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
-  contentRuleList?: string;
+  contentRuleLists?: string[];
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
@@ -486,7 +486,7 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   lockScroll?: number;
   adjustOffset?: object;
-  contentRuleList?: string;
+  contentRuleLists?: string[];
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
