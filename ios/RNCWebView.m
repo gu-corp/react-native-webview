@@ -158,20 +158,20 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
   NSString *scheme = navigationAction.request.URL.scheme;
-  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]/* || [scheme isEqualToString:@"about"]*/)) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
     [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
                                        @"navigationType": @(navigationAction.navigationType)
     }];
     RNCWebView* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
-    if (!wkWebView) {
-      [webView loadRequest:navigationAction.request];
-    } else {
-      return wkWebView.webview;
-    }
-  } else if (!navigationAction.targetFrame.isMainFrame) {
+    // if (!wkWebView) {
+    //   [webView loadRequest:navigationAction.request];
+    // } else {
+    //   return wkWebView.webview;
+    // }
+  }/* else if (!navigationAction.targetFrame.isMainFrame) {
     [webView loadRequest:navigationAction.request];
-  } else {
+  }*/ else {
     UIApplication *app = [UIApplication sharedApplication];
     NSURL *url = navigationAction.request.URL;
     if ([app canOpenURL:url]) {
