@@ -32,8 +32,11 @@ import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -499,10 +502,47 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private Map<String, Engine> engines = new HashMap<String, Engine>();
 
   @ReactMethod
-  public void addAdblockRules(String name, String rules, final Promise promise) {
-    engines.put(name, new Engine(rules));
+  public void addAdblockRules(String name, String path, final Promise promise) {
+    new Thread(new Runnable(){
+      @Override
+      public void run() {
+        InputStream is = null;
+        BufferedReader br = null;
 
-    promise.resolve(null);
+        try {
+          is = getCurrentActivity().getApplicationContext().getAssets().open(path);
+          br = new BufferedReader(new InputStreamReader(is));
+
+          StringBuilder sb = new StringBuilder();
+
+          String line;
+          while ((line = br.readLine()) != null) {
+            sb.append(line);
+            sb.append("\n");
+          }
+
+          engines.put(name, new Engine(sb.toString()));
+
+          promise.resolve(null);
+        } catch (Exception e) {
+          promise.reject(e);
+        } finally {
+          if (br != null) {
+            try {
+              br.close();
+            } catch (Exception e) {
+            }
+          }
+
+          if (is != null) {
+            try {
+              is.close();
+            } catch (Exception e) {
+            }
+          }
+        }
+      }
+    }).start();
   }
 
   @ReactMethod
