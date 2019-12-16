@@ -1187,6 +1187,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       });
       // Create dynamically a new view
       newView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      newView.setVisibility(View.GONE);
 
       webView.addView(newView);
 
