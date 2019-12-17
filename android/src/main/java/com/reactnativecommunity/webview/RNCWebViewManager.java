@@ -253,7 +253,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
                 data.putString("type", "contextmenu");
                 data.putString("url", url);
                 data.putString("image_url", image_url);
-                dispatchEvent(webView, new TopMessageEvent(webView.getId(), data));
+                WritableMap eventData = Arguments.createMap();
+                eventData.putMap("data", data);
+                dispatchEvent(webView, new TopMessageEvent(webView.getId(), eventData));
               }
             }
           };
@@ -610,7 +612,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
-    export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLsMessage"));
+    export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
     return export;
   }
 
