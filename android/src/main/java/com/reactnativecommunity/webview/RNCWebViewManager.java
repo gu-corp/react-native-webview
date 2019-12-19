@@ -773,6 +773,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
 
+    protected Uri mainUrl;
+
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
 
@@ -843,7 +845,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         for (Engine engine : adblockEngines) {
           synchronized (engine) {
-            blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+            if (request.isForMainFrame()) {
+              mainUrl = url;
+              blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+            } else {
+              blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+            }
           }
 
           if (blockerResult.matched) {
