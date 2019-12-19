@@ -36,6 +36,7 @@ typedef enum {
 @property (nonatomic, assign) BOOL messagingEnabled;
 @property (nonatomic, copy) NSString * _Nullable injectedJavaScript;
 @property (nonatomic, copy) NSString *injectedJavaScriptBeforeDocumentLoad;
+@property (nonatomic, copy) NSString * _Nullable injectedJavaScriptBeforeContentLoaded;
 @property (nonatomic, assign) BOOL scrollEnabled;
 @property (nonatomic, assign) BOOL sharedCookiesEnabled;
 @property (nonatomic, assign) BOOL pagingEnabled;
@@ -57,6 +58,7 @@ typedef enum {
 @property (nonatomic, copy) NSString * _Nullable applicationNameForUserAgent;
 @property (nonatomic, assign) BOOL cacheEnabled;
 @property (nonatomic, assign) BOOL javaScriptEnabled;
+@property (nonatomic, assign) BOOL allowFileAccessFromFileURLs;
 @property (nonatomic, assign) BOOL allowsLinkPreview;
 @property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
 @property (nonatomic, assign) BOOL showsVerticalScrollIndicator;

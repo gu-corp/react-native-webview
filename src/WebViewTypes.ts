@@ -4,30 +4,25 @@ import { ReactElement, Component } from 'react';
 import {
   NativeSyntheticEvent,
   ViewProps,
+  StyleProp,
+  ViewStyle,
   NativeMethodsMixin,
   Constructor,
   UIManagerStatic,
   NativeScrollEvent,
 } from 'react-native';
 
-export interface WebViewCommands {
-  goForward: number;
-  goBack: number;
-  reload: number;
-  stopLoading: number;
-  postMessage: number;
-  injectJavaScript: number;
-  loadUrl: number;
-  requestFocus: number;
-  captureScreen: number;
-  findInPage: number;
-}
+type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus' | 'captureScreen' | 'findInPage';
 
-export interface RNCWebViewUIManager extends UIManagerStatic {
+type AndroidWebViewCommands = 'clearHistory' | 'clearCache' | 'clearFormData';
+
+
+
+interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   getViewManagerConfig: (
-    name: 'RNCWebView',
+    name: string,
   ) => {
-    Commands: WebViewCommands;
+    Commands: {[key in Commands]: number};
   };
   evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
   findInPage: (viewTag: number, js: string) => Promise<number>;
@@ -35,6 +30,11 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
 }
+
+export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<WebViewCommands | AndroidWebViewCommands>
+export type RNCWebViewUIManagerIOS = RNCWebViewUIManager<WebViewCommands>
+
+
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
 
@@ -152,6 +152,8 @@ export type DataDetectorTypes =
 
 export type OverScrollModeType = 'always' | 'content' | 'never';
 
+export type CacheMode = 'LOAD_DEFAULT' | 'LOAD_CACHE_ONLY' | 'LOAD_CACHE_ELSE_NETWORK' | 'LOAD_NO_CACHE';
+
 export interface WebViewSourceUri {
   /**
    * The URI to load in the `WebView`. Can be a local or remote file.
@@ -232,6 +234,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   incognito?: boolean;
   injectedJavaScript?: string;
   injectedJavaScriptBeforeDocumentLoad?: string;
+  injectedJavaScriptBeforeContentLoaded?: string;
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
   openNewWindowInWebView?: boolean;
@@ -258,8 +261,10 @@ export interface CommonNativeWebViewProps extends ViewProps {
 }
 
 export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
+  cacheMode?: CacheMode;
   allowFileAccess?: boolean;
   scalesPageToFit?: boolean;
+  allowFileAccessFromFileURLs?: boolean;
   allowUniversalAccessFromFileURLs?: boolean;
   androidHardwareAccelerationDisabled?: boolean;
   domStorageEnabled?: boolean;
@@ -494,6 +499,19 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
   onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
+   * https://developer.android.com/reference/android/webkit/WebSettings.html#setCacheMode(int)
+   * Set the cacheMode. Possible values are:
+   *
+   * - `'LOAD_DEFAULT'` (default)
+   * - `'LOAD_CACHE_ELSE_NETWORK'`
+   * - `'LOAD_NO_CACHE'`
+   * - `'LOAD_CACHE_ONLY'`
+   *
+   * @platform android
+   */
+  cacheMode?: CacheMode;
+
+  /**
    * https://developer.android.com/reference/android/view/View#OVER_SCROLL_NEVER
    * Sets the overScrollMode. Possible values are:
    *
@@ -517,6 +535,15 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   geolocationEnabled?: boolean;
+
+  
+  /**
+   * Boolean that sets whether JavaScript running in the context of a file
+   * scheme URL should be allowed to access content from other file scheme URLs.
+   * Including accessing content from other file scheme URLs
+   * @platform android
+   */
+  allowFileAccessFromFileURLs?: boolean;
 
   /**
    * Boolean that sets whether JavaScript running in the context of a file
@@ -614,6 +641,11 @@ export interface WebViewSharedProps extends ViewProps {
   javaScriptEnabled?: boolean;
 
   /**
+   * Stylesheet object to set the style of the container view.
+   */
+  containerStyle?: StyleProp<ViewStyle>;
+
+  /**
    * Function that returns a view to show if there's an error.
    */
   renderError?: (
@@ -688,6 +720,12 @@ export interface WebViewSharedProps extends ViewProps {
    * when the view loads.
    */
   injectedJavaScript?: string;
+
+  /**
+   * Set this to provide JavaScript that will be injected into the web page
+   * once the webview is initialized but before the view loads any content.
+   */
+  injectedJavaScriptBeforeContentLoaded?: string;
 
   /**
    * Boolean value that determines whether a horizontal scroll indicator is

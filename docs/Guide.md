@@ -8,11 +8,13 @@ _This guide is currently a work in progress._
 
 - [Basic Inline HTML](Guide.md#basic-inline-html)
 - [Basic URL Source](Guide.md#basic-url-source)
+- [Loading local HTML files](Guide.md#loading-local-html-files)
 - [Controlling navigation state changes](Guide.md#controlling-navigation-state-changes)
 - [Add support for File Upload](Guide.md#add-support-for-file-upload)
 - [Multiple files upload](Guide.md#multiple-files-upload)
 - [Add support for File Download](Guide.md#add-support-for-file-download)
 - [Communicating between JS and Native](Guide.md#communicating-between-js-and-native)
+- [Working with custom headers, sessions, and cookies](Guide.md#working-with-custom-headers-sessions-and-cookies)
 
 ### Basic inline HTML
 
@@ -48,6 +50,40 @@ class MyWeb extends Component {
   render() {
     return (
       <WebView source={{ uri: 'https://facebook.github.io/react-native/' }} />
+    );
+  }
+}
+```
+
+### Loading local HTML files
+
+Sometimes you would have bundled an HTML file along with the app and would like to load the HTML asset into your WebView. To do this on iOS, you can just import the html file like any other asset as shown below.
+
+```js
+import React, { Component } from 'react';
+import { WebView } from 'react-native-webview';
+
+const myHtmlFile = require("./my-asset-folder/local-site.html");
+
+class MyWeb extends Component {
+  render() {
+    return (
+      <WebView source={myHtmlFile} />
+    );
+  }
+}
+```
+
+However on Android, you need to place the HTML file inside your android project's asset directory. For example, if `local-site.html` is your HTML file and you'd like to load it into the webview, you should move the file to your project's android asset directory which is `your-project/android/src/main/assets/`. Then you can load the html file as shown in the following code block
+
+```js
+import React, { Component } from 'react';
+import { WebView } from 'react-native-webview';
+
+class MyWeb extends Component {
+  render() {
+    return (
+      <WebView source={{ uri: "file:///android_asset/local-site.html" }} />
     );
   }
 }
@@ -112,44 +148,6 @@ class MyWeb extends Component {
   };
 }
 ```
-
-#### Intercepting hash URL changes
-
-While `onNavigationStateChange` will trigger on URL changes, it does not trigger when only the hash URL ("anchor") changes, e.g. from `https://example.com/users#list` to `https://example.com/users#help`.
-
-You can inject some JavaScript to wrap the history functions in order to intercept these hash URL changes.
-
-```jsx
-<WebView
-  source={{ uri: someURI }}
-  injectedJavaScript={`
-    (function() {
-      function wrap(fn) {
-        return function wrapper() {
-          var res = fn.apply(this, arguments);
-          window.ReactNativeWebView.postMessage('navigationStateChange');
-          return res;
-        }
-      }
-
-      history.pushState = wrap(history.pushState);
-      history.replaceState = wrap(history.replaceState);
-      window.addEventListener('popstate', function() {
-        window.ReactNativeWebView.postMessage('navigationStateChange');
-      });
-    })();
-
-    true;
-  `}
-  onMessage={({ nativeEvent: state }) => {
-    if (state.data === 'navigationStateChange') {
-      // Navigation state updated, can check state.canGoBack, etc.
-    }
-  }}
-/>
-```
-
-Thanks to [Janic Duplessis](https://github.com/react-native-community/react-native-webview/issues/24#issuecomment-483956651) for this workaround.
 
 ### Add support for File Upload
 
@@ -300,6 +298,39 @@ _Under the hood_
 > On iOS, `injectedJavaScript` runs a method on WebView called `evaluateJavaScript:completionHandler:`
 > On Android, `injectedJavaScript` runs a method on the Android WebView called `evaluateJavascriptWithFallback`
 
+
+#### The `injectedJavaScriptBeforeContentLoaded` prop
+
+This is a script that runs **before** the web page loads for the first time. It only runs once, even if the page is reloaded or navigated away. This is useful if you want to inject anything into the window, localstorage, or document prior to the web code executing. 
+
+```jsx
+import React, { Component } from 'react';
+import { View } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+export default class App extends Component {
+  render() {
+    const runFirst = `
+      window.isNativeApp = true;
+      true; // note: this is required, or you'll sometimes get silent failures
+    `;
+    return (
+      <View style={{ flex: 1 }}>
+        <WebView
+          source={{
+            uri:
+              'https://github.com/react-native-community/react-native-webview',
+          }}
+          injectedJavaScriptBeforeContentLoaded={runFirst}
+        />
+      </View>
+    );
+  }
+}
+```
+
+This runs the JavaScript in the `runFirst` string before the page is loaded. In this case, the value of `window.isNativeApp` will be set to true before the web code executes. 
+
 #### The `injectJavaScript` method
 
 While convenient, the downside to the previously mentioned `injectedJavaScript` prop is that it only runs once. That's why we also expose a method on the webview ref called `injectJavaScript` (note the slightly different name!).
@@ -346,7 +377,7 @@ _Under the hood_
 
 #### The `window.ReactNativeWebView.postMessage` method and `onMessage` prop
 
-Being able to send JavaScript to the web page is great, but what about when the web page wants to communicate back to your React Native code? This where `window.ReactNativeWebView.postMessage` and the `onMessage` prop come in.
+Being able to send JavaScript to the web page is great, but what about when the web page wants to communicate back to your React Native code? This is where `window.ReactNativeWebView.postMessage` and the `onMessage` prop come in.
 
 You _must_ set `onMessage` or the `window.ReactNativeWebView.postMessage` method will not be injected into the web page.
 
@@ -389,3 +420,92 @@ export default class App extends Component {
 This code will result in this alert:
 
 <img alt="Alert showing communication from web page to React Native" width="200" src="https://user-images.githubusercontent.com/1479215/53671269-7e822300-3c32-11e9-9937-7ddc34ba8af3.png" />
+
+### Working with custom headers, sessions, and cookies
+
+#### Setting Custom Headers
+
+In React Native WebView, you can set a custom header like this:
+
+```jsx
+<WebView
+  source={{
+    uri: 'http://example.com',
+    headers: {
+      'my-custom-header-key': 'my-custom-header-value',
+    },
+  }}
+/>
+```
+
+This will set the header on the first load, but not on subsequent page navigations.
+
+In order to work around this, you can track the current URL, intercept new page loads, and navigate to them yourself ([original credit for this technique to Chirag Shah from Big Binary](https://blog.bigbinary.com/2016/07/26/passing-request-headers-on-each-webview-request-in-react-native.html)):
+
+```jsx
+const CustomHeaderWebView = props => {
+  const { uri, onLoadStart, ...restProps } = props;
+  const [currentURI, setURI] = useState(props.source.uri);
+  const newSource = { ...props.source, uri: currentURI };
+
+  return (
+    <WebView
+      {...restProps}
+      source={newSource}
+      onShouldStartLoadWithRequest={request => {
+        // If we're loading the current URI, allow it to load
+        if (request.url === currentURI) return true;
+        // We're loading a new URL -- change state first
+        setURI(request.url);
+        return false;
+      }}
+    />
+  );
+};
+
+<CustomHeaderWebView
+  source={{
+    uri: 'http://example.com',
+    headers: {
+      'my-custom-header-key': 'my-custom-header-value',
+    },
+  }}
+/>;
+```
+
+#### Managing Cookies
+
+You can set cookies on the React Native side using the [react-native-cookies](https://github.com/joeferraro/react-native-cookies) package.
+
+When you do, you'll likely want to enable the [sharedCookiesEnabled](Reference#sharedCookiesEnabled) prop as well.
+
+```jsx
+const App = () => {
+  return (
+    <WebView
+      source={{ uri: 'http://example.com' }}
+      sharedCookiesEnabled={true}
+    />
+  );
+};
+```
+
+If you'd like to send custom cookies in the WebView itself, you can do so in a custom header, like this:
+
+```jsx
+const App = () => {
+  return (
+    <WebView
+      source={{
+        uri: 'http://example.com',
+        headers: {
+          Cookie: 'cookie1=asdf; cookie2=dfasdfdas',
+        },
+      }}
+      sharedCookiesEnabled={true}
+    />
+  );
+};
+```
+
+Note that these cookies will only be sent on the first request unless you use the technique above for [setting custom headers on each page load](#Setting-Custom-Headers).

@@ -21,6 +21,7 @@
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
 static NSTimer *keyboardTimer;
+static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
@@ -188,8 +189,16 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       wkWebViewConfig = [WKWebViewConfiguration new];
     }
     WKPreferences *prefs = [[WKPreferences alloc]init];
+    BOOL _prefsUsed = NO;
     if (!_javaScriptEnabled) {
       prefs.javaScriptEnabled = NO;
+      _prefsUsed = YES;
+    }
+    if (_allowFileAccessFromFileURLs) {
+      [prefs setValue:@TRUE forKey:@"allowFileAccessFromFileURLs"];
+      _prefsUsed = YES;
+    }
+    if (_prefsUsed) {
       wkWebViewConfig.preferences = prefs;
     }
     if (_incognito) {
@@ -201,6 +210,31 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
     }
     wkWebViewConfig.userContentController = [WKUserContentController new];
+
+    // Shim the HTML5 history API:
+    [wkWebViewConfig.userContentController addScriptMessageHandler:self name:HistoryShimName];
+    NSString *source = [NSString stringWithFormat:
+      @"(function(history) {\n"
+      "  function notify(type) {\n"
+      "    setTimeout(function() {\n"
+      "      window.webkit.messageHandlers.%@.postMessage(type)\n"
+      "    }, 0)\n"
+      "  }\n"
+      "  function shim(f) {\n"
+      "    return function pushState() {\n"
+      "      notify('other')\n"
+      "      return f.apply(history, arguments)\n"
+      "    }\n"
+      "  }\n"
+      "  history.pushState = shim(history.pushState)\n"
+      "  history.replaceState = shim(history.replaceState)\n"
+      "  window.addEventListener('popstate', function() {\n"
+      "    notify('backforward')\n"
+      "  })\n"
+      "})(window.history)\n", HistoryShimName
+    ];
+    WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    [wkWebViewConfig.userContentController addUserScript:script];
 
     if (_messagingEnabled) {
       [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
@@ -215,6 +249,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
       WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
       [wkWebViewConfig.userContentController addUserScript:script];
+        
+      if (_injectedJavaScriptBeforeContentLoaded) {
+        // If user has provided an injectedJavascript prop, execute it at the start of the document
+        WKUserScript *injectedScript = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeContentLoaded injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        [wkWebViewConfig.userContentController addUserScript:injectedScript];
+      }
     }
 
     wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
@@ -491,10 +531,18 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (void)userContentController:(WKUserContentController *)userContentController
        didReceiveScriptMessage:(WKScriptMessage *)message
 {
-  if (_onMessage != nil) {
-    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-    [event addEntriesFromDictionary: @{@"data": message.body}];
-    _onMessage(event);
+  if ([message.name isEqualToString:HistoryShimName]) {
+    if (_onLoadingFinish) {
+      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+      [event addEntriesFromDictionary: @{@"navigationType": message.body}];
+      _onLoadingFinish(event);
+    }
+  } else if ([message.name isEqualToString:MessageHandlerName]) {
+    if (_onMessage) {
+      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+      [event addEntriesFromDictionary: @{@"data": message.body}];
+      _onMessage(event);
+    }
   }
 }
 
@@ -1136,7 +1184,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
       return;
     }
 
-    if ([error.domain isEqualToString:@"WebKitErrorDomain"] && error.code == 102) {
+    if ([error.domain isEqualToString:@"WebKitErrorDomain"] && error.code == 102 || [error.domain isEqualToString:@"WebKitErrorDomain"] && error.code == 101) {
       // Error code 102 "Frame load interrupted" is raised by the WKWebView
       // when the URL is from an http redirect. This is a common pattern when
       // implementing OAuth with a WebView.
@@ -1171,7 +1219,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
  * Called when the navigation is complete.
  * @see https://fburl.com/rtys6jlb
  */
-- (void)      webView:(WKWebView *)webView
+- (void)webView:(WKWebView *)webView
   didFinishNavigation:(WKNavigation *)navigation
 {
   if (resourceBundle) {
