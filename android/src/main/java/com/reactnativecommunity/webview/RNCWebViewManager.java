@@ -937,7 +937,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
 
         return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
-      } catch (IOException e) {
+      } catch (Exception e) {
         return null;
       }
     }
