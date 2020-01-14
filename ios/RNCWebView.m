@@ -89,6 +89,8 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
+    
+  BOOL initiated;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -183,6 +185,10 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (void)didMoveToWindow
 {
+  if (initiated) {
+    // this function should be called once
+    return;
+  }
   if (self.window != nil) {
     if (wkWebViewConfig == nil) {
       wkWebViewConfig = [WKWebViewConfiguration new];
@@ -360,6 +366,9 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
     [self visitSource];
+    
+    // To avoid this function call again
+    initiated = true;
   }
 }
 
