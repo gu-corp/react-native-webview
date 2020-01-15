@@ -183,7 +183,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil) {
+  if (self.window != nil && _webView == nil) {
     if (wkWebViewConfig == nil) {
       wkWebViewConfig = [WKWebViewConfiguration new];
     }
