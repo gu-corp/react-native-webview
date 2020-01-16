@@ -19,8 +19,11 @@ import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
@@ -812,6 +815,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+      if (((RNCWebView)view).skipTouchEvent()) {
+        return true;
+      }
       activeUrl = url;
       dispatchEvent(
         view,
@@ -1172,6 +1178,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
     @Override
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+      if (((RNCWebView)webView).skipTouchEvent()) {
+        return true;
+      }
       final WebView newView = new WebView(mReactContext);
       newView.setWebViewClient(new WebViewClient() {
         @Override
@@ -1239,6 +1248,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
 
+    private GestureDetector gestureDetector;
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -1247,6 +1258,33 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
      */
     public RNCWebView(ThemedReactContext reactContext) {
       super(reactContext);
+      this.setFocusableInTouchMode(false);
+
+      gestureDetector = new GestureDetector(reactContext, new GestureDetector.SimpleOnGestureListener() {
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+          Log.d("DebugTouch", "onSingleTapUp");
+          if (isFling) {
+            skipTouchEvent = true;
+          }
+          isFling = false;
+          return super.onSingleTapUp(e);
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+          Log.d("DebugTouch", "onFling");
+          isFling = true;
+          return true;
+        }
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+          Log.d("DebugTouch", "onDown");
+          skipTouchEvent = false;
+          return super.onDown(e);
+        }
+      });
     }
 
     @Override
@@ -1486,6 +1524,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } catch (IOException e) {
         e.printStackTrace();
       }
+    }
+
+    private boolean skipTouchEvent;
+    private boolean isFling;
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+      gestureDetector.onTouchEvent(ev);
+      return super.dispatchTouchEvent(ev);
+    }
+
+    public boolean skipTouchEvent() {
+      return this.skipTouchEvent;
     }
   }
 }
