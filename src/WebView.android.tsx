@@ -265,11 +265,11 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
-  findInPage = (data: string, callback: any) => {
+  findInPage = (data: string) => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
       this.getCommands().findInPage,
-      [String(data), callback]
+      [String(data)]
     );
   };
 

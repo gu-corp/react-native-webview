@@ -827,52 +827,52 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-      Uri url = request.getUrl();
-      String urlStr = url.toString();
-      String scheme = url.getScheme();
+      try {
+        Uri url = request.getUrl();
+        String urlStr = url.toString();
+        String scheme = url.getScheme();
 
-      if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
-        return null;
-      }
-
-      if (adblockEngines != null) {
-        BlockerResult blockerResult;
-
-        for (Engine engine : adblockEngines) {
-          synchronized (engine) {
-            if (request.isForMainFrame()) {
-              mainUrl = url;
-              blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
-            } else {
-              blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
-            }
-          }
-
-          if (blockerResult.matched) {
-            return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
-          }
-        }
-      }
-
-      if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
-        return null;
-      }
-
-      if (!request.isForMainFrame()) {
-        return null;
-      }
-
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        if (request.isRedirect()) {
+        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
           return null;
         }
-      }
 
-      if (!TextUtils.equals(request.getMethod(), "GET")) {
-        return null;
-      }
+        if (adblockEngines != null) {
+          BlockerResult blockerResult;
 
-      try {
+          for (Engine engine : adblockEngines) {
+            synchronized (engine) {
+              if (request.isForMainFrame()) {
+                mainUrl = url;
+                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+              } else {
+                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+              }
+            }
+
+            if (blockerResult.matched) {
+              return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+            }
+          }
+        }
+
+        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
+          return null;
+        }
+
+        if (!request.isForMainFrame()) {
+          return null;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          if (request.isRedirect()) {
+            return null;
+          }
+        }
+
+        if (!TextUtils.equals(request.getMethod(), "GET")) {
+          return null;
+        }
+
         Map<String, String> requestHeaders = request.getRequestHeaders();
         Request req = new Request.Builder()
           .headers(Headers.of(requestHeaders))
@@ -932,7 +932,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
 
         return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
-      } catch (IOException e) {
+      } catch (Exception e) {
         return null;
       }
     }
