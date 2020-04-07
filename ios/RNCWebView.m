@@ -1040,11 +1040,6 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
-    
-  if ([self decisionHandlerURL:request.URL]) {
-    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onOpenExternalApp", @"data":@{@"url": request.URL.absoluteString}}});
-    return decisionHandler(WKNavigationActionPolicyCancel);
-  }
 
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1361,28 +1356,6 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
   return YES;
-}
-
-- (BOOL)decisionHandlerURL:(NSURL *)url {
-  if (([url.scheme isEqualToString:@"https"] || [url.scheme isEqualToString:@"http"]) && [url.host isEqualToString:@"itunes.apple.com"]) {
-    NSString *newURLString = [url.absoluteString stringByReplacingOccurrencesOfString:url.scheme withString:@"itms-appss"];
-    NSURL *newURL = [NSURL URLWithString:newURLString];
-    if (@available(iOS 10.0, *)) {
-        [[UIApplication sharedApplication] openURL:newURL options:@{} completionHandler:^(BOOL success) {
-            if (success) {
-                if (self->_onLoadingFinish) {
-                    self->_onLoadingFinish([self baseEvent]);
-                }
-                NSLog(@"Launching %@ was successfull", url);
-            }
-        }];
-    } else {
-        // Fallback on earlier versions
-        [[UIApplication sharedApplication] openURL:newURL];
-    }
-    return YES;
-  }
-  return NO;
 }
 
 -(void)handleRefresh:(UIRefreshControl *)refresh {
