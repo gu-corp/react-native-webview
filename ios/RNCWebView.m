@@ -692,7 +692,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   dragging = YES;
     
   NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
-  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollBeginDrag", @"data":event}});
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollBeginDrag", @"data":event}});
 }
 
 - (void)setScrollEnabled:(BOOL)scrollEnabled
@@ -750,7 +750,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     }
     
     NSDictionary *event = [self onScrollEvent:offset moveDistance:CGPointMake(offset.x - lastOffset.x, dy)];
-    _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScroll", @"data":event}});
+    _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScroll", @"data":event}});
 }
 
 - (NSDictionary*)onScrollEvent:(CGPoint)currentOffset moveDistance:(CGPoint)distance {
@@ -771,14 +771,14 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   dragging = NO;
   
   NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
-  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDrag", @"data":event}});
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDrag", @"data":event}});
 }
 
 - (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
   decelerating = NO;
   
   NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
-  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDecelerating", @"data":event}});
 }
 
 - (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
@@ -798,7 +798,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   scrollingToTop = NO;
   
   NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
-  _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDecelerating", @"data":event}});
 }
 
 - (void)setDirectionalLockEnabled:(BOOL)directionalLockEnabled
@@ -1346,7 +1346,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
         if (urlResult.allKeys.count == 0) {
           longPress = NO;
         }
-        _onMessage(@{@"name":@"reactNative", @"body": @{@"type":@"contextMenu", @"data":urlResult}});
+        _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"contextMenu", @"data":urlResult}});
       }
     }
   } else if (sender.state == UIGestureRecognizerStateCancelled) {
