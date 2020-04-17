@@ -555,4 +555,52 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   public Engine getAdblockEngine(String name) {
     return engines.get(name);
   }
+
+  private String injectedScript;
+
+  @ReactMethod
+  public void initDappClientService(String filepath, final Promise promise) {
+    new Thread(new Runnable(){
+      @Override
+      public void run() {
+        InputStream is = null;
+        BufferedReader br = null;
+
+        try {
+          is = getCurrentActivity().getApplicationContext().getAssets().open(filepath);
+          br = new BufferedReader(new InputStreamReader(is));
+
+          StringBuilder sb = new StringBuilder();
+
+          String line;
+          while ((line = br.readLine()) != null) {
+            sb.append(line);
+            sb.append("\n");
+          }
+          injectedScript = sb.toString();
+          promise.resolve(null);
+        } catch (Exception e) {
+          promise.reject(e);
+        } finally {
+          if (br != null) {
+            try {
+              br.close();
+            } catch (Exception e) {
+            }
+          }
+
+          if (is != null) {
+            try {
+              is.close();
+            } catch (Exception e) {
+            }
+          }
+        }
+      }
+    }).start();
+  }
+
+  public String getInjectedScript() {
+    return injectedScript;
+  }
 }
