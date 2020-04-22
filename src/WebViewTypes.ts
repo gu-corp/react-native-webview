@@ -729,7 +729,7 @@ export interface WebViewSharedProps extends ViewProps {
    */
   onShouldCreateNewWindow?: OnShouldCreateNewWindow;
 
-  onWebviewClosed?: (event: WebViewNavigation) => void;
+  onWebviewClosed?: (event: WebViewNavigationEvent) => void;
 
   /**
    * Override the native component used to render the WebView. Enables a custom native
