@@ -161,11 +161,6 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 }
 
 - (void)setupConfiguration {
-  WKPreferences *prefs = [[WKPreferences alloc]init];
-  if (!_javaScriptEnabled) {
-    prefs.javaScriptEnabled = NO;
-    wkWebViewConfig.preferences = prefs;
-  }
   if (_incognito) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
   } else if (_cacheEnabled) {
@@ -331,6 +326,12 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     initiated = YES;
     if (wkWebViewConfig == nil) {
       wkWebViewConfig = [WKWebViewConfiguration new];
+      WKPreferences *prefs = [[WKPreferences alloc]init];
+      // Override javaScriptEnabled of configuration when create new window would cause unexpected behaviour
+      if (!_javaScriptEnabled) {
+        prefs.javaScriptEnabled = NO;
+        wkWebViewConfig.preferences = prefs;
+      }
       [self setupConfiguration];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
