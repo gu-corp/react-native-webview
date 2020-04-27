@@ -61,7 +61,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
-@property (nonatomic, copy) RCTDirectEventBlock onWebviewClosed;
+@property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) WKWebView *webView;
 @end
@@ -94,8 +94,8 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
-  if (_onWebviewClosed) {
-    _onWebviewClosed([self baseEvent]);
+  if (_onWebViewClosed) {
+    _onWebViewClosed([self baseEvent]);
   }
 }
 

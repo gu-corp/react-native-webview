@@ -91,7 +91,7 @@ RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(messagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onMessage, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
-RCT_EXPORT_VIEW_PROPERTY(onWebviewClosed, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onWebViewClosed, RCTDirectEventBlock)
 
 RCT_EXPORT_VIEW_PROPERTY(contentRuleLists, NSArray<NSString>)
 
