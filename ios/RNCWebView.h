@@ -68,6 +68,7 @@ typedef enum {
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
 
+- (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
 - (void)postMessage:(NSString *_Nullable)message;
@@ -77,7 +78,6 @@ typedef enum {
 - (void)reload;
 - (void)stopLoading;
 
-- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
 - (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;

@@ -61,6 +61,7 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
+@property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) WKWebView *webView;
 @end
@@ -89,6 +90,13 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
+  BOOL initiated;
+}
+
+- (void)webViewDidClose:(WKWebView *)webView {
+  if (_onWebViewClosed) {
+    _onWebViewClosed([self baseEvent]);
+  }
 }
 
 - (instancetype)initWithFrame:(CGRect)frame
@@ -138,13 +146,144 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
     
   NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
   resourceBundle = [NSBundle bundleWithPath:bundlePath];
+  initiated = NO;
 
   return self;
 }
 
-- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
-  wkWebViewConfig = configuration;
-  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+- (id)initWithConfiguration:(WKWebViewConfiguration*)configuration {
+  if (self = [super initWithFrame:CGRectZero]) {
+    wkWebViewConfig = configuration;
+    [self setupConfiguration];
+    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+  }
+  return self;
+}
+
+- (void)setupConfiguration {
+  if (_incognito) {
+    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+  } else if (_cacheEnabled) {
+    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
+  }
+  if(self.useSharedProcessPool) {
+    wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
+  }
+  wkWebViewConfig.userContentController = [WKUserContentController new];
+
+  if (_messagingEnabled) {
+    [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
+
+    NSString *source = [NSString stringWithFormat:
+      @"window.%@ = {"
+       "  postMessage: function (data) {"
+       "    window.webkit.messageHandlers.%@.postMessage(String(data));"
+       "  }"
+       "};", MessageHandlerName, MessageHandlerName
+    ];
+
+    WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    [wkWebViewConfig.userContentController addUserScript:script];
+  }
+
+  wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
+#if WEBKIT_IOS_10_APIS_AVAILABLE
+  wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
+    ? WKAudiovisualMediaTypeAll
+    : WKAudiovisualMediaTypeNone;
+  wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
+#else
+  wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+#endif
+
+  if (_applicationNameForUserAgent) {
+      wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, _applicationNameForUserAgent];
+  }
+
+  if(_sharedCookiesEnabled) {
+    // More info to sending cookies with WKWebView
+    // https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
+    if (@available(iOS 11.0, *)) {
+      // Set Cookies in iOS 11 and above, initialize websiteDataStore before setting cookies
+      // See also https://forums.developer.apple.com/thread/97194
+      // check if websiteDataStore has not been initialized before
+      if(!_incognito && !_cacheEnabled) {
+        wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+      }
+      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
+        [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+      }
+    } else {
+      NSMutableString *script = [NSMutableString string];
+
+      // Clear all existing cookies in a direct called function. This ensures that no
+      // javascript error will break the web content javascript.
+      // We keep this code here, if someone requires that Cookies are also removed within the
+      // the WebView and want to extends the current sharedCookiesEnabled option with an
+      // additional property.
+      // Generates JS: document.cookie = "key=; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+      // for each cookie which is already available in the WebView context.
+      /*
+      [script appendString:@"(function () {\n"];
+      [script appendString:@"  var cookies = document.cookie.split('; ');\n"];
+      [script appendString:@"  for (var i = 0; i < cookies.length; i++) {\n"];
+      [script appendString:@"    if (cookies[i].indexOf('=') !== -1) {\n"];
+      [script appendString:@"      document.cookie = cookies[i].split('=')[0] + '=; Expires=Thu, 01 Jan 1970 00:00:01 GMT';\n"];
+      [script appendString:@"    }\n"];
+      [script appendString:@"  }\n"];
+      [script appendString:@"})();\n\n"];
+      */
+
+      // Set cookies in a direct called function. This ensures that no
+      // javascript error will break the web content javascript.
+        // Generates JS: document.cookie = "key=value; Path=/; Expires=Thu, 01 Jan 20xx 00:00:01 GMT;"
+      // for each cookie which is available in the application context.
+      [script appendString:@"(function () {\n"];
+      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
+        [script appendFormat:@"document.cookie = %@ + '=' + %@",
+          RCTJSONStringify(cookie.name, NULL),
+          RCTJSONStringify(cookie.value, NULL)];
+        if (cookie.path) {
+          [script appendFormat:@" + '; Path=' + %@", RCTJSONStringify(cookie.path, NULL)];
+        }
+        if (cookie.expiresDate) {
+          [script appendFormat:@" + '; Expires=' + new Date(%f).toUTCString()",
+            cookie.expiresDate.timeIntervalSince1970 * 1000
+          ];
+        }
+        [script appendString:@";\n"];
+      }
+      [script appendString:@"})();\n"];
+
+      WKUserScript* cookieInScript = [[WKUserScript alloc] initWithSource:script
+                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                         forMainFrameOnly:YES];
+      [wkWebViewConfig.userContentController addUserScript:cookieInScript];
+    }
+  }
+
+  if (_injectedJavaScriptBeforeDocumentLoad) {
+      WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
+                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                         forMainFrameOnly:YES];
+      [wkWebViewConfig.userContentController addUserScript:script];
+  }
+
+  if (_contentRuleLists) {
+    WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+    [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+      for (NSString *identifier in identifiers) {
+        if ([_contentRuleLists containsObject:identifier]) {
+          [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+            if (!error) {
+                [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+            }
+          }];
+        }
+      }
+    }];
+  }
 }
 
 - (void)dealloc
@@ -158,17 +297,17 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
   NSString *scheme = navigationAction.request.URL.scheme;
-  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"]/* || [scheme isEqualToString:@"about"]*/)) {
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
     [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
                                        @"navigationType": @(navigationAction.navigationType)
     }];
     RNCWebView* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
-    // if (!wkWebView) {
-    //   [webView loadRequest:navigationAction.request];
-    // } else {
-    //   return wkWebView.webview;
-    // }
+    if (!wkWebView) {
+      [webView loadRequest:navigationAction.request];
+    } else {
+      return wkWebView.webview;
+    }
   }/* else if (!navigationAction.targetFrame.isMainFrame) {
     [webView loadRequest:navigationAction.request];
   }*/ else {
@@ -183,142 +322,20 @@ NSString *const RNCJSNavigationScheme = @"react-js-navigation";
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
+  if (self.window != nil && !initiated) {
+    initiated = YES;
     if (wkWebViewConfig == nil) {
       wkWebViewConfig = [WKWebViewConfiguration new];
-    }
-    WKPreferences *prefs = [[WKPreferences alloc]init];
-    if (!_javaScriptEnabled) {
-      prefs.javaScriptEnabled = NO;
-      wkWebViewConfig.preferences = prefs;
-    }
-    if (_incognito) {
-      wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-    } else if (_cacheEnabled) {
-      wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
-    }
-    if(self.useSharedProcessPool) {
-      wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
-    }
-    wkWebViewConfig.userContentController = [WKUserContentController new];
-
-    if (_messagingEnabled) {
-      [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
-
-      NSString *source = [NSString stringWithFormat:
-        @"window.%@ = {"
-         "  postMessage: function (data) {"
-         "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-         "  }"
-         "};", MessageHandlerName, MessageHandlerName
-      ];
-
-      WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-      [wkWebViewConfig.userContentController addUserScript:script];
-    }
-
-    wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
-#if WEBKIT_IOS_10_APIS_AVAILABLE
-    wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
-      ? WKAudiovisualMediaTypeAll
-      : WKAudiovisualMediaTypeNone;
-    wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
-#else
-    wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
-#endif
-
-    if (_applicationNameForUserAgent) {
-        wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, _applicationNameForUserAgent];
-    }
-
-    if(_sharedCookiesEnabled) {
-      // More info to sending cookies with WKWebView
-      // https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
-      if (@available(iOS 11.0, *)) {
-        // Set Cookies in iOS 11 and above, initialize websiteDataStore before setting cookies
-        // See also https://forums.developer.apple.com/thread/97194
-        // check if websiteDataStore has not been initialized before
-        if(!_incognito && !_cacheEnabled) {
-          wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-        }
-        for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
-          [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
-        }
-      } else {
-        NSMutableString *script = [NSMutableString string];
-
-        // Clear all existing cookies in a direct called function. This ensures that no
-        // javascript error will break the web content javascript.
-        // We keep this code here, if someone requires that Cookies are also removed within the
-        // the WebView and want to extends the current sharedCookiesEnabled option with an
-        // additional property.
-        // Generates JS: document.cookie = "key=; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
-        // for each cookie which is already available in the WebView context.
-        /*
-        [script appendString:@"(function () {\n"];
-        [script appendString:@"  var cookies = document.cookie.split('; ');\n"];
-        [script appendString:@"  for (var i = 0; i < cookies.length; i++) {\n"];
-        [script appendString:@"    if (cookies[i].indexOf('=') !== -1) {\n"];
-        [script appendString:@"      document.cookie = cookies[i].split('=')[0] + '=; Expires=Thu, 01 Jan 1970 00:00:01 GMT';\n"];
-        [script appendString:@"    }\n"];
-        [script appendString:@"  }\n"];
-        [script appendString:@"})();\n\n"];
-        */
-
-        // Set cookies in a direct called function. This ensures that no
-        // javascript error will break the web content javascript.
-          // Generates JS: document.cookie = "key=value; Path=/; Expires=Thu, 01 Jan 20xx 00:00:01 GMT;"
-        // for each cookie which is available in the application context.
-        [script appendString:@"(function () {\n"];
-        for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
-          [script appendFormat:@"document.cookie = %@ + '=' + %@",
-            RCTJSONStringify(cookie.name, NULL),
-            RCTJSONStringify(cookie.value, NULL)];
-          if (cookie.path) {
-            [script appendFormat:@" + '; Path=' + %@", RCTJSONStringify(cookie.path, NULL)];
-          }
-          if (cookie.expiresDate) {
-            [script appendFormat:@" + '; Expires=' + new Date(%f).toUTCString()",
-              cookie.expiresDate.timeIntervalSince1970 * 1000
-            ];
-          }
-          [script appendString:@";\n"];
-        }
-        [script appendString:@"})();\n"];
-
-        WKUserScript* cookieInScript = [[WKUserScript alloc] initWithSource:script
-                                                              injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                           forMainFrameOnly:YES];
-        [wkWebViewConfig.userContentController addUserScript:cookieInScript];
+      WKPreferences *prefs = [[WKPreferences alloc]init];
+      // Override javaScriptEnabled of configuration when create new window would cause unexpected behaviour
+      if (!_javaScriptEnabled) {
+        prefs.javaScriptEnabled = NO;
+        wkWebViewConfig.preferences = prefs;
       }
-    }
-
-    if (_injectedJavaScriptBeforeDocumentLoad) {
-        WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
-                                                              injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                           forMainFrameOnly:YES];
-        [wkWebViewConfig.userContentController addUserScript:script];
-    }
-
-    if (_contentRuleLists) {
-      WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-      [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-        for (NSString *identifier in identifiers) {
-          if ([_contentRuleLists containsObject:identifier]) {
-            [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-              if (!error) {
-                  [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
-              }
-            }];
-          }
-        }
-      }];
-    }
-
-    if (_webView == nil) {
+      [self setupConfiguration];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
+
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;

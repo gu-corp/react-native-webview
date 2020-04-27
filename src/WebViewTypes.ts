@@ -245,6 +245,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onMessage: (event: WebViewMessageEvent) => void;
   onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
+  onWebViewClosed?: (event: WebViewNavigationEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
   // TODO: find a better way to type this.
@@ -727,6 +728,8 @@ export interface WebViewSharedProps extends ViewProps {
    * Allows custom handling of window.open() by a JS handler
    */
   onShouldCreateNewWindow?: OnShouldCreateNewWindow;
+
+  onWebViewClosed?: (event: WebViewNavigationEvent) => void;
 
   /**
    * Override the native component used to render the WebView. Enables a custom native
