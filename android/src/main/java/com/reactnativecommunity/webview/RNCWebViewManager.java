@@ -450,6 +450,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "injectedJavaScriptBeforeDocumentLoad")
   public void setInjectedJavaScriptBeforeDocumentLoad(WebView view, @Nullable String injectedJavaScriptBeforeDocumentLoad) {
     String injectedScript = getModule((ReactContext)view.getContext()).getInjectedScript();
+    if ((injectedScript == null || injectedScript.length() == 0) &&
+        (injectedJavaScriptBeforeDocumentLoad == null || injectedJavaScriptBeforeDocumentLoad.length() == 0)
+    ) {
+      return;
+    }
     ((RNCWebView) view).setInjectedJavaScriptBeforeDocumentLoad(injectedJavaScriptBeforeDocumentLoad + injectedScript);
   }
 
@@ -833,118 +838,118 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return this.shouldOverrideUrlLoading(view, url);
     }
 
-//    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-//    @Override
-//    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-//      try {
-//        Uri url = request.getUrl();
-//        String urlStr = url.toString();
-//        String scheme = url.getScheme();
-//
-//        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
-//          return null;
-//        }
-//
-//        if (adblockEngines != null) {
-//          BlockerResult blockerResult;
-//
-//          for (Engine engine : adblockEngines) {
-//            synchronized (engine) {
-//              if (request.isForMainFrame()) {
-//                mainUrl = url;
-//                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
-//              } else {
-//                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
-//              }
-//            }
-//
-//            if (blockerResult.matched) {
-//              return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
-//            }
-//          }
-//        }
-//
-//        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
-//          return null;
-//        }
-//
-//        if (!request.isForMainFrame()) {
-//          return null;
-//        }
-//
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-//          if (request.isRedirect()) {
-//            return null;
-//          }
-//        }
-//
-//        if (!TextUtils.equals(request.getMethod(), "GET")) {
-//          return null;
-//        }
-//
-//        Map<String, String> requestHeaders = request.getRequestHeaders();
-//        Request req = new Request.Builder()
-//          .headers(Headers.of(requestHeaders))
-//          .url(urlStr)
-//          .build();
-//
-//        Response response = httpClient.newCall(req).execute();
-//
-//        ResponseBody body = response.body();
-//        MediaType type = body != null ? body.contentType() : null;
-//        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
-//        Charset charset = type != null ? type.charset(UTF_8) : null;
-//        String encoding = charset != null ? charset.displayName() : null;
-//        InputStream bis = body != null ? body.byteStream() : null;
-//        HashMap<String, String> map = new HashMap<>();
-//        Headers headers = response.headers();
-//        for (String key : headers.names()) {
-//          map.put(key, headers.get(key));
-//        }
-//        int statusCode = response.code();
-//        String message = response.message();
-//        if (TextUtils.isEmpty(message)) {
-//          message = "Unknown";
-//        }
-//
-//        if (statusCode == 401) {
-//          return null;
-//        }
-//
-//        if (response.isRedirect()) {
-//          String location = response.header("Location");
-//          if (location != null) {
-//            view.post(new Runnable() {
-//              @Override
-//              public void run() {
-//                view.loadUrl(location, requestHeaders);
-//              }
-//            });
-//          }
-//          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
-//            @Override
-//            public int read() throws IOException {
-//              return 0;
-//            }
-//          });
-//        }
-//
-//        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
-//          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-//        }
-//
-//        if (!response.isSuccessful()) {
-//          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-//        }
-//
-//        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
-//          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
-//
-//        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
-//      } catch (Exception e) {
-//        return null;
-//      }
-//    }
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+      try {
+        Uri url = request.getUrl();
+        String urlStr = url.toString();
+        String scheme = url.getScheme();
+
+        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+          return null;
+        }
+
+        if (adblockEngines != null) {
+          BlockerResult blockerResult;
+
+          for (Engine engine : adblockEngines) {
+            synchronized (engine) {
+              if (request.isForMainFrame()) {
+                mainUrl = url;
+                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+              } else {
+                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+              }
+            }
+
+            if (blockerResult.matched) {
+              return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+            }
+          }
+        }
+
+        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
+          return null;
+        }
+
+        if (!request.isForMainFrame()) {
+          return null;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          if (request.isRedirect()) {
+            return null;
+          }
+        }
+
+        if (!TextUtils.equals(request.getMethod(), "GET")) {
+          return null;
+        }
+
+        Map<String, String> requestHeaders = request.getRequestHeaders();
+        Request req = new Request.Builder()
+          .headers(Headers.of(requestHeaders))
+          .url(urlStr)
+          .build();
+
+        Response response = httpClient.newCall(req).execute();
+
+        ResponseBody body = response.body();
+        MediaType type = body != null ? body.contentType() : null;
+        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
+        Charset charset = type != null ? type.charset(UTF_8) : null;
+        String encoding = charset != null ? charset.displayName() : null;
+        InputStream bis = body != null ? body.byteStream() : null;
+        HashMap<String, String> map = new HashMap<>();
+        Headers headers = response.headers();
+        for (String key : headers.names()) {
+          map.put(key, headers.get(key));
+        }
+        int statusCode = response.code();
+        String message = response.message();
+        if (TextUtils.isEmpty(message)) {
+          message = "Unknown";
+        }
+
+        if (statusCode == 401) {
+          return null;
+        }
+
+        if (response.isRedirect()) {
+          String location = response.header("Location");
+          if (location != null) {
+            view.post(new Runnable() {
+              @Override
+              public void run() {
+                view.loadUrl(location, requestHeaders);
+              }
+            });
+          }
+          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
+            @Override
+            public int read() throws IOException {
+              return 0;
+            }
+          });
+        }
+
+        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
+          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+        }
+
+        if (!response.isSuccessful()) {
+          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+        }
+
+        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
+          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
+
+        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
+      } catch (Exception e) {
+        return null;
+      }
+    }
 
     @Override
     public void onReceivedError(
