@@ -19,6 +19,7 @@ import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -112,6 +113,7 @@ import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 
 /**
  * Manages instances of {@link WebView}
@@ -193,7 +195,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   protected RNCWebView createRNCWebViewInstance(ThemedReactContext reactContext) {
-    return new RNCWebView(reactContext);
+    return RNCWebView.createNewInstance(reactContext);
   }
 
   @Override
@@ -614,6 +616,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
+    export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     return export;
   }
 
@@ -830,118 +833,118 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return this.shouldOverrideUrlLoading(view, url);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
-    @Override
-    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-      try {
-        Uri url = request.getUrl();
-        String urlStr = url.toString();
-        String scheme = url.getScheme();
-
-        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
-          return null;
-        }
-
-        if (adblockEngines != null) {
-          BlockerResult blockerResult;
-
-          for (Engine engine : adblockEngines) {
-            synchronized (engine) {
-              if (request.isForMainFrame()) {
-                mainUrl = url;
-                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
-              } else {
-                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
-              }
-            }
-
-            if (blockerResult.matched) {
-              return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
-            }
-          }
-        }
-
-        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
-          return null;
-        }
-
-        if (!request.isForMainFrame()) {
-          return null;
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-          if (request.isRedirect()) {
-            return null;
-          }
-        }
-
-        if (!TextUtils.equals(request.getMethod(), "GET")) {
-          return null;
-        }
-
-        Map<String, String> requestHeaders = request.getRequestHeaders();
-        Request req = new Request.Builder()
-          .headers(Headers.of(requestHeaders))
-          .url(urlStr)
-          .build();
-
-        Response response = httpClient.newCall(req).execute();
-
-        ResponseBody body = response.body();
-        MediaType type = body != null ? body.contentType() : null;
-        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
-        Charset charset = type != null ? type.charset(UTF_8) : null;
-        String encoding = charset != null ? charset.displayName() : null;
-        InputStream bis = body != null ? body.byteStream() : null;
-        HashMap<String, String> map = new HashMap<>();
-        Headers headers = response.headers();
-        for (String key : headers.names()) {
-          map.put(key, headers.get(key));
-        }
-        int statusCode = response.code();
-        String message = response.message();
-        if (TextUtils.isEmpty(message)) {
-          message = "Unknown";
-        }
-
-        if (statusCode == 401) {
-          return null;
-        }
-
-        if (response.isRedirect()) {
-          String location = response.header("Location");
-          if (location != null) {
-            view.post(new Runnable() {
-              @Override
-              public void run() {
-                view.loadUrl(location, requestHeaders);
-              }
-            });
-          }
-          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
-            @Override
-            public int read() throws IOException {
-              return 0;
-            }
-          });
-        }
-
-        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
-          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-        }
-
-        if (!response.isSuccessful()) {
-          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-        }
-
-        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
-          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
-
-        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
-      } catch (Exception e) {
-        return null;
-      }
-    }
+//    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+//    @Override
+//    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+//      try {
+//        Uri url = request.getUrl();
+//        String urlStr = url.toString();
+//        String scheme = url.getScheme();
+//
+//        if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+//          return null;
+//        }
+//
+//        if (adblockEngines != null) {
+//          BlockerResult blockerResult;
+//
+//          for (Engine engine : adblockEngines) {
+//            synchronized (engine) {
+//              if (request.isForMainFrame()) {
+//                mainUrl = url;
+//                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+//              } else {
+//                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+//              }
+//            }
+//
+//            if (blockerResult.matched) {
+//              return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+//            }
+//          }
+//        }
+//
+//        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
+//          return null;
+//        }
+//
+//        if (!request.isForMainFrame()) {
+//          return null;
+//        }
+//
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//          if (request.isRedirect()) {
+//            return null;
+//          }
+//        }
+//
+//        if (!TextUtils.equals(request.getMethod(), "GET")) {
+//          return null;
+//        }
+//
+//        Map<String, String> requestHeaders = request.getRequestHeaders();
+//        Request req = new Request.Builder()
+//          .headers(Headers.of(requestHeaders))
+//          .url(urlStr)
+//          .build();
+//
+//        Response response = httpClient.newCall(req).execute();
+//
+//        ResponseBody body = response.body();
+//        MediaType type = body != null ? body.contentType() : null;
+//        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
+//        Charset charset = type != null ? type.charset(UTF_8) : null;
+//        String encoding = charset != null ? charset.displayName() : null;
+//        InputStream bis = body != null ? body.byteStream() : null;
+//        HashMap<String, String> map = new HashMap<>();
+//        Headers headers = response.headers();
+//        for (String key : headers.names()) {
+//          map.put(key, headers.get(key));
+//        }
+//        int statusCode = response.code();
+//        String message = response.message();
+//        if (TextUtils.isEmpty(message)) {
+//          message = "Unknown";
+//        }
+//
+//        if (statusCode == 401) {
+//          return null;
+//        }
+//
+//        if (response.isRedirect()) {
+//          String location = response.header("Location");
+//          if (location != null) {
+//            view.post(new Runnable() {
+//              @Override
+//              public void run() {
+//                view.loadUrl(location, requestHeaders);
+//              }
+//            });
+//          }
+//          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
+//            @Override
+//            public int read() throws IOException {
+//              return 0;
+//            }
+//          });
+//        }
+//
+//        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
+//          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+//        }
+//
+//        if (!response.isSuccessful()) {
+//          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
+//        }
+//
+//        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
+//          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
+//
+//        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
+//      } catch (Exception e) {
+//        return null;
+//      }
+//    }
 
     @Override
     public void onReceivedError(
@@ -1173,8 +1176,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
     @Override
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-      final WebView newView = new WebView(mReactContext);
-      newView.setWebViewClient(new WebViewClient() {
+      RNCWebView newView = RNCWebView.createNewWindow((ThemedReactContext) mReactContext);
+      newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
           WritableMap eventData = Arguments.createMap();
@@ -1186,13 +1189,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           eventData.putBoolean("canGoBack", webView.canGoBack());
           eventData.putBoolean("canGoForward", webView.canGoForward());
           dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
-          try {
-            webView.removeView(newView);
-            newView.destroy();
-          } catch (Exception e) {
-            // Exception if occurs here only means that newView was removed.
-            // No need to do anything in this case
-          }
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+          return false;
+        }
+
+        @TargetApi(Build.VERSION_CODES.N)
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+          final String url = request.getUrl().toString();
+          return this.shouldOverrideUrlLoading(view, url);
         }
       });
       // Create dynamically a new view
@@ -1205,6 +1213,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       transport.setWebView(newView);
       resultMsg.sendToTarget();
       return true;
+    }
+
+    @Override
+    public void onCloseWindow(WebView webView) {
+      WritableMap event = Arguments.createMap();
+      event.putDouble("target", webView.getId());
+      event.putString("title", webView.getTitle());
+      event.putString("url", webView.getUrl());
+      event.putBoolean("canGoBack", webView.canGoBack());
+      event.putBoolean("canGoForward", webView.canGoForward());
+      event.putDouble("progress", (float) webView.getProgress() / 100);
+      dispatchEvent(webView, new TopWebViewClosedEvent(webView.getId(), event));
     }
 
     @Override
@@ -1240,13 +1260,39 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
 
+    private static RNCWebView newWindow;
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
      * Activity Context is required for creation of dialogs internally by WebView
      * Reactive Native needed for access to ReactNative internal system functionality
      */
-    public RNCWebView(ThemedReactContext reactContext) {
+
+    public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
+      RNCWebView webView = null;
+      if (newWindow != null) {
+        webView = newWindow;
+        try {
+          ViewGroup parent = (ViewGroup)newWindow.getParent();
+          if (parent != null) {
+            parent.removeView(newWindow);
+          }
+        } catch (Exception e) {
+          Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
+        }
+        newWindow = null;
+      } else {
+        webView = new RNCWebView(reactContext);
+      }
+      return webView;
+    }
+    public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
+      newWindow = new RNCWebView(reactContext);
+      return newWindow;
+    }
+
+    private RNCWebView(ThemedReactContext reactContext) {
       super(reactContext);
     }
 
