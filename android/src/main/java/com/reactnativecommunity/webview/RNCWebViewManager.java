@@ -19,6 +19,7 @@ import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -112,6 +113,7 @@ import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 
 /**
  * Manages instances of {@link WebView}
@@ -193,7 +195,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   protected RNCWebView createRNCWebViewInstance(ThemedReactContext reactContext) {
-    return new RNCWebView(reactContext);
+    return RNCWebView.createNewInstance(reactContext);
   }
 
   @Override
@@ -448,6 +450,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "injectedJavaScriptBeforeDocumentLoad")
   public void setInjectedJavaScriptBeforeDocumentLoad(WebView view, @Nullable String injectedJavaScriptBeforeDocumentLoad) {
     String injectedScript = getModule((ReactContext)view.getContext()).getInjectedScript();
+    if ((injectedScript == null || injectedScript.length() == 0) &&
+        (injectedJavaScriptBeforeDocumentLoad == null || injectedJavaScriptBeforeDocumentLoad.length() == 0)
+    ) {
+      return;
+    }
     ((RNCWebView) view).setInjectedJavaScriptBeforeDocumentLoad(injectedJavaScriptBeforeDocumentLoad + injectedScript);
   }
 
@@ -614,6 +621,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
+    export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     return export;
   }
 
@@ -1173,8 +1181,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
     @Override
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-      final WebView newView = new WebView(mReactContext);
-      newView.setWebViewClient(new WebViewClient() {
+      RNCWebView newView = RNCWebView.createNewWindow((ThemedReactContext) mReactContext);
+      newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
           WritableMap eventData = Arguments.createMap();
@@ -1186,13 +1194,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           eventData.putBoolean("canGoBack", webView.canGoBack());
           eventData.putBoolean("canGoForward", webView.canGoForward());
           dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
-          try {
-            webView.removeView(newView);
-            newView.destroy();
-          } catch (Exception e) {
-            // Exception if occurs here only means that newView was removed.
-            // No need to do anything in this case
-          }
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+          return false;
+        }
+
+        @TargetApi(Build.VERSION_CODES.N)
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+          final String url = request.getUrl().toString();
+          return this.shouldOverrideUrlLoading(view, url);
         }
       });
       // Create dynamically a new view
@@ -1205,6 +1218,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       transport.setWebView(newView);
       resultMsg.sendToTarget();
       return true;
+    }
+
+    @Override
+    public void onCloseWindow(WebView webView) {
+      WritableMap event = Arguments.createMap();
+      event.putDouble("target", webView.getId());
+      event.putString("title", webView.getTitle());
+      event.putString("url", webView.getUrl());
+      event.putBoolean("canGoBack", webView.canGoBack());
+      event.putBoolean("canGoForward", webView.canGoForward());
+      event.putDouble("progress", (float) webView.getProgress() / 100);
+      dispatchEvent(webView, new TopWebViewClosedEvent(webView.getId(), event));
     }
 
     @Override
@@ -1240,13 +1265,39 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
 
+    private static RNCWebView newWindow;
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
      * Activity Context is required for creation of dialogs internally by WebView
      * Reactive Native needed for access to ReactNative internal system functionality
      */
-    public RNCWebView(ThemedReactContext reactContext) {
+
+    public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
+      RNCWebView webView = null;
+      if (newWindow != null) {
+        webView = newWindow;
+        try {
+          ViewGroup parent = (ViewGroup)newWindow.getParent();
+          if (parent != null) {
+            parent.removeView(newWindow);
+          }
+        } catch (Exception e) {
+          Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
+        }
+        newWindow = null;
+      } else {
+        webView = new RNCWebView(reactContext);
+      }
+      return webView;
+    }
+    public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
+      newWindow = new RNCWebView(reactContext);
+      return newWindow;
+    }
+
+    private RNCWebView(ThemedReactContext reactContext) {
       super(reactContext);
     }
 
