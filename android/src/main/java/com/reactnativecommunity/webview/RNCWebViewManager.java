@@ -831,7 +831,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
       final String url = request.getUrl().toString();
-      request.isForMainFrame();
       return this._shouldOverrideUrlLoading(view, url, request.isForMainFrame());
     }
 
