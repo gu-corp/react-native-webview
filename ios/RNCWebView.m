@@ -148,7 +148,7 @@ static NSDictionary* customCertificatesForHost;
 }
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration {
-  if (self = [self initWithFrame:CGRectZero]) {
+  if (self = [self initWithFrame:[UIApplication sharedApplication].delegate.window.bounds]) {
     wkWebViewConfig = configuration;
     [self setupConfiguration];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
