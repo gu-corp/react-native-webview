@@ -339,14 +339,14 @@ RCT_EXPORT_METHOD(startLoadWithResult:(BOOL)result lockIdentifier:(NSInteger)loc
     [createNewWindowCondition unlock];
     createNewWindowCondition = nil;
     if (createNewWindowResult) {
-      newWindow = [[RNCWebView alloc] initWithConfiguration:configuration];
+      newWindow = [[RNCWebView alloc] initWithConfiguration:configuration from:webView];
       return newWindow;
     } else {
       return nil;
     }
   } else {
     RCTLogWarn(@"Did not receive response to shouldCreateNewWindow in time, defaulting to YES");
-    newWindow = [[RNCWebView alloc] initWithConfiguration:configuration];
+    newWindow = [[RNCWebView alloc] initWithConfiguration:configuration from:webView];
     return newWindow;
   }
 }

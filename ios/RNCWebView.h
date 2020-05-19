@@ -68,7 +68,7 @@ typedef enum {
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
 
-- (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration;
+- (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
 - (void)postMessage:(NSString *_Nullable)message;
