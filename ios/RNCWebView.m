@@ -147,27 +147,27 @@ static NSDictionary* customCertificatesForHost;
   return self;
 }
 
-- (id)initWithConfiguration:(WKWebViewConfiguration*)configuration {
+- (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebView*)parentView {
   if (self = [self initWithFrame:[UIApplication sharedApplication].delegate.window.bounds]) {
     wkWebViewConfig = configuration;
-    [self setupConfiguration];
+    [self setupConfiguration:parentView];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
   }
   return self;
 }
 
-- (void)setupConfiguration {
-  if (_incognito) {
+- (void)setupConfiguration:(RNCWebView*)sender {
+  if (sender.incognito) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-  } else if (_cacheEnabled) {
+  } else if (sender.cacheEnabled) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
   }
-  if(self.useSharedProcessPool) {
+  if(sender.useSharedProcessPool) {
     wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
   }
   wkWebViewConfig.userContentController = [WKUserContentController new];
 
-  if (_messagingEnabled) {
+  if (sender.messagingEnabled) {
     [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
 
     NSString *source = [NSString stringWithFormat:
@@ -182,28 +182,28 @@ static NSDictionary* customCertificatesForHost;
     [wkWebViewConfig.userContentController addUserScript:script];
   }
 
-  wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
+  wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
 #if WEBKIT_IOS_10_APIS_AVAILABLE
   wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
     ? WKAudiovisualMediaTypeAll
     : WKAudiovisualMediaTypeNone;
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
 #else
-  wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+  wkWebViewConfig.mediaPlaybackRequiresUserAction = sender.mediaPlaybackRequiresUserAction;
 #endif
 
-  if (_applicationNameForUserAgent) {
-      wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, _applicationNameForUserAgent];
+  if (sender.applicationNameForUserAgent) {
+      wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, sender.applicationNameForUserAgent];
   }
 
-  if(_sharedCookiesEnabled) {
+  if(sender.sharedCookiesEnabled) {
     // More info to sending cookies with WKWebView
     // https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
     if (@available(iOS 11.0, *)) {
       // Set Cookies in iOS 11 and above, initialize websiteDataStore before setting cookies
       // See also https://forums.developer.apple.com/thread/97194
       // check if websiteDataStore has not been initialized before
-      if(!_incognito && !_cacheEnabled) {
+      if(!sender.incognito && !sender.cacheEnabled) {
         wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
       }
       for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
@@ -258,22 +258,22 @@ static NSDictionary* customCertificatesForHost;
     }
   }
 
-  if (_injectedJavaScriptBeforeDocumentLoad) {
-      WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
+  if (sender.injectedJavaScriptBeforeDocumentLoad) {
+      WKUserScript* script = [[WKUserScript alloc] initWithSource:sender.injectedJavaScriptBeforeDocumentLoad
                                                             injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                          forMainFrameOnly:YES];
       [wkWebViewConfig.userContentController addUserScript:script];
   }
 
-  if (_contentRuleLists) {
+  if (sender.contentRuleLists) {
     WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
 
     [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
       for (NSString *identifier in identifiers) {
-        if ([_contentRuleLists containsObject:identifier]) {
+        if ([sender.contentRuleLists containsObject:identifier]) {
           [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
             if (!error) {
-                [self->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+                [sender->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
             }
           }];
         }
@@ -328,7 +328,7 @@ static NSDictionary* customCertificatesForHost;
         prefs.javaScriptEnabled = NO;
         wkWebViewConfig.preferences = prefs;
       }
-      [self setupConfiguration];
+      [self setupConfiguration:self];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
 
