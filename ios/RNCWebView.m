@@ -343,10 +343,6 @@ static NSDictionary* customCertificatesForHost;
     _webView.scrollView.showsVerticalScrollIndicator = _showsVerticalScrollIndicator;
     _webView.scrollView.directionalLockEnabled = _directionalLockEnabled;
     _webView.allowsLinkPreview = _allowsLinkPreview;
-    // Enable allowsLinkPreview when 3D Touch is unavailable
-    if ([self traitCollection].forceTouchCapability == UIForceTouchCapabilityUnavailable) {
-        _webView.allowsLinkPreview = true;
-    }
     [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew context:nil];
       [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
       [_webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:nil];
