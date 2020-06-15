@@ -1385,4 +1385,9 @@ static NSDictionary* customCertificatesForHost;
   [refresh endRefreshing];
 }
 
+// Disable previews for the given element.
+-(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
+    return NO;
+}
+
 @end
