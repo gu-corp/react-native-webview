@@ -273,7 +273,7 @@ static NSDictionary* customCertificatesForHost;
         if ([sender.contentRuleLists containsObject:identifier]) {
           [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
             if (!error) {
-                [sender->wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+                [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
             }
           }];
         }
