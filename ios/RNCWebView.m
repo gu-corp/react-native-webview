@@ -1080,7 +1080,9 @@ static NSDictionary* customCertificatesForHost;
   if (_onLoadingStart) {
     // We have this check to filter out iframe requests and whatnot
     BOOL isTopFrame = [request.URL isEqual:request.mainDocumentURL];
-    if (isTopFrame) {
+    // Do not notify event if the request is for new window
+    BOOL isMainFrame = navigationAction.targetFrame.isMainFrame;
+    if (isTopFrame && isMainFrame) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       [event addEntriesFromDictionary: @{
         @"url": (request.URL).absoluteString,
