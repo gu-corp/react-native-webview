@@ -794,7 +794,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     public void cloneAdblockRules(RNCWebViewClient parentClient) {
-      adblockEngines = (ArrayList<Engine>)parentClient.getAdblockRules().clone();
+      if (parentClient.getAdblockRules() != null) {
+        adblockEngines = (ArrayList<Engine>)parentClient.getAdblockRules().clone();
+      }
     }
 
     @Override
@@ -1304,14 +1306,25 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void cloneSettings(RNCWebView parentView) {
       WebSettings settings = getSettings();
-      settings.setJavaScriptEnabled(parentView.getSettings().getJavaScriptEnabled());
-      settings.setDomStorageEnabled(parentView.getSettings().getDomStorageEnabled());
-      settings.setLoadWithOverviewMode(parentView.getSettings().getLoadWithOverviewMode());
-      settings.setUseWideViewPort(parentView.getSettings().getUseWideViewPort());
-      settings.setTextZoom(parentView.getSettings().getTextZoom());
-      settings.setUserAgentString(parentView.getSettings().getUserAgentString());
+      WebSettings parentSettings = parentView.getSettings();
+
+      settings.setBuiltInZoomControls(true);
+      settings.setDisplayZoomControls(false);
+      settings.setSupportMultipleWindows(true);
+
+      settings.setJavaScriptEnabled(parentSettings.getJavaScriptEnabled());
+      settings.setDomStorageEnabled(parentSettings.getDomStorageEnabled());
+      settings.setLoadWithOverviewMode(parentSettings.getLoadWithOverviewMode());
+      settings.setUseWideViewPort(parentSettings.getUseWideViewPort());
+      settings.setTextZoom(parentSettings.getTextZoom());
+      settings.setUserAgentString(parentSettings.getUserAgentString());
+      settings.setMediaPlaybackRequiresUserGesture(parentSettings.getMediaPlaybackRequiresUserGesture());
 
       mRNCWebViewClient.cloneAdblockRules(parentView.mRNCWebViewClient);
+      injectedJS = parentView.injectedJS;
+      injectedJSBeforeDocumentLoad = parentView.injectedJSBeforeDocumentLoad;
+      messagingEnabled = parentView.messagingEnabled;
+      sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
     @Override
