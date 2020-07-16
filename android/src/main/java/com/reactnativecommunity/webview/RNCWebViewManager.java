@@ -78,7 +78,6 @@ import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -108,7 +107,6 @@ import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
@@ -789,6 +787,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         .build();
     }
 
+    public ArrayList<Engine> getAdblockRules() {
+      return adblockEngines;
+    }
+
+    public void cloneAdblockRules(RNCWebViewClient parentClient) {
+      if (parentClient.getAdblockRules() != null) {
+        adblockEngines = (ArrayList<Engine>)parentClient.getAdblockRules().clone();
+      }
+    }
+
     @Override
     public void onPageFinished(WebView webView, String url) {
       super.onPageFinished(webView, url);
@@ -1181,6 +1189,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
     @Override
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+      // Create a new view
       RNCWebView newView = RNCWebView.createNewWindow((ThemedReactContext) mReactContext);
       newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
@@ -1208,8 +1217,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           return this.shouldOverrideUrlLoading(view, url);
         }
       });
-      // Create dynamically a new view
-      newView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+      // Clone settings from parent view
+      newView.cloneSettings((RNCWebView)webView);
+      newView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
       newView.setVisibility(View.GONE);
 
       webView.addView(newView);
@@ -1299,6 +1310,29 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     private RNCWebView(ThemedReactContext reactContext) {
       super(reactContext);
+    }
+
+    public void cloneSettings(RNCWebView parentView) {
+      WebSettings settings = getSettings();
+      WebSettings parentSettings = parentView.getSettings();
+
+      settings.setBuiltInZoomControls(true);
+      settings.setDisplayZoomControls(false);
+      settings.setSupportMultipleWindows(true);
+
+      settings.setJavaScriptEnabled(parentSettings.getJavaScriptEnabled());
+      settings.setDomStorageEnabled(parentSettings.getDomStorageEnabled());
+      settings.setLoadWithOverviewMode(parentSettings.getLoadWithOverviewMode());
+      settings.setUseWideViewPort(parentSettings.getUseWideViewPort());
+      settings.setTextZoom(parentSettings.getTextZoom());
+      settings.setUserAgentString(parentSettings.getUserAgentString());
+      settings.setMediaPlaybackRequiresUserGesture(parentSettings.getMediaPlaybackRequiresUserGesture());
+
+      mRNCWebViewClient.cloneAdblockRules(parentView.mRNCWebViewClient);
+      injectedJS = parentView.injectedJS;
+      injectedJSBeforeDocumentLoad = parentView.injectedJSBeforeDocumentLoad;
+      messagingEnabled = parentView.messagingEnabled;
+      sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
     @Override
