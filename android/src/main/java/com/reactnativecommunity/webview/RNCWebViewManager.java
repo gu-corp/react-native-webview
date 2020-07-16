@@ -78,7 +78,6 @@ import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -108,7 +107,6 @@ import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
@@ -1222,8 +1220,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
       // Clone settings from parent view
       newView.cloneSettings((RNCWebView)webView);
-      newView.setLayoutParams(new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      newView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
       newView.setVisibility(View.GONE);
+
+      webView.addView(newView);
 
       WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
       transport.setWebView(newView);
@@ -1289,6 +1289,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       RNCWebView webView = null;
       if (newWindow != null) {
         webView = newWindow;
+        try {
+          ViewGroup parent = (ViewGroup)newWindow.getParent();
+          if (parent != null) {
+            parent.removeView(newWindow);
+          }
+        } catch (Exception e) {
+          Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
+        }
         newWindow = null;
       } else {
         webView = new RNCWebView(reactContext);
