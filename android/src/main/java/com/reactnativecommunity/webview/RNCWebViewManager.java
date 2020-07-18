@@ -598,7 +598,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    view.setWebViewClient(new RNCWebViewClient(reactContext));
+    if (((RNCWebView)view).mRNCWebViewClient == null) {
+      view.setWebViewClient(new RNCWebViewClient(reactContext));
+    }
   }
 
   @Override
