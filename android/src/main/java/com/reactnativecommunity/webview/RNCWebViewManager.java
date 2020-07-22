@@ -860,13 +860,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           return null;
         }
 
+        if (request.isForMainFrame()) {
+          mainUrl = url;
+        }
+
         if (adblockEngines != null) {
           BlockerResult blockerResult;
 
           for (Engine engine : adblockEngines) {
             synchronized (engine) {
               if (request.isForMainFrame()) {
-                mainUrl = url;
                 blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
               } else {
                 blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
