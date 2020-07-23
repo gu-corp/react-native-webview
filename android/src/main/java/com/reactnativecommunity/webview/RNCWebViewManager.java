@@ -598,9 +598,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
-    if (((RNCWebView)view).mRNCWebViewClient == null) {
-      view.setWebViewClient(new RNCWebViewClient(reactContext));
+    RNCWebViewClient currentClient = ((RNCWebView)view).mRNCWebViewClient;
+    RNCWebViewClient newClient = new RNCWebViewClient(reactContext);
+
+    if (currentClient != null) {
+      // Client was setup before in onCreateWindow
+      // However it has some override methods, so we have to replace it by a default client
+      // ==> Transfer adblock setting before replacing
+      newClient.cloneAdblockRules(currentClient);
     }
+    view.setWebViewClient(newClient);
   }
 
   @Override
