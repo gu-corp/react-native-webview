@@ -604,8 +604,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     if (currentClient != null) {
       // Client was setup before in onCreateWindow
       // However it has some override methods, so we have to replace it by a default client
-      // ==> Transfer adblock setting before replacing
-      newClient.cloneAdblockRules(currentClient);
+      // ==> Transfer settings before replacing
+      newClient.cloneSettings(currentClient);
     }
     view.setWebViewClient(newClient);
   }
@@ -796,14 +796,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         .build();
     }
 
-    public ArrayList<Engine> getAdblockRules() {
+    protected ArrayList<Engine> getAdblockRules() {
       return adblockEngines;
     }
 
-    public void cloneAdblockRules(RNCWebViewClient parentClient) {
+    protected void cloneAdblockRules(RNCWebViewClient parentClient) {
       if (parentClient.getAdblockRules() != null) {
         adblockEngines = (ArrayList<Engine>)parentClient.getAdblockRules().clone();
       }
+    }
+
+    protected void cloneSettings(RNCWebViewClient parentClient) {
+      cloneAdblockRules(parentClient);
+      mLastLoadFailed = parentClient.mLastLoadFailed;
+      mainUrl = parentClient.mainUrl;
     }
 
     @Override
