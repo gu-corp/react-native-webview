@@ -624,6 +624,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
     export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
+    export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
     return export;
   }
 
@@ -729,6 +730,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
           mReactContext.getCurrentActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
 
+          WritableMap data = Arguments.createMap();;
+          data.putBoolean("fullscreen", true);
+          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
+
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             mVideoView.setSystemUiVisibility(FULLSCREEN_SYSTEM_UI_VISIBILITY);
             mReactContext.getCurrentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
@@ -755,6 +760,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           mCustomViewCallback = null;
 
           mWebView.setVisibility(View.VISIBLE);
+
+          WritableMap data = Arguments.createMap();;
+          data.putBoolean("fullscreen", false);
+          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             mReactContext.getCurrentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);

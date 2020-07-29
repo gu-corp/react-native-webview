@@ -92,6 +92,10 @@ export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
   progress: number;
 }
 
+export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {
+  fullscreen: boolean;
+}
+
 export interface WebViewNavigation extends WebViewNativeEvent {
   navigationType:
     | 'click'
@@ -127,6 +131,10 @@ export type WebViewEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewProgressEvent = NativeSyntheticEvent<
   WebViewNativeProgressEvent
+>;
+
+export type WebViewFullScreenEvent = NativeSyntheticEvent<
+WebViewNativeFullScreenEvent
 >;
 
 export type WebViewNavigationEvent = NativeSyntheticEvent<WebViewNavigation>;
@@ -599,6 +607,11 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    */
   allowsFullscreenVideo?: boolean;
   adblockRules?: string[];
+  /**
+   * Function that is invoked when the `WebView` entering or exiting video full-screen mode.
+   * @platform android
+   */
+  onVideoFullScreen?: (event: WebViewFullScreenEvent) => void;
 }
 
 export interface WebViewSharedProps extends ViewProps {
