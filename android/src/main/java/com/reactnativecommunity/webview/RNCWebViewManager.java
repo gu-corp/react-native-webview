@@ -74,6 +74,7 @@ import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.events.TopCreateNewWindowEvent;
 import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
+import com.reactnativecommunity.webview.events.TopWebViewOnFullScreenEvent;
 
 import org.json.JSONException;
 import org.json.JSONObject;
