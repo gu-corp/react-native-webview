@@ -554,7 +554,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private Map<String, Engine> engines = new HashMap<String, Engine>();
 
   @ReactMethod
-  public void addAdblockRules(String name, String path, final Promise promise) {
+  public void addAdblockRulesFromAsset(String name, String assetPath, final Promise promise) {
     new Thread(new Runnable(){
       @Override
       public void run() {
@@ -562,7 +562,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
         BufferedReader br = null;
 
         try {
-          is = getCurrentActivity().getApplicationContext().getAssets().open(path);
+          is = getCurrentActivity().getApplicationContext().getAssets().open(assetPath);
           br = new BufferedReader(new InputStreamReader(is));
 
           StringBuilder sb = new StringBuilder();
@@ -573,7 +573,9 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
             sb.append("\n");
           }
 
-          engines.put(name, new Engine(sb.toString()));
+          synchronized(engines) {
+            engines.put(name, new Engine(sb.toString()));
+          }
 
           promise.resolve(null);
         } catch (Exception e) {
@@ -598,8 +600,19 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   }
 
   @ReactMethod
+  public void addAdblockRules(String name, String rules, final Promise promise) {
+    synchronized(engines) {
+      engines.put(name, new Engine(rules));
+    }
+
+    promise.resolve(null);
+  }
+
+  @ReactMethod
   public void removeAdblockRules(String name, String rules, final Promise promise) {
-    engines.remove(name);
+    synchronized(engines) {
+      engines.remove(name);
+    }
 
     promise.resolve(null);
   }
