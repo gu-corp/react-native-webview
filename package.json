@@ -23,8 +23,8 @@
     "type": "Component"
   },
   "peerDependencies": {
-    "react": "^16.0",
-    "react-native": ">=0.60 <0.62"
+    "react": "^17.0",
+    "react-native": "^0.64"
   },
   "dependencies": {
     "escape-string-regexp": "2.0.0",
@@ -50,8 +50,8 @@
     "eslint-plugin-react-native": "3.7.0",
     "jest": "26.0.1",
     "metro-react-native-babel-preset": "0.53.1",
-    "react": "16.8.3",
-    "react-native": "0.60.5",
+    "react": "17.0.0",
+    "react-native": "0.64.2",
     "semantic-release": "15.13.24",
     "typescript": "3.6.2"
   },
