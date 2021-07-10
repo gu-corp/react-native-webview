@@ -10,6 +10,8 @@ import {
   findNodeHandle,
 } from 'react-native';
 
+import BatchedBridge from 'react-native/Libraries/BatchedBridge/BatchedBridge';
+
 import invariant from 'invariant';
 
 import {
@@ -19,6 +21,7 @@ import {
   defaultRenderLoading,
 } from './WebViewShared';
 import {
+  WebViewRenderProcessGoneEvent,
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
   WebViewMessageEvent,
@@ -27,17 +30,22 @@ import {
   AndroidWebViewProps,
   NativeWebViewAndroid,
   State,
-  RNCWebViewUIManager,
+  RNCWebViewUIManagerAndroid,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
 
-const UIManager = NotTypedUIManager as RNCWebViewUIManager;
+const UIManager = NotTypedUIManager as RNCWebViewUIManagerAndroid;
 
 const RNCWebView = requireNativeComponent(
   'RNCWebView',
 ) as typeof NativeWebViewAndroid;
 const { resolveAssetSource } = Image;
+
+/**
+ * A simple counter to uniquely identify WebView instances. Do not use this for anything else.
+ */
+let uniqueRef = 0;
 
 /**
  * Renders a native WebView.
@@ -53,7 +61,9 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     saveFormDataDisabled: false,
     cacheEnabled: true,
     androidHardwareAccelerationDisabled: false,
+    androidLayerType: 'none',
     originWhitelist: defaultOriginWhitelist,
+    setSupportMultipleWindows: true,
   };
 
   static isFileUploadSupported = async () => {
@@ -68,7 +78,15 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     lastErrorEvent: null,
   };
 
+  onShouldStartLoadWithRequest: ReturnType<typeof createOnShouldStartLoadWithRequest> | null = null;
+
   webViewRef = React.createRef<NativeWebViewAndroid>();
+
+  messagingModuleName = `WebViewMessageHandler${uniqueRef+=1}`;
+
+  componentDidMount = () => {
+    BatchedBridge.registerCallableModule(this.messagingModuleName, this);
+  };
 
   getCommands = () => UIManager.getViewManagerConfig('RNCWebView').Commands;
 
@@ -107,14 +125,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
-  captureScreen = (type: string) => {
-    UIManager.dispatchViewManagerCommand(
-      this.getWebViewHandle(),
-      this.getCommands().captureScreen,
-      [String(type)],
-    );
-  };
-
   requestFocus = () => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
@@ -128,6 +138,30 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getWebViewHandle(),
       this.getCommands().postMessage,
       [String(data)],
+    );
+  };
+
+  clearFormData = () => {
+    UIManager.dispatchViewManagerCommand(
+       this.getWebViewHandle(),
+       this.getCommands().clearFormData,
+        undefined,
+    );
+  }
+
+  clearCache = (includeDiskFiles: boolean) => {
+    UIManager.dispatchViewManagerCommand(
+       this.getWebViewHandle(),
+       this.getCommands().clearCache,
+       [includeDiskFiles],
+    );
+  };
+
+  clearHistory = () => {
+    UIManager.dispatchViewManagerCommand(
+       this.getWebViewHandle(),
+       this.getCommands().clearHistory,
+        undefined,
     );
   };
 
@@ -177,13 +211,16 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   onLoadingError = (event: WebViewErrorEvent) => {
     event.persist(); // persist this event because we need to store it
     const { onError, onLoadEnd } = this.props;
+
     if (onError) {
       onError(event);
+    } else {
+      console.warn('Encountered an error loading page', event.nativeEvent);
     }
+
     if (onLoadEnd) {
       onLoadEnd(event);
     }
-    console.warn('Encountered an error loading page', event.nativeEvent);
 
     this.setState({
       lastErrorEvent: event.nativeEvent,
@@ -195,6 +232,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     const { onHttpError } = this.props;
     if (onHttpError) {
       onHttpError(event);
+    }
+  }
+
+  onRenderProcessGone = (event: WebViewRenderProcessGoneEvent) => {
+    const { onRenderProcessGone } = this.props;
+    if (onRenderProcessGone) {
+      onRenderProcessGone(event);
     }
   }
 
@@ -226,8 +270,11 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
     if (progress === 1) {
-      this.setState({
-        viewState: 'IDLE',
+      this.setState((state) => {
+        if (state.viewState === 'LOADING') {
+          return { viewState: 'IDLE' };
+        }
+        return null;
       });
     }
     if (onLoadProgress) {
@@ -238,39 +285,17 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   onShouldStartLoadWithRequestCallback = (
     shouldStart: boolean,
     url: string,
+    lockIdentifier?: number,
   ) => {
-    if (shouldStart) {
+    if (lockIdentifier) {
+      NativeModules.RNCWebView.onShouldStartLoadWithRequestCallback(shouldStart, lockIdentifier);
+    } else if (shouldStart) {
       UIManager.dispatchViewManagerCommand(
         this.getWebViewHandle(),
         this.getCommands().loadUrl,
         [String(url)],
       );
     }
-  };
-
-  /**
-   * Allows custom handling of window.open() by a JS handler. Return true
-   * or false from this method to use default behavior.
-  */
-  onCreateNewWindow = (event: WebViewNavigationEvent) => {
-    if (this.props.onShouldCreateNewWindow) {
-      this.props.onShouldCreateNewWindow(event.nativeEvent);
-    }
-  };
-
-  onCaptureScreen = (event: WebViewMessageEvent) => {
-    const { onCaptureScreen } = this.props;
-    if (onCaptureScreen) {
-      onCaptureScreen(event.nativeEvent);
-    }
-  };
-
-  findInPage = (data: string) => {
-    UIManager.dispatchViewManagerCommand(
-      this.getWebViewHandle(),
-      this.getCommands().findInPage,
-      [String(data)]
-    );
   };
 
   render() {
@@ -282,6 +307,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       renderLoading,
       source,
       style,
+      containerStyle,
       nativeConfig = {},
       ...otherProps
     } = this.props;
@@ -305,8 +331,9 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
 
     const webViewStyles = [styles.container, styles.webView, style];
+    const webViewContainerStyle = [styles.container, containerStyle];
 
-    if (source && 'method' in source) {
+    if (typeof source !== "number" && source && 'method' in source) {
       if (source.method === 'POST' && source.headers) {
         console.warn(
           'WebView: `source.headers` is not supported when using POST.',
@@ -319,7 +346,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewAndroid) || RNCWebView;
 
-    const onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
+    this.onShouldStartLoadWithRequest = createOnShouldStartLoadWithRequest(
       this.onShouldStartLoadWithRequestCallback,
       // casting cause it's in the default props
       originWhitelist as readonly string[],
@@ -331,16 +358,15 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         key="webViewKey"
         {...otherProps}
         messagingEnabled={typeof onMessage === 'function'}
+        messagingModuleName={this.messagingModuleName}
         onLoadingError={this.onLoadingError}
         onLoadingFinish={this.onLoadingFinish}
         onLoadingProgress={this.onLoadingProgress}
         onLoadingStart={this.onLoadingStart}
         onHttpError={this.onHttpError}
+        onRenderProcessGone={this.onRenderProcessGone}
         onMessage={this.onMessage}
-        onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onShouldCreateNewWindow={this.onCreateNewWindow}
-        onNavigationStateChange={this.updateNavigationState}
-        onCaptureScreen={this.onCaptureScreen}
+        onShouldStartLoadWithRequest={this.onShouldStartLoadWithRequest}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
@@ -350,7 +376,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
 
     return (
-      <View style={styles.container}>
+      <View style={webViewContainerStyle}>
         {webView}
         {otherView}
       </View>
