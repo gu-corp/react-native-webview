@@ -716,8 +716,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   protected void setupWebChromeClient(ReactContext reactContext, WebView webView) {
-    if (mAllowsFullscreenVideo) {
-      int initialRequestedOrientation = reactContext.getCurrentActivity().getRequestedOrientation();
+    Activity activity = reactContext.getCurrentActivity();
+
+    if (mAllowsFullscreenVideo && activity != null) {
+      int initialRequestedOrientation = activity.getRequestedOrientation();
+
       mWebChromeClient = new RNCWebChromeClient(reactContext, webView) {
         @Override
         public void onShowCustomView(View view, CustomViewCallback callback) {
@@ -729,20 +732,34 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           mVideoView = view;
           mCustomViewCallback = callback;
 
-          mReactContext.getCurrentActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-
-          WritableMap data = Arguments.createMap();;
-          data.putBoolean("fullscreen", true);
-          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
+          activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             mVideoView.setSystemUiVisibility(FULLSCREEN_SYSTEM_UI_VISIBILITY);
-            mReactContext.getCurrentActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            activity.getWindow().setFlags(
+              WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+              WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+            );
           }
 
           mVideoView.setBackgroundColor(Color.BLACK);
-          getRootView().addView(mVideoView, FULLSCREEN_LAYOUT_PARAMS);
-          mWebView.setVisibility(View.GONE);
+
+          // Since RN's Modals interfere with the View hierarchy
+          // we will decide which View to hide if the hierarchy
+          // does not match (i.e., the WebView is within a Modal)
+          // NOTE: We could use `mWebView.getRootView()` instead of `getRootView()`
+          // but that breaks the Modal's styles and layout, so we need this to render
+          // in the main View hierarchy regardless
+          ViewGroup rootView = getRootView();
+          rootView.addView(mVideoView, FULLSCREEN_LAYOUT_PARAMS);
+
+          // Different root views, we are in a Modal
+          if (rootView.getRootView() != mWebView.getRootView()) {
+            mWebView.getRootView().setVisibility(View.GONE);
+          } else {
+            // Same view hierarchy (no Modal), just hide the WebView then
+            mWebView.setVisibility(View.GONE);
+          }
 
           mReactContext.addLifecycleEventListener(this);
         }
@@ -753,33 +770,45 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
             return;
           }
 
-          mVideoView.setVisibility(View.GONE);
-          getRootView().removeView(mVideoView);
+          // Same logic as above
+          ViewGroup rootView = getRootView();
+
+          if (rootView.getRootView() != mWebView.getRootView()) {
+            mWebView.getRootView().setVisibility(View.VISIBLE);
+          } else {
+            // Same view hierarchy (no Modal)
+            mWebView.setVisibility(View.VISIBLE);
+          }
+
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+          }
+
+          rootView.removeView(mVideoView);
           mCustomViewCallback.onCustomViewHidden();
 
           mVideoView = null;
           mCustomViewCallback = null;
 
-          mWebView.setVisibility(View.VISIBLE);
-
-          WritableMap data = Arguments.createMap();;
-          data.putBoolean("fullscreen", false);
-          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
-
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            mReactContext.getCurrentActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
-          }
-          mReactContext.getCurrentActivity().setRequestedOrientation(initialRequestedOrientation);
+          activity.setRequestedOrientation(initialRequestedOrientation);
 
           mReactContext.removeLifecycleEventListener(this);
         }
       };
+
       webView.setWebChromeClient(mWebChromeClient);
     } else {
       if (mWebChromeClient != null) {
         mWebChromeClient.onHideCustomView();
       }
-      mWebChromeClient = new RNCWebChromeClient(reactContext, webView);
+
+      mWebChromeClient = new RNCWebChromeClient(reactContext, webView) {
+        @Override
+        public Bitmap getDefaultVideoPoster() {
+          return Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+        }
+      };
+
       webView.setWebChromeClient(mWebChromeClient);
     }
   }
