@@ -14,19 +14,6 @@
 @interface RNCWebViewManager () <RNCWebViewDelegate>
 @end
 
-@implementation RCTConvert (UIScrollView)
-
-#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
-RCT_ENUM_CONVERTER(UIScrollViewContentInsetAdjustmentBehavior, (@{
-                                                                  @"automatic": @(UIScrollViewContentInsetAdjustmentAutomatic),
-                                                                  @"scrollableAxes": @(UIScrollViewContentInsetAdjustmentScrollableAxes),
-                                                                  @"never": @(UIScrollViewContentInsetAdjustmentNever),
-                                                                  @"always": @(UIScrollViewContentInsetAdjustmentAlways),
-                                                                  }), UIScrollViewContentInsetAdjustmentNever, integerValue)
-#endif
-
-@end
-
 @implementation RNCWebViewManager
 {
   NSMutableDictionary* shouldStartRequestConditions;
@@ -39,7 +26,11 @@ RCT_ENUM_CONVERTER(UIScrollViewContentInsetAdjustmentBehavior, (@{
 
 RCT_EXPORT_MODULE()
 
+#if !TARGET_OS_OSX
 - (UIView *)view
+#else
+- (RCTUIView *)view
+#endif // !TARGET_OS_OSX
 {
   RNCWebView *webView = newWindow ? newWindow : [RNCWebView new];
   webView.delegate = self;
@@ -57,6 +48,8 @@ RCT_EXPORT_VIEW_PROPERTY(onShouldStartLoadWithRequest, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onContentProcessDidTerminate, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(injectedJavaScript, NSString)
 RCT_EXPORT_VIEW_PROPERTY(injectedJavaScriptBeforeContentLoaded, NSString)
+RCT_EXPORT_VIEW_PROPERTY(injectedJavaScriptForMainFrameOnly, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(injectedJavaScriptBeforeContentLoadedForMainFrameOnly, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(javaScriptEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowFileAccessFromFileURLs, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowsInlineMediaPlayback, BOOL)
@@ -124,9 +117,11 @@ RCT_CUSTOM_VIEW_PROPERTY(sharedCookiesEnabled, BOOL, RNCWebView) {
     view.sharedCookiesEnabled = json == nil ? false : [RCTConvert BOOL: json];
 }
 
+#if !TARGET_OS_OSX
 RCT_CUSTOM_VIEW_PROPERTY(decelerationRate, CGFloat, RNCWebView) {
   view.decelerationRate = json == nil ? UIScrollViewDecelerationRateNormal : [RCTConvert CGFloat: json];
 }
+#endif // !TARGET_OS_OSX
 
 RCT_CUSTOM_VIEW_PROPERTY(directionalLockEnabled, BOOL, RNCWebView) {
     view.directionalLockEnabled = json == nil ? true : [RCTConvert BOOL: json];

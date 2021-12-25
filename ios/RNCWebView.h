@@ -22,6 +22,11 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 
 @end
 
+@interface RNCWeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
+@property (nonatomic, weak) id<WKScriptMessageHandler> scriptDelegate;
+- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate;
+@end
+
 typedef enum {
     NoLock = 0,
     LockDirectionUp,
@@ -36,6 +41,8 @@ typedef enum {
 @property (nonatomic, assign) BOOL messagingEnabled;
 @property (nonatomic, copy) NSString * _Nullable injectedJavaScript;
 @property (nonatomic, copy) NSString * _Nullable injectedJavaScriptBeforeContentLoaded;
+@property (nonatomic, assign) BOOL injectedJavaScriptForMainFrameOnly;
+@property (nonatomic, assign) BOOL injectedJavaScriptBeforeContentLoadedForMainFrameOnly;
 @property (nonatomic, assign) BOOL scrollEnabled;
 @property (nonatomic, assign) BOOL sharedCookiesEnabled;
 @property (nonatomic, assign) BOOL pagingEnabled;
