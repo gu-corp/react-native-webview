@@ -181,6 +181,8 @@ export type WebViewHttpErrorEvent = NativeSyntheticEvent<WebViewHttpError>;
 
 export type WebViewRenderProcessGoneEvent = NativeSyntheticEvent<WebViewRenderProcessGoneDetail>;
 
+export type WebViewScrollEvent = NativeSyntheticEvent<NativeScrollEvent>;
+
 export type DataDetectorTypes =
   | 'phoneNumber'
   | 'link'
@@ -236,6 +238,18 @@ export interface WebViewSourceHtml {
   baseUrl?: string;
 }
 
+export interface WebViewCustomMenuItems {
+  /**
+   * The unique key that will be added as a selector on the webview
+   * Returned by the `onCustomMenuSelection` callback
+   */
+  key: string;
+  /**
+   * The label to appear on the UI Menu when selecting text
+   */
+  label: string;
+}
+
 export type WebViewSource = WebViewSourceUri | WebViewSourceHtml;
 
 export interface ViewManager {
@@ -268,6 +282,18 @@ export interface WebViewNativeConfig {
 export type OnShouldStartLoadWithRequest = (
   event: ShouldStartLoadRequest,
 ) => boolean;
+
+export interface BasicAuthCredential {
+  /**
+   * A username used for basic authentication.
+   */
+  username: string;
+
+  /**
+   * A password used for basic authentication.
+   */
+  password: string;
+}
 
 export type OnShouldCreateNewWindow = (
   event: WebViewNavigation,
@@ -305,6 +331,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Append to the existing user-agent. Overridden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
+  basicAuthCredential?: BasicAuthCredential;
 }
 
 export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
@@ -328,11 +355,22 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   messagingModuleName?: string;
+  setBuiltInZoomControls?: boolean,
+  setDisplayZoomControls?: boolean,
+  nestedScrollEnabled?: boolean;
   readonly urlPrefixesForDefaultIntent?: string[];
+  forceDarkOn?: boolean;
   adblockRules?: string[];
 }
 
 export declare type ContentInsetAdjustmentBehavior = 'automatic' | 'scrollableAxes' | 'never' | 'always';
+
+export declare type MediaCapturePermissionGrantType =
+  | 'grantIfSameHostElsePrompt'
+  | 'grantIfSameHostElseDeny'
+  | 'deny'
+  | 'grant'
+  | 'prompt';
 
 export declare type ContentMode = 'recommended' | 'mobile' | 'desktop';
 
@@ -341,6 +379,8 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowsBackForwardNavigationGestures?: boolean;
   allowsInlineMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
+  allowFileAccessFromFileURLs?: boolean;
+  allowUniversalAccessFromFileURLs?: boolean;
   automaticallyAdjustContentInsets?: boolean;
   autoManageStatusBarEnabled?: boolean;
   bounces?: boolean;
@@ -359,10 +399,14 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   injectedJavaScriptForMainFrameOnly?: boolean;
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
   onFileDownload?: (event: FileDownloadEvent) => void;
+  limitsNavigationsToAppBoundDomains?: boolean;
+  mediaCapturePermissionGrantType?: MediaCapturePermissionGrantType;
 }
 
 export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowingReadAccessToURL?: string;
+  allowFileAccessFromFileURLs?: boolean;
+  allowUniversalAccessFromFileURLs?: boolean;
   allowsBackForwardNavigationGestures?: boolean;
   allowsInlineMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
@@ -430,6 +474,14 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   automaticallyAdjustContentInsets?: boolean;
+
+  /**
+   * Controls whether to adjust the scroll indicator inset for web views that are
+   * placed behind a navigation bar, tab bar, or toolbar. The default value
+   * is `false`. (iOS 13+)
+   * @platform ios
+   */
+  automaticallyAdjustsScrollIndicatorInsets?: boolean;
 
   /**
    * This property specifies how the safe area insets are used to modify the
@@ -532,6 +584,13 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   sharedCookiesEnabled?: boolean;
 
   /**
+   * When set to true the hardware silent switch is ignored.
+   * The default value is `false`.
+   * @platform ios
+   */
+  ignoreSilentHardwareSwitch?: boolean;
+
+  /**
    * Set true if StatusBar should be light when user watch video fullscreen.
    * The default value is `true`.
    * @platform ios
@@ -570,6 +629,22 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   allowingReadAccessToURL?: string;
 
   
+  /**
+   * Boolean that sets whether JavaScript running in the context of a file
+   * scheme URL should be allowed to access content from other file scheme URLs.
+   * Including accessing content from other file scheme URLs
+   * @platform ios
+   */
+  allowFileAccessFromFileURLs?: boolean;
+
+  /**
+   * Boolean that sets whether JavaScript running in the context of a file
+   * scheme URL should be allowed to access content from any origin.
+   * Including accessing content from other file scheme URLs
+   * @platform ios
+   */
+  allowUniversalAccessFromFileURLs?: boolean;
+
   /**
    * Function that is invoked when the WebKit WebView content process gets terminated.
    * @platform ios
@@ -624,6 +699,53 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * If not provided, the default is to let the webview try to render the file.
    */
   onFileDownload?: (event: FileDownloadEvent) => void;
+
+  /**
+   * A Boolean value which, when set to `true`, indicates to WebKit that a WKWebView
+   * will only navigate to app-bound domains. Once set, any attempt to navigate away
+   * from an app-bound domain will fail with the error “App-bound domain failure.”
+   * 
+   * Applications can specify up to 10 “app-bound” domains using a new
+   * Info.plist key `WKAppBoundDomains`.
+   * @platform ios
+   */
+  limitsNavigationsToAppBoundDomains?: boolean;
+
+  /**
+   * This property specifies how to handle media capture permission requests.
+   * Defaults to `prompt`, resulting in the user being prompted repeatedly.
+   * Available on iOS 15 and later.
+   */
+  mediaCapturePermissionGrantType?: MediaCapturePermissionGrantType;
+
+  /**
+   * A Boolean value which, when set to `true`, WebView will be rendered with Apple Pay support.
+   *  Once set, websites will be able to invoke apple pay from React Native Webview.
+   *  This comes with a cost features like `injectJavaScript`, html5 History,`sharedCookiesEnabled`,
+   *  `injectedJavaScript`, `injectedJavaScriptBeforeContentLoaded` will not work
+   * {@link https://developer.apple.com/documentation/safari-release-notes/safari-13-release-notes#Payment-Request-API ApplePay Doc}
+   * if you require to send message to App , webpage has to explicitly call webkit message handler
+   * and receive it on `onMessage` handler on react native side
+   * @example
+   *     window.webkit.messageHandlers.ReactNativeWebView.postMessage("hello apple pay")
+   * @platform ios
+   * The default value is false.
+   */
+  enableApplePay?: boolean;
+
+  /** 
+   * An array of objects which will be added to the UIMenu controller when selecting text.
+   * These will appear after a long press to select text.
+  */
+  menuItems?: WebViewCustomMenuItems[];
+
+  /**
+   * The function fired when selecting a custom menu item created by `menuItems`.
+   * It passes a WebViewEvent with a `nativeEvent`, where custom keys are passed:
+   * `customMenuKey`: the string of the menu item
+   * `selectedText`: the text selected on the document
+   */
+  onCustomMenuSelection?: (event: WebViewEvent) => void;
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
@@ -755,6 +877,22 @@ export interface MacOSWebViewProps extends WebViewSharedProps {
    * @platform macos
    */
   allowingReadAccessToURL?: string;
+
+  /**
+   * Boolean that sets whether JavaScript running in the context of a file
+   * scheme URL should be allowed to access content from other file scheme URLs.
+   * Including accessing content from other file scheme URLs
+   * @platform macos
+   */
+  allowFileAccessFromFileURLs?: boolean;
+
+  /**
+   * Boolean that sets whether JavaScript running in the context of a file
+   * scheme URL should be allowed to access content from any origin.
+   * Including accessing content from other file scheme URLs
+   * @platform macos
+   */
+  allowUniversalAccessFromFileURLs?: boolean;
 
   /**
    * Function that is invoked when the WebKit WebView content process gets terminated.
@@ -919,12 +1057,53 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Sets ability to open fullscreen videos on Android devices.
    */
   allowsFullscreenVideo?: boolean;
-  adblockRules?: string[];
+
   /**
    * Function that is invoked when the `WebView` entering or exiting video full-screen mode.
    * @platform android
    */
   onVideoFullScreen?: (event: WebViewFullScreenEvent) => void;
+
+  /**
+   * Configuring Dark Theme
+   * 
+   * *NOTE* : The force dark setting is not persistent. You must call the static method every time your app process is started.
+   *  
+   * *NOTE* : The change from day<->night mode is a configuration change so by default the activity will be restarted
+   * and pickup the new values to apply the theme. 
+   * Take care when overriding this default behavior to ensure this method is still called when changes are made.
+   * 
+   * @platform android
+   */
+  forceDarkOn?: boolean;
+
+  /**
+   * Boolean value to control whether pinch zoom is enabled. Used only in Android.
+   * Default to true
+   *
+   * @platform android
+   */
+  setBuiltInZoomControls?: boolean;
+   
+  /**
+   * Boolean value to control whether built-in zooms controls are displayed. Used only in Android.
+   * Default to false
+   * Controls will always be hidden if setBuiltInZoomControls is set to `false`
+   * 
+   * @platform android
+   */
+  setDisplayZoomControls?: boolean;
+  
+  /**
+   * Allows to scroll inside the webview when used inside a scrollview.
+   * Behaviour already existing on iOS.
+   * Default to false
+   *
+   * @platform android
+   */
+  nestedScrollEnabled?: boolean;
+
+  adblockRules?: string[];
 }
 
 export interface WebViewSharedProps extends ViewProps {
@@ -968,7 +1147,7 @@ export interface WebViewSharedProps extends ViewProps {
   /**
    * Function that is invoked when the `WebView` scrolls.
    */
-  onScroll?: (event: NativeScrollEvent) => void;
+  onScroll?: (event: WebViewScrollEvent) => void;
 
   /**
    * Function that is invoked when the `WebView` has finished loading.
@@ -1101,6 +1280,11 @@ export interface WebViewSharedProps extends ViewProps {
    * Append to the existing user-agent. Overridden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
+
+  /**
+   * An object that specifies the credentials of a user to be used for basic authentication.
+   */
+  basicAuthCredential?: BasicAuthCredential;
 
   openNewWindowInWebView?: boolean;
 }

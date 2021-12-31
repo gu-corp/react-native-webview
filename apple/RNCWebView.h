@@ -10,6 +10,14 @@
 #import <WebKit/WebKit.h>
 #import <React/RCTBridge.h>
 
+typedef enum RNCWebViewPermissionGrantType : NSUInteger {
+    RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt,
+    RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny,
+    RNCWebViewPermissionGrantType_Deny,
+    RNCWebViewPermissionGrantType_Grant,
+    RNCWebViewPermissionGrantType_Prompt
+} RNCWebViewPermissionGrantType;
+
 @class RNCWebView;
 
 @protocol RNCWebViewDelegate <NSObject>
@@ -23,8 +31,11 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @end
 
 @interface RNCWeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
-@property (nonatomic, weak) id<WKScriptMessageHandler> scriptDelegate;
-- (instancetype)initWithDelegate:(id<WKScriptMessageHandler>)scriptDelegate;
+
+@property (nonatomic, weak, nullable) id<WKScriptMessageHandler> scriptDelegate;
+
+- (nullable instancetype)initWithDelegate:(id<WKScriptMessageHandler> _Nullable)scriptDelegate;
+
 @end
 
 typedef enum {
@@ -67,24 +78,37 @@ typedef enum {
 @property (nonatomic, assign) BOOL javaScriptEnabled;
 @property (nonatomic, assign) BOOL javaScriptCanOpenWindowsAutomatically;
 @property (nonatomic, assign) BOOL allowFileAccessFromFileURLs;
+@property (nonatomic, assign) BOOL allowUniversalAccessFromFileURLs;
 @property (nonatomic, assign) BOOL allowsLinkPreview;
 @property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
 @property (nonatomic, assign) BOOL showsVerticalScrollIndicator;
 @property (nonatomic, assign) BOOL directionalLockEnabled;
 @property (nonatomic, assign) BOOL ignoreSilentHardwareSwitch;
 @property (nonatomic, copy) NSString * _Nullable allowingReadAccessToURL;
+@property (nonatomic, copy) NSDictionary * _Nullable basicAuthCredential;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) LockScroll lockScroll;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
 @property (nonatomic, assign) BOOL pullToRefreshEnabled;
+@property (nonatomic, assign) BOOL enableApplePay;
+@property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable menuItems;
+@property (nonatomic, copy) RCTDirectEventBlock onCustomMenuSelection;
 #if !TARGET_OS_OSX
-@property (nonatomic, weak) UIRefreshControl * refreshControl;
+@property (nonatomic, weak) UIRefreshControl * _Nullable refreshControl;
 #endif
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
 @property (nonatomic, assign) WKContentMode contentMode;
+#endif
+
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 /* iOS 14 */
+@property (nonatomic, assign) BOOL limitsNavigationsToAppBoundDomains;
+#endif
+
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 /* iOS 15 */
+@property (nonatomic, assign) RNCWebViewPermissionGrantType mediaCapturePermissionGrantType;
 #endif
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
@@ -98,7 +122,7 @@ typedef enum {
 - (void)stopLoading;
 #if !TARGET_OS_OSX
 - (void)addPullToRefreshControl;
-- (void)pullToRefresh:(UIRefreshControl *)refreshControl;
+- (void)pullToRefresh:(UIRefreshControl *_Nonnull)refreshControl;
 #endif
 
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
