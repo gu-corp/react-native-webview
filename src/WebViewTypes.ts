@@ -123,6 +123,10 @@ export interface WebViewNavigation extends WebViewNativeEvent {
   mainDocumentURL?: string;
 }
 
+export interface ShouldStartLoadRequest extends WebViewNavigation {
+  isTopFrame: boolean;
+}
+
 export interface FileDownload {
   downloadUrl: string;
 }
@@ -147,6 +151,10 @@ export interface WebViewHttpError extends WebViewNativeEvent {
   statusCode: number;
 }
 
+export interface WebViewRenderProcessGoneDetail {
+  didCrash: boolean;
+}
+
 export type WebViewEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewProgressEvent = NativeSyntheticEvent<
@@ -159,6 +167,8 @@ WebViewNativeFullScreenEvent
 
 export type WebViewNavigationEvent = NativeSyntheticEvent<WebViewNavigation>;
 
+export type ShouldStartLoadRequestEvent = NativeSyntheticEvent<ShouldStartLoadRequest>;
+
 export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
 
 export type WebViewMessageEvent = NativeSyntheticEvent<WebViewMessage>;
@@ -168,6 +178,8 @@ export type WebViewErrorEvent = NativeSyntheticEvent<WebViewError>;
 export type WebViewTerminatedEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewHttpErrorEvent = NativeSyntheticEvent<WebViewHttpError>;
+
+export type WebViewRenderProcessGoneEvent = NativeSyntheticEvent<WebViewRenderProcessGoneDetail>;
 
 export type DataDetectorTypes =
   | 'phoneNumber'
@@ -183,6 +195,8 @@ export type DataDetectorTypes =
 export type OverScrollModeType = 'always' | 'content' | 'never';
 
 export type CacheMode = 'LOAD_DEFAULT' | 'LOAD_CACHE_ONLY' | 'LOAD_CACHE_ELSE_NETWORK' | 'LOAD_NO_CACHE';
+
+export type AndroidLayerType = 'none' | 'software' | 'hardware';
 
 export interface WebViewSourceUri {
   /**
@@ -252,7 +266,7 @@ export interface WebViewNativeConfig {
 }
 
 export type OnShouldStartLoadWithRequest = (
-  event: WebViewNavigation,
+  event: ShouldStartLoadRequest,
 ) => boolean;
 
 export type OnShouldCreateNewWindow = (
@@ -264,6 +278,9 @@ export interface CommonNativeWebViewProps extends ViewProps {
   incognito?: boolean;
   injectedJavaScript?: string;
   injectedJavaScriptBeforeContentLoaded?: string;
+  injectedJavaScriptForMainFrameOnly?: boolean;
+  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
+  javaScriptCanOpenWindowsAutomatically?: boolean;
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
   openNewWindowInWebView?: boolean;
@@ -275,9 +292,9 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
-  onShouldStartLoadWithRequest: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   onWebViewClosed?: (event: WebViewNavigationEvent) => void;
+  onShouldStartLoadWithRequest: (event: ShouldStartLoadRequestEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
   showsVerticalScrollIndicator?: boolean;
   // TODO: find a better way to type this.
@@ -285,7 +302,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   source: any;
   userAgent?: string;
   /**
-   * Append to the existing user-agent. Overriden if `userAgent` is set.
+   * Append to the existing user-agent. Overridden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
 }
@@ -297,14 +314,17 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   allowFileAccessFromFileURLs?: boolean;
   allowUniversalAccessFromFileURLs?: boolean;
   androidHardwareAccelerationDisabled?: boolean;
+  androidLayerType?: AndroidLayerType;
   domStorageEnabled?: boolean;
   geolocationEnabled?: boolean;
   javaScriptEnabled?: boolean;
   mixedContentMode?: 'never' | 'always' | 'compatibility';
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onRenderProcessGone?: (event: WebViewRenderProcessGoneEvent) => void;
   onCaptureScreen?: (event: WebViewMessageEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
+  setSupportMultipleWindows?: boolean;
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   messagingModuleName?: string;
@@ -312,12 +332,9 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   adblockRules?: string[];
 }
 
-export enum ContentInsetAdjustmentBehavior {
-  automatic = 'automatic',
-  scrollableAxes = 'scrollableAxes',
-  never = 'never',
-  always = 'always'
-};
+export declare type ContentInsetAdjustmentBehavior = 'automatic' | 'scrollableAxes' | 'never' | 'always';
+
+export declare type ContentMode = 'recommended' | 'mobile' | 'desktop';
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowingReadAccessToURL?: string;
@@ -325,9 +342,11 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowsInlineMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
   automaticallyAdjustContentInsets?: boolean;
+  autoManageStatusBarEnabled?: boolean;
   bounces?: boolean;
   contentInset?: ContentInsetProp;
   contentInsetAdjustmentBehavior?: ContentInsetAdjustmentBehavior;
+  contentMode?: ContentMode;
   readonly dataDetectorTypes?: DataDetectorTypes | DataDetectorTypes[];
   decelerationRate?: number;
   directionalLockEnabled?: boolean;
@@ -427,6 +446,18 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   contentInset?: ContentInsetProp;
 
   /**
+   * Defaults to `recommended`, which loads mobile content on iPhone
+   * and iPad Mini but desktop content on other iPads.
+   *
+   * Possible values are:
+   * - `'recommended'`
+   * - `'mobile'`
+   * - `'desktop'`
+   * @platform ios
+   */
+  contentMode?: ContentMode;
+
+  /**
    * Determines the types of data converted to clickable URLs in the web view's content.
    * By default only phone numbers are detected.
    *
@@ -501,6 +532,13 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   sharedCookiesEnabled?: boolean;
 
   /**
+   * Set true if StatusBar should be light when user watch video fullscreen.
+   * The default value is `true`.
+   * @platform ios
+   */
+  autoManageStatusBarEnabled?: boolean;
+
+  /**
    * A Boolean value that determines whether scrolling is disabled in a particular direction.
    * The default value is `true`.
    * @platform ios
@@ -553,13 +591,22 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
 
   /**
+   * Boolean value that determines whether a pull to refresh gesture is
+   * available in the `WebView`. The default value is `false`.
+   * If `true`, sets `bounces` automatically to `true`
+   * @platform ios
+   *
+  */
+  pullToRefreshEnabled?: boolean;
+
+  /**
    * Lunascape custom props
    */
-     scrollToTop?: boolean;
-     lockScroll?: number;
-     adjustOffset?: object;
-     contentRuleLists?: string[];
-  
+   scrollToTop?: boolean;
+   lockScroll?: number;
+   adjustOffset?: object;
+   contentRuleLists?: string[];
+
   /**
    * Function that is invoked when the client needs to download a file.
    *
@@ -722,6 +769,12 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
   onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
+   * Function that is invoked when the `WebView` process crashes or is killed by the OS.
+   * Works only on Android (minimum API level 26).
+   */
+  onRenderProcessGone?: (event: WebViewRenderProcessGoneEvent) => void;
+
+  /**
    * https://developer.android.com/reference/android/webkit/WebSettings.html#setCacheMode(int)
    * Set the cacheMode. Possible values are:
    *
@@ -759,7 +812,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    */
   geolocationEnabled?: boolean;
 
-  
+
   /**
    * Boolean that sets whether JavaScript running in the context of a file
    * scheme URL should be allowed to access content from other file scheme URLs.
@@ -789,6 +842,13 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
   saveFormDataDisabled?: boolean;
 
   /**
+   * Boolean value to set whether the WebView supports multiple windows. Used on Android only
+   * The default value is `true`.
+   * @platform android
+   */
+  setSupportMultipleWindows?: boolean;
+
+  /**
    * Used on Android only, controls whether the given list of URL prefixes should
    * make {@link com.facebook.react.views.webview.ReactWebViewClient} to launch a
    * default activity intent for those URL instead of loading it within the webview.
@@ -803,6 +863,18 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   androidHardwareAccelerationDisabled?: boolean;
+
+    /**
+   * https://developer.android.com/reference/android/webkit/WebView#setLayerType(int,%20android.graphics.Paint)
+   * Sets the layerType. Possible values are:
+   *
+   * - `'none'` (default)
+   * - `'software'`
+   * - `'hardware'`
+   *
+   * @platform android
+   */
+  androidLayerType?: AndroidLayerType;
 
   /**
    * Boolean value to enable third party cookies in the `WebView`. Used on
@@ -867,6 +939,12 @@ export interface WebViewSharedProps extends ViewProps {
    * @platform android
    */
   javaScriptEnabled?: boolean;
+
+  /**
+   * A Boolean value indicating whether JavaScript can open windows without user interaction.
+   * The default value is `false`.
+   */
+  javaScriptCanOpenWindowsAutomatically?: boolean;
 
   /**
    * Stylesheet object to set the style of the container view.
@@ -956,6 +1034,18 @@ export interface WebViewSharedProps extends ViewProps {
   injectedJavaScriptBeforeContentLoaded?: string;
 
   /**
+   * If `true` (default; mandatory for Android), loads the `injectedJavaScript` only into the main frame.
+   * If `false` (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
+   */
+  injectedJavaScriptForMainFrameOnly?: boolean;
+
+  /**
+   * If `true` (default; mandatory for Android), loads the `injectedJavaScriptBeforeContentLoaded` only into the main frame.
+   * If `false` (only supported on iOS and macOS), loads it into all frames (e.g. iframes).
+   */
+  injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
+
+  /**
    * Boolean value that determines whether a horizontal scroll indicator is
    * shown in the `WebView`. The default value is `true`.
    */
@@ -1007,6 +1097,10 @@ export interface WebViewSharedProps extends ViewProps {
    */
   cacheEnabled?: boolean;
 
-  injectedJavaScriptBeforeDocumentLoad?: string;
+  /**
+   * Append to the existing user-agent. Overridden if `userAgent` is set.
+   */
+  applicationNameForUserAgent?: string;
+
   openNewWindowInWebView?: boolean;
 }

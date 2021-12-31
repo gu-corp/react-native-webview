@@ -45,6 +45,7 @@ typedef enum {
 @property (nonatomic, assign) BOOL injectedJavaScriptBeforeContentLoadedForMainFrameOnly;
 @property (nonatomic, assign) BOOL scrollEnabled;
 @property (nonatomic, assign) BOOL sharedCookiesEnabled;
+@property (nonatomic, assign) BOOL autoManageStatusBarEnabled;
 @property (nonatomic, assign) BOOL pagingEnabled;
 @property (nonatomic, assign) CGFloat decelerationRate;
 @property (nonatomic, assign) BOOL allowsInlineMediaPlayback;
@@ -64,6 +65,7 @@ typedef enum {
 @property (nonatomic, copy) NSString * _Nullable applicationNameForUserAgent;
 @property (nonatomic, assign) BOOL cacheEnabled;
 @property (nonatomic, assign) BOOL javaScriptEnabled;
+@property (nonatomic, assign) BOOL javaScriptCanOpenWindowsAutomatically;
 @property (nonatomic, assign) BOOL allowFileAccessFromFileURLs;
 @property (nonatomic, assign) BOOL allowsLinkPreview;
 @property (nonatomic, assign) BOOL showsHorizontalScrollIndicator;
@@ -76,6 +78,14 @@ typedef enum {
 @property (nonatomic, assign) LockScroll lockScroll;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
+@property (nonatomic, assign) BOOL pullToRefreshEnabled;
+#if !TARGET_OS_OSX
+@property (nonatomic, weak) UIRefreshControl * refreshControl;
+#endif
+
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
+@property (nonatomic, assign) WKContentMode contentMode;
+#endif
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
@@ -86,6 +96,10 @@ typedef enum {
 - (void)goBack;
 - (void)reload;
 - (void)stopLoading;
+#if !TARGET_OS_OSX
+- (void)addPullToRefreshControl;
+- (void)pullToRefresh:(UIRefreshControl *)refreshControl;
+#endif
 
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
 - (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
