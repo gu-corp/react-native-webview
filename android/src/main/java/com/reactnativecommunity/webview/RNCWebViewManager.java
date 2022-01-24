@@ -275,7 +275,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
                 data.putString("image_url", image_url);
                 WritableMap eventData = Arguments.createMap();
                 eventData.putMap("data", data);
-                dispatchEvent(webView, new TopMessageEvent(webView.getId(), eventData));
+                webView.dispatchEvent(webView, new TopMessageEvent(webView.getId(), eventData));
               }
             }
           };
@@ -891,7 +891,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
           WritableMap data = Arguments.createMap();;
           data.putBoolean("fullscreen", true);
-          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
+          ((RNCWebView) webView).dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
 
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             mVideoView.setSystemUiVisibility(FULLSCREEN_SYSTEM_UI_VISIBILITY);
@@ -951,7 +951,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
           WritableMap data = Arguments.createMap();;
           data.putBoolean("fullscreen", false);
-          dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
+          ((RNCWebView)webView).dispatchEvent(webView, new TopWebViewOnFullScreenEvent(webView.getId(), data));
 
           activity.setRequestedOrientation(initialRequestedOrientation);
 
@@ -993,7 +993,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       ignoreErrFailedForThisURL = url;
     }
 
-<<<<<<< HEAD
     protected Uri mainUrl;
 
     public RNCWebViewClient(ReactContext reactContext) {
@@ -1148,15 +1147,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } catch (Exception e) {
         return null;
       }
-    }
-
-    @Override
-    public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
-      if (basicAuthCredential != null) {
-        handler.proceed(basicAuthCredential.username, basicAuthCredential.password);
-        return;
-      }
-      super.onReceivedHttpAuthRequest(view, handler, host, realm);
     }
 
     @Override
@@ -1432,17 +1422,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     @Override
-    public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-
-      final WebView newWebView = new WebView(view.getContext());
-      final WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-      transport.setWebView(newWebView);
-      resultMsg.sendToTarget();
-
-      return true;
-    }
-
-    @Override
     public boolean onConsoleMessage(ConsoleMessage message) {
       if (ReactBuildConfig.DEBUG) {
         return super.onConsoleMessage(message);
@@ -1673,7 +1652,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           eventData.putString("title", webView.getTitle());
           eventData.putBoolean("canGoBack", webView.canGoBack());
           eventData.putBoolean("canGoForward", webView.canGoForward());
-          dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
+
+          ((RNCWebView) webView).dispatchEvent(
+            webView,
+            new TopCreateNewWindowEvent(webView.getId(), eventData)
+          );
         }
 
         @Override
@@ -1711,7 +1694,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       event.putBoolean("canGoBack", webView.canGoBack());
       event.putBoolean("canGoForward", webView.canGoForward());
       event.putDouble("progress", (float) webView.getProgress() / 100);
-      dispatchEvent(webView, new TopWebViewClosedEvent(webView.getId(), event));
+      
+      ((RNCWebView) webView).dispatchEvent(
+        webView,
+        new TopWebViewClosedEvent(webView.getId(), event)
+      );
     }
 
     @Override

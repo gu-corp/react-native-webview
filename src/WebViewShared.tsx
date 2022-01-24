@@ -5,6 +5,7 @@ import {
   OnShouldStartLoadWithRequest,
   ShouldStartLoadRequestEvent,
   OnShouldCreateNewWindow,
+  WebViewNavigationEvent,
 } from './WebViewTypes';
 import styles from './WebView.styles';
 

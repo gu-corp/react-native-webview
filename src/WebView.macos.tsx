@@ -15,6 +15,7 @@ import {
   createOnShouldStartLoadWithRequest,
   defaultRenderError,
   defaultRenderLoading,
+  createOnShouldCreateNewWindow,
 } from './WebViewShared';
 import {
   WebViewErrorEvent,
@@ -248,6 +249,18 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
     viewManager.startLoadWithResult(!!shouldStart, lockIdentifier);
   };
 
+  onShouldCreateNewWindowCallback = (
+    shouldCreate: boolean,
+    _url: string,
+    lockIdentifier: number,
+  ) => {
+    const viewManager
+      = (this.props.nativeConfig && this.props.nativeConfig.viewManager)
+      || RNCWebViewManager;
+
+    viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
+  };
+
   onContentProcessDidTerminate = (event: WebViewTerminatedEvent) => {
     const { onContentProcessDidTerminate } = this.props;
     if (onContentProcessDidTerminate) {
@@ -277,6 +290,7 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
       nativeConfig = {},
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      onShouldCreateNewWindow: onShouldCreateNewWindowProp,
       originWhitelist,
       renderError,
       renderLoading,
@@ -313,6 +327,12 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
       onShouldStartLoadWithRequestProp,
     );
 
+    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+      this.onShouldCreateNewWindowCallback,
+      onShouldCreateNewWindowProp,
+    );
+
+
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewMacOS | undefined)
       || RNCWebView;
@@ -330,6 +350,7 @@ class WebView extends React.Component<MacOSWebViewProps, State> {
         onMessage={this.onMessage}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

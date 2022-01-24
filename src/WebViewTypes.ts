@@ -310,12 +310,11 @@ export interface CommonNativeWebViewProps extends ViewProps {
   mediaPlaybackRequiresUserAction?: boolean;
   messagingEnabled: boolean;
   openNewWindowInWebView?: boolean;
-  onScroll?: (event: NativeScrollEvent) => void;
+  onScroll?: (event: WebViewScrollEvent) => void;
   onLoadingError: (event: WebViewErrorEvent) => void;
   onLoadingFinish: (event: WebViewNavigationEvent) => void;
   onLoadingProgress: (event: WebViewProgressEvent) => void;
   onLoadingStart: (event: WebViewNavigationEvent) => void;
-  onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
   onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;

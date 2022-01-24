@@ -21,6 +21,7 @@ import {
   findNodeHandle,
 } from 'react-native';
 import {
+  createOnShouldCreateNewWindow,
   createOnShouldStartLoadWithRequest,
 } from './WebViewShared';
 import {
@@ -204,6 +205,7 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
       nativeConfig = {},
       onMessage,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      onShouldCreateNewWindow: onShouldCreateNewWindowProp,
       originWhitelist,
       renderError,
       renderLoading,
@@ -244,6 +246,11 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
       onShouldStartLoadWithRequestProp,
     );
 
+    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+      ()=>{},
+      onShouldCreateNewWindowProp,
+    );
+
     const NativeWebView
     = (nativeConfig.component as typeof NativeWebViewWindows | undefined)
     || RCTWebView;
@@ -262,6 +269,7 @@ export default class WebView extends React.Component<WebViewSharedProps, State> 
         onMessage={this.onMessage}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
+        onShouldCreateNewWindow={onShouldCreateNewWindow}
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}
         style={webViewStyles}
         {...nativeConfig.props}

@@ -123,7 +123,6 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 #endif
 
   NSBundle* resourceBundle;
-  WKWebViewConfiguration *wkWebViewConfig;
     
   CGPoint lastOffset;
   BOOL decelerating;
@@ -223,137 +222,9 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebView*)parentView {
   if (self = [self initWithFrame:[UIApplication sharedApplication].delegate.window.bounds]) {
-    wkWebViewConfig = configuration;
-    [self setupConfiguration:parentView];
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
   }
   return self;
-}
-
-- (void)setupConfiguration:(RNCWebView*)sender {
-  if (sender.incognito) {
-    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-  } else if (sender.cacheEnabled) {
-    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
-  }
-  if(sender.useSharedProcessPool) {
-    wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
-  }
-  wkWebViewConfig.userContentController = [WKUserContentController new];
-
-  if (sender.messagingEnabled) {
-    [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
-
-    NSString *source = [NSString stringWithFormat:
-      @"window.%@ = {"
-       "  postMessage: function (data) {"
-       "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-       "  }"
-       "};", MessageHandlerName, MessageHandlerName
-    ];
-
-    WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-    [wkWebViewConfig.userContentController addUserScript:script];
-  }
-
-  wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
-#if WEBKIT_IOS_10_APIS_AVAILABLE
-  wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
-    ? WKAudiovisualMediaTypeAll
-    : WKAudiovisualMediaTypeNone;
-  wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
-#else
-  wkWebViewConfig.mediaPlaybackRequiresUserAction = sender.mediaPlaybackRequiresUserAction;
-#endif
-
-  if (sender.applicationNameForUserAgent) {
-      wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, sender.applicationNameForUserAgent];
-  }
-
-  if(sender.sharedCookiesEnabled) {
-    // More info to sending cookies with WKWebView
-    // https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
-    if (@available(iOS 11.0, *)) {
-      // Set Cookies in iOS 11 and above, initialize websiteDataStore before setting cookies
-      // See also https://forums.developer.apple.com/thread/97194
-      // check if websiteDataStore has not been initialized before
-      if(!sender.incognito && !sender.cacheEnabled) {
-        wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-      }
-      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
-        [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
-      }
-    } else {
-      NSMutableString *script = [NSMutableString string];
-
-      // Clear all existing cookies in a direct called function. This ensures that no
-      // javascript error will break the web content javascript.
-      // We keep this code here, if someone requires that Cookies are also removed within the
-      // the WebView and want to extends the current sharedCookiesEnabled option with an
-      // additional property.
-      // Generates JS: document.cookie = "key=; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
-      // for each cookie which is already available in the WebView context.
-      /*
-      [script appendString:@"(function () {\n"];
-      [script appendString:@"  var cookies = document.cookie.split('; ');\n"];
-      [script appendString:@"  for (var i = 0; i < cookies.length; i++) {\n"];
-      [script appendString:@"    if (cookies[i].indexOf('=') !== -1) {\n"];
-      [script appendString:@"      document.cookie = cookies[i].split('=')[0] + '=; Expires=Thu, 01 Jan 1970 00:00:01 GMT';\n"];
-      [script appendString:@"    }\n"];
-      [script appendString:@"  }\n"];
-      [script appendString:@"})();\n\n"];
-      */
-
-      // Set cookies in a direct called function. This ensures that no
-      // javascript error will break the web content javascript.
-        // Generates JS: document.cookie = "key=value; Path=/; Expires=Thu, 01 Jan 20xx 00:00:01 GMT;"
-      // for each cookie which is available in the application context.
-      [script appendString:@"(function () {\n"];
-      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
-        [script appendFormat:@"document.cookie = %@ + '=' + %@",
-          RCTJSONStringify(cookie.name, NULL),
-          RCTJSONStringify(cookie.value, NULL)];
-        if (cookie.path) {
-          [script appendFormat:@" + '; Path=' + %@", RCTJSONStringify(cookie.path, NULL)];
-        }
-        if (cookie.expiresDate) {
-          [script appendFormat:@" + '; Expires=' + new Date(%f).toUTCString()",
-            cookie.expiresDate.timeIntervalSince1970 * 1000
-          ];
-        }
-        [script appendString:@";\n"];
-      }
-      [script appendString:@"})();\n"];
-
-      WKUserScript* cookieInScript = [[WKUserScript alloc] initWithSource:script
-                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                         forMainFrameOnly:YES];
-      [wkWebViewConfig.userContentController addUserScript:cookieInScript];
-    }
-  }
-
-  if (sender.injectedJavaScriptBeforeDocumentLoad) {
-      WKUserScript* script = [[WKUserScript alloc] initWithSource:sender.injectedJavaScriptBeforeDocumentLoad
-                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                         forMainFrameOnly:YES];
-      [wkWebViewConfig.userContentController addUserScript:script];
-  }
-
-  if (sender.contentRuleLists) {
-    WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-    [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-      for (NSString *identifier in identifiers) {
-        if ([sender.contentRuleLists containsObject:identifier]) {
-          [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-            if (!error) {
-                [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
-            }
-          }];
-        }
-      }
-    }];
-  }
 }
 
 #if !TARGET_OS_OSX
@@ -369,6 +240,17 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 // Listener for long presses
 - (void)startLongPress:(UILongPressGestureRecognizer *)pressSender
 {
+    if(pressSender.state == UIGestureRecognizerStateBegan) {
+      NSUInteger touchCount = [pressSender numberOfTouches];
+      if (touchCount) {
+        CGPoint point = [pressSender locationOfTouch:0 inView:pressSender.view];
+        if ([_webView respondsToSelector:@selector(respondToTapAndHoldAtLocation:)]) {
+          NSDictionary* urlResult = [_webView respondToTapAndHoldAtLocation:point];
+          _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"contextMenu", @"data":urlResult}});
+        }
+      }
+    }
+
     // When a long press ends, bring up our custom UIMenu
     if(pressSender.state == UIGestureRecognizerStateEnded) {
       if (!self.menuItems || self.menuItems.count == 0) {
@@ -568,18 +450,38 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
       wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, _applicationNameForUserAgent];
   }
 
+  if (_contentRuleLists) {
+    WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+    [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+      for (NSString *identifier in identifiers) {
+        if ([_contentRuleLists containsObject:identifier]) {
+          [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+            if (!error) {
+                [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+            }
+          }];
+        }
+      }
+    }];
+  }
+
   return wkWebViewConfig;
 }
 
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
-    WKWebViewConfiguration *wkWebViewConfig = [self setUpWkWebViewConfig];
+  if (self.window != nil && !initiated) {
+    initiated = YES;
+
+    if (!_webView) {
+      WKWebViewConfiguration *wkWebViewConfig = [self setUpWkWebViewConfig];
 #if !TARGET_OS_OSX
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 #else
-    _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+      _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
 #endif // !TARGET_OS_OSX
+    }
 
     [self setBackgroundColor: _savedBackgroundColor];
 #if !TARGET_OS_OSX
@@ -624,19 +526,22 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
     if (@available(iOS 13.0, *)) {
       _webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = _savedAutomaticallyAdjustsScrollIndicatorInsets;
     }
-#endif      
+#endif
+
+    [self addSubview:_webView];
+    [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
+    [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
+    [self visitSource];
   }
 #if !TARGET_OS_OSX
   // Allow this object to recognize gestures
-  if (self.menuItems != nil) {
-    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(startLongPress:)];
-    longPress.delegate = self;
+  UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(startLongPress:)];
+  longPress.delegate = self;
 
-    longPress.minimumPressDuration = 0.4f;
-    longPress.numberOfTouchesRequired = 1;
-    longPress.cancelsTouchesInView = YES;
-    [self addGestureRecognizer:longPress];
-  }
+  longPress.minimumPressDuration = 0.4f;
+  longPress.numberOfTouchesRequired = 1;
+  longPress.cancelsTouchesInView = YES;
+  [self addGestureRecognizer:longPress];
 #endif // !TARGET_OS_OSX
 }
 
