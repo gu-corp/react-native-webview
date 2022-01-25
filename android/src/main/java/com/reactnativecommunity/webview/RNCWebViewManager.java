@@ -105,6 +105,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.IllegalArgumentException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -298,7 +299,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         RNCWebViewModule module = getModule(reactContext);
 
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        DownloadManager.Request request;
+        try {
+          request = new DownloadManager.Request(Uri.parse(url));
+        } catch (IllegalArgumentException e) {
+          Log.w(TAG, "Unsupported URI, aborting download", e);
+          return;
+        }
 
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
         String downloadMessage = "Downloading " + fileName;
@@ -311,8 +318,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           String cookie = CookieManager.getInstance().getCookie(baseUrl);
           request.addRequestHeader("Cookie", cookie);
         } catch (MalformedURLException e) {
-          System.out.println("Error getting cookie for DownloadManager: " + e.toString());
-          e.printStackTrace();
+          Log.w(TAG, "Error getting cookie for DownloadManager", e);
         }
 
         //Finish setting up request
@@ -1205,7 +1211,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         if (!topWindowUrl.equalsIgnoreCase(failingUrl)) {
           // If error is not due to top-level navigation, then do not call onReceivedError()
-          Log.w("RNCWebViewManager", "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
+          Log.w(TAG, "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
           return;
         }
 
@@ -1314,10 +1320,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         super.onRenderProcessGone(webView, detail);
 
         if(detail.didCrash()){
-          Log.e("RNCWebViewManager", "The WebView rendering process crashed.");
+          Log.e(TAG, "The WebView rendering process crashed.");
         }
         else{
-          Log.w("RNCWebViewManager", "The WebView rendering process was killed by the system.");
+          Log.w(TAG, "The WebView rendering process was killed by the system.");
         }
 
         // if webView is null, we cannot return any event
