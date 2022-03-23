@@ -1359,7 +1359,6 @@ static NSDictionary* customCertificatesForHost;
 - (void)longPressed:(UILongPressGestureRecognizer*)sender {
   if (sender.state == UIGestureRecognizerStateBegan) {
     longPress = YES;
-    sender.enabled = NO;
     
     NSUInteger touchCount = [sender numberOfTouches];
     if (touchCount) {
@@ -1372,8 +1371,6 @@ static NSDictionary* customCertificatesForHost;
         _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"contextMenu", @"data":urlResult}});
       }
     }
-  } else if (sender.state == UIGestureRecognizerStateCancelled) {
-    sender.enabled = YES;
   }
 }
 
