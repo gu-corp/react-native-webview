@@ -510,7 +510,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
         BufferedReader br = null;
 
         try {
-          is = getCurrentActivity().getApplicationContext().getAssets().open(path);
+          is = getCurrentActivity().getApplicationContext().getAssets().open(assetPath);
           br = new BufferedReader(new InputStreamReader(is));
 
           StringBuilder sb = new StringBuilder();
