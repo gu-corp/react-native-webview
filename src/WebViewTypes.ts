@@ -334,7 +334,6 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingStart: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
-  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   onWebViewClosed?: (event: WebViewNavigationEvent) => void;
   onShouldStartLoadWithRequest: (event: ShouldStartLoadRequestEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
@@ -355,6 +354,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   allowFileAccess?: boolean;
   scalesPageToFit?: boolean;
   allowFileAccessFromFileURLs?: boolean;
+  allowsFullscreenVideo?: boolean;
   allowUniversalAccessFromFileURLs?: boolean;
   androidHardwareAccelerationDisabled?: boolean;
   androidLayerType?: AndroidLayerType;
@@ -365,6 +365,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   onContentSizeChange?: (event: WebViewEvent) => void;
   onRenderProcessGone?: (event: WebViewRenderProcessGoneEvent) => void;
   onCaptureScreen?: (event: WebViewMessageEvent) => void;
+  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
   setSupportMultipleWindows?: boolean;
@@ -415,6 +416,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   decelerationRate?: number;
   directionalLockEnabled?: boolean;
   hideKeyboardAccessoryView?: boolean;
+  javaScriptEnabled?: boolean;
   pagingEnabled?: boolean;
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
@@ -432,6 +434,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   limitsNavigationsToAppBoundDomains?: boolean;
   textInteractionEnabled?: boolean;
   mediaCapturePermissionGrantType?: MediaCapturePermissionGrantType;
+  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
 }
 
 export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -448,6 +451,7 @@ export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
   contentInsetAdjustmentBehavior?: ContentInsetAdjustmentBehavior;
   directionalLockEnabled?: boolean;
   hideKeyboardAccessoryView?: boolean;
+  javaScriptEnabled?: boolean;
   pagingEnabled?: boolean;
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
