@@ -795,6 +795,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     ReadableArray mUrlPrefixesForDefaultIntent;
 
     protected Uri mainUrl;
+    protected boolean isMainDocumentException;
 
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
@@ -887,19 +888,35 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           mainUrl = url;
         }
 
-        if (adblockEngines != null) {
+        if (adblockEngines != null && !this.isMainDocumentException) {
           BlockerResult blockerResult;
 
+          boolean matched = false;
+          boolean exception = false;
           for (Engine engine : adblockEngines) {
             synchronized (engine) {
               if (request.isForMainFrame()) {
-                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "document");
               } else {
                 blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
               }
-            }
 
-            if (blockerResult.matched) {
+              matched |= blockerResult.matched;
+              if (blockerResult.important) {
+                break;
+              }
+
+              if (blockerResult.exception) {
+                exception = true;
+                break;
+              }
+            }
+          }
+
+          if (request.isForMainFrame() && exception) {
+            this.isMainDocumentException = true;
+          } else {
+            if (matched && !exception) {
               return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
             }
           }
