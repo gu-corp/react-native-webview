@@ -67,6 +67,7 @@ typedef enum {
 @property (nonatomic, assign) LockScroll lockScroll;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable adBlockAllowLists;
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;

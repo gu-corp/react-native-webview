@@ -1040,6 +1040,9 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                   decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
+    printf("===> debug nghia line 1043 --> navigationAction");
+//    printf("===> debug nghia line 1043 --> sender.contentRuleLists = %@", _contentRuleLists);
+    NSLog(@"===> debug nghia line 1043 --> sender.contentRuleLists = %@", _contentRuleLists);
   static NSDictionary<NSNumber *, NSString *> *navigationTypes;
   static dispatch_once_t onceToken;
 
@@ -1090,11 +1093,40 @@ static NSDictionary* customCertificatesForHost;
       }];
       _onLoadingStart(event);
     }
+      
+      BOOL isAllowWebsite = [request.mainDocumentURL.host isEqual:@"www.cinematoday.jp"];
+//      NSLog(@"===> debug nghia --> isAllowWebsite = %@", isAllowWebsite);
+      if(isAllowWebsite){
+          if (@available(iOS 11.0, *)) {
+              printf("===> debug nghia line 1101 --> removeAllContentRuleLists");
+              [webView.configuration.userContentController removeAllContentRuleLists];
+          } else {
+              // Fallback on earlier versions
+          }
+      }else if(_contentRuleLists) {
+          WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+
+          [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+            for (NSString *identifier in identifiers) {
+              if ([_contentRuleLists containsObject:identifier]) {
+                [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+                  if (!error) {
+                      printf("===> debug nghia line 1114 --> addContentRuleList");
+                      [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                  }
+                }];
+              }
+            }
+          }];
+      }
   }
 
   // Allow all navigation by default
   decisionHandler(WKNavigationActionPolicyAllow);
 }
+
+
+
 
 /**
  * Called when the web view’s content process is terminated.
@@ -1117,6 +1149,7 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse
                     decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler
 {
+    printf("===> debug nghia line 1121 --> navigationResponse");
   if (_onHttpError && navigationResponse.forMainFrame) {
     if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
       NSHTTPURLResponse *response = (NSHTTPURLResponse *)navigationResponse.response;

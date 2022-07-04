@@ -307,6 +307,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
   contentRuleLists?: string[];
+  adBlockAllowLists?: string[];
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
