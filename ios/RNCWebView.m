@@ -1093,32 +1093,37 @@ static NSDictionary* customCertificatesForHost;
       }];
       _onLoadingStart(event);
     }
-      
-      BOOL isAllowWebsite = [request.mainDocumentURL.host isEqual:@"www.cinematoday.jp"];
-//      NSLog(@"===> debug nghia --> isAllowWebsite = %@", isAllowWebsite);
-      if(isAllowWebsite){
-          if (@available(iOS 11.0, *)) {
-              printf("===> debug nghia line 1101 --> removeAllContentRuleLists");
-              [webView.configuration.userContentController removeAllContentRuleLists];
-          } else {
-              // Fallback on earlier versions
-          }
-      }else if(_contentRuleLists) {
-          WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-          [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-            for (NSString *identifier in identifiers) {
-              if ([_contentRuleLists containsObject:identifier]) {
-                [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-                  if (!error) {
-                      printf("===> debug nghia line 1114 --> addContentRuleList");
-                      [webView.configuration.userContentController addContentRuleList:contentRuleList];
-                  }
-                }];
-              }
-            }
-          }];
+    
+    // allowlist function
+    if (@available(iOS 11.0, *)) {
+      NSLog(@"===> debug nghia line 1097 --> _adBlockAllowLists = %@", _adBlockAllowList);
+     
+      BOOL isAllowWebsite = false;
+        
+      if (_adBlockAllowList != nil && [_adBlockAllowList count] > 0) {
+        NSLog(@"===> debug nghia --> _adBlockAllowLists check containsObject ");
+        isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
+      if (isAllowWebsite) {
+        printf("===> debug nghia line 1101 --> removeAllContentRuleLists");
+        [webView.configuration.userContentController removeAllContentRuleLists];
+          
+      } else if (_contentRuleLists) {
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+          for (NSString *identifier in identifiers) {
+              if ([self->_contentRuleLists containsObject:identifier]) {
+              [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+                if (!error) {
+                  printf("===> debug nghia line 1114 --> addContentRuleList");
+                  [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                }
+              }];
+            }
+          }
+        }];
+      }
+    }
   }
 
   // Allow all navigation by default

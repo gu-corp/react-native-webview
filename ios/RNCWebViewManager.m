@@ -94,7 +94,7 @@ RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onWebViewClosed, RCTDirectEventBlock)
 
 RCT_EXPORT_VIEW_PROPERTY(contentRuleLists, NSArray<NSString>)
-RCT_EXPORT_VIEW_PROPERTY(adBlockAllowLists, NSArray<NSString>)
+RCT_EXPORT_VIEW_PROPERTY(adBlockAllowList, NSArray<NSString>)
 
 RCT_EXPORT_METHOD(postMessage:(nonnull NSNumber *)reactTag message:(NSString *)message)
 {
