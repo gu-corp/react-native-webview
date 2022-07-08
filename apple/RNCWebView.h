@@ -110,6 +110,7 @@ typedef enum {
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 /* iOS 15 */
 @property (nonatomic, assign) RNCWebViewPermissionGrantType mediaCapturePermissionGrantType;
 #endif
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable adBlockAllowList;
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;

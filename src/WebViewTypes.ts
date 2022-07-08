@@ -395,6 +395,12 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
   contentRuleLists?: string[];
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adBlockAllowList?: string[];
   injectedJavaScriptForMainFrameOnly?: boolean;
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
   onFileDownload?: (event: FileDownloadEvent) => void;
@@ -680,6 +686,12 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    lockScroll?: number;
    adjustOffset?: object;
    contentRuleLists?: string[];
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adBlockAllowList?: string[];
 
   /**
    * Function that is invoked when the client needs to download a file.
