@@ -501,6 +501,12 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   lockScroll?: number;
   adjustOffset?: object;
   contentRuleLists?: string[];
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adBlockAllowList?: string[];
 }
 
 export interface AndroidWebViewProps extends WebViewSharedProps {
