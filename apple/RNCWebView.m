@@ -1375,12 +1375,11 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
      
       BOOL isAllowWebsite = false;
         
-      if (_adBlockAllowList != nil && [_adBlockAllowList count] > 0) {
+      if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
         isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
-      if (isAllowWebsite) {
-        [webView.configuration.userContentController removeAllContentRuleLists];
-      } else if (_contentRuleLists) {
+
+      if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
         WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
         [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
           for (NSString *identifier in identifiers) {
@@ -1393,6 +1392,8 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
             }
           }
         }];
+      } else {
+        [webView.configuration.userContentController removeAllContentRuleLists];
       }
     }
   }
