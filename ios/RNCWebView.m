@@ -1090,11 +1090,41 @@ static NSDictionary* customCertificatesForHost;
       }];
       _onLoadingStart(event);
     }
+    
+    // allowlist function
+    if (@available(iOS 11.0, *)) {
+     
+      BOOL isAllowWebsite = false;
+        
+      if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
+        isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
+      }
+
+      if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+          for (NSString *identifier in identifiers) {
+              if ([self->_contentRuleLists containsObject:identifier]) {
+              [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+                if (!error) {
+                  [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                }
+              }];
+            }
+          }
+        }];
+      } else {
+        [webView.configuration.userContentController removeAllContentRuleLists];
+      }
+    }
   }
 
   // Allow all navigation by default
   decisionHandler(WKNavigationActionPolicyAllow);
 }
+
+
+
 
 /**
  * Called when the web view’s content process is terminated.
