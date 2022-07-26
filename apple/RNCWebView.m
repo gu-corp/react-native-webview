@@ -221,8 +221,10 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 }
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebView*)parentView {
-  if (self = [self initWithFrame:[UIApplication sharedApplication].delegate.window.bounds]) {
-    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
+  if (self = [self initWithFrame:parentView.frame]) {
+    wkWebViewConfig = configuration;
+    [self setupConfiguration:parentView];
+    _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
   }
   return self;
 }
