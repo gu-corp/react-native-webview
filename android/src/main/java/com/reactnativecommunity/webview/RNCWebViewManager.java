@@ -1829,7 +1829,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       injectedJSBeforeContentLoaded = parentView.injectedJSBeforeContentLoaded;
       injectedJavaScriptBeforeContentLoadedForMainFrameOnly = parentView.injectedJavaScriptBeforeContentLoadedForMainFrameOnly;
       injectedJavaScriptForMainFrameOnly = parentView.injectedJavaScriptForMainFrameOnly;
-      messagingEnabled = parentView.messagingEnabled;
+      setMessagingEnabled(parentView.messagingEnabled);
       sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
