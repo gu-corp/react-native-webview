@@ -1376,7 +1376,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       mRNCWebViewClient.cloneAdblockRules(parentView.mRNCWebViewClient);
       injectedJS = parentView.injectedJS;
       injectedJSBeforeDocumentLoad = parentView.injectedJSBeforeDocumentLoad;
-      messagingEnabled = parentView.messagingEnabled;
+      setMessagingEnabled(parentView.messagingEnabled);
       sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
