@@ -444,7 +444,9 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
     : WKAudiovisualMediaTypeNone;
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
 #else
-  wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+  if(_mediaPlaybackRequiresUserAction) {
+    wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+  }
 #endif
 #endif // !TARGET_OS_OSX
 
