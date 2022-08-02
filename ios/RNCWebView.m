@@ -189,7 +189,7 @@ static NSDictionary* customCertificatesForHost;
     : WKAudiovisualMediaTypeNone;
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
 #else
-  wkWebViewConfig.mediaPlaybackRequiresUserAction = sender.mediaPlaybackRequiresUserAction;
+  // wkWebViewConfig.mediaPlaybackRequiresUserAction = sender.mediaPlaybackRequiresUserAction;
 #endif
 
   if (sender.applicationNameForUserAgent) {
