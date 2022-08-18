@@ -150,6 +150,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
    *  url, title, loading, canGoBack, canGoForward
    */
   updateNavigationState = (event: WebViewNavigationEvent) => {
+    console.log('====> Webview.android.tsx -- updateNavigationState event = ', event)
     if (this.props.onNavigationStateChange) {
       this.props.onNavigationStateChange(event.nativeEvent);
     }
@@ -171,6 +172,8 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     if (onLoadStart) {
       onLoadStart(event);
     }
+
+    console.log('====> Webview.android.tsx -- onLoadingStart event = ', event)
     this.updateNavigationState(event);
   };
 
@@ -212,6 +215,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         viewState: 'IDLE',
       });
     }
+    console.log('====> Webview.android.tsx -- onLoadingFinish event = ', event)
     this.updateNavigationState(event);
   };
 
