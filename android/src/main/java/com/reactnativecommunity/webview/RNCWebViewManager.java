@@ -16,8 +16,12 @@ import android.graphics.Picture;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.SystemClock;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
+import androidx.core.util.Pair;
+
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -45,6 +49,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
+import com.facebook.common.logging.FLog;
+import com.facebook.react.bridge.CatalystInstance;
+import com.facebook.react.bridge.WritableNativeArray;
+import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
@@ -65,6 +73,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.RNCWebViewModule.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -95,7 +104,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.annotation.Nullable;
 
 import okhttp3.Headers;
 import okhttp3.MediaType;
@@ -113,6 +121,8 @@ import android.widget.TextView;
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages instances of {@link WebView}
@@ -140,6 +150,7 @@ import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
  */
 @ReactModule(name = RNCWebViewManager.REACT_CLASS)
 public class RNCWebViewManager extends SimpleViewManager<WebView> {
+  private static final String TAG = "RNCWebViewManager";
 
   public static String activeUrl = null;
   public static final int COMMAND_GO_BACK = 1;
@@ -163,6 +174,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   // Use `webView.loadUrl("about:blank")` to reliably reset the view
   // state and release page resources (including any running JavaScript).
   protected static final String BLANK_URL = "about:blank";
+  protected static final int SHOULD_OVERRIDE_URL_LOADING_TIMEOUT = 250;
   protected WebViewConfig mWebViewConfig;
 
   protected RNCWebChromeClient mWebChromeClient = null;
@@ -456,6 +468,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public void setMessagingEnabled(WebView view, boolean enabled) {
     ((RNCWebView) view).setMessagingEnabled(enabled);
   }
+
+  @ReactProp(name = "messagingModuleName")
+  public void setMessagingModuleName(WebView view, String moduleName) {
+    ((RNCWebView) view).setMessagingModuleName(moduleName);
+  }
+
   @ReactProp(name = "incognito")
   public void setIncognito(WebView view, boolean enabled) {
     // Remove all previous cookies
@@ -850,14 +868,54 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     private boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
       activeUrl = url;
-      WritableMap event = createWebViewEvent(view, url);
-      event.putBoolean("mainFrame", isMainFrame);
-      dispatchEvent(
-        view,
-        new TopShouldStartLoadWithRequestEvent(
+
+      final RNCWebView rncWebView = (RNCWebView) view;
+      final boolean isJsDebugging = ((ReactContext) view.getContext()).getJavaScriptContextHolder().get() == 0;
+
+      if (!isJsDebugging && rncWebView.mCatalystInstance != null) {
+        final Pair<Integer, AtomicReference<ShouldOverrideCallbackState>> lock = RNCWebViewModule.shouldOverrideUrlLoadingLock.getNewLock();
+        final int lockIdentifier = lock.first;
+        final AtomicReference<ShouldOverrideCallbackState> lockObject = lock.second;
+
+        final WritableMap event = createWebViewEvent(view, url);
+        event.putInt("lockIdentifier", lockIdentifier);
+        rncWebView.sendDirectMessage("onShouldStartLoadWithRequest", event);
+
+        try {
+          assert lockObject != null;
+          synchronized (lockObject) {
+            final long startTime = SystemClock.elapsedRealtime();
+            while (lockObject.get() == ShouldOverrideCallbackState.UNDECIDED) {
+              if (SystemClock.elapsedRealtime() - startTime > SHOULD_OVERRIDE_URL_LOADING_TIMEOUT) {
+                FLog.w(TAG, "Did not receive response to shouldOverrideUrlLoading in time, defaulting to allow loading.");
+                RNCWebViewModule.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
+                return false;
+              }
+              lockObject.wait(SHOULD_OVERRIDE_URL_LOADING_TIMEOUT);
+            }
+          }
+        } catch (InterruptedException e) {
+          FLog.e(TAG, "shouldOverrideUrlLoading was interrupted while waiting for result.", e);
+          RNCWebViewModule.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
+          return false;
+        }
+
+        final boolean shouldOverride = lockObject.get() == ShouldOverrideCallbackState.SHOULD_OVERRIDE;
+        RNCWebViewModule.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
+
+        return shouldOverride;
+      } else {
+        FLog.w(TAG, "Couldn't use blocking synchronous call for onShouldStartLoadWithRequest due to debugging or missing Catalyst instance, falling back to old event-and-load.");
+//        progressChangedFilter.setWaitingForCommandLoadUrl(true);
+        WritableMap event = createWebViewEvent(view, url);
+        event.putBoolean("mainFrame", isMainFrame);
+        dispatchEvent(
+          view,
+          new TopShouldStartLoadWithRequestEvent(
           view.getId(),
           event));
-      return true;
+        return true;
+      }
     }
 
     @Override
@@ -1316,7 +1374,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     String injectedJSBeforeDocumentLoad;
     protected boolean messagingEnabled = false;
     protected @Nullable
+    String messagingModuleName;
+    protected @Nullable
     RNCWebViewClient mRNCWebViewClient;
+    protected @Nullable
+    CatalystInstance mCatalystInstance;
     protected boolean sendContentSizeChangeEvents = false;
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
@@ -1447,6 +1509,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return new RNCWebViewBridge(webView);
     }
 
+    protected void createCatalystInstance() {
+      ReactContext reactContext = (ReactContext) this.getContext();
+
+      if (reactContext != null) {
+        mCatalystInstance = reactContext.getCatalystInstance();
+      }
+    }
+
     @SuppressLint("AddJavascriptInterface")
     public void setMessagingEnabled(boolean enabled) {
       if (messagingEnabled == enabled) {
@@ -1460,6 +1530,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } else {
         removeJavascriptInterface(JAVASCRIPT_INTERFACE);
       }
+    }
+
+    public void setMessagingModuleName(String moduleName) {
+      messagingModuleName = moduleName;
     }
 
     protected void evaluateJavascriptWithFallback(String script) {
@@ -1485,6 +1559,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     public void onMessage(String message) {
+      ReactContext reactContext = (ReactContext) this.getContext();
+      RNCWebView mContext = this;
+
       if (mRNCWebViewClient != null) {
         WebView webView = this;
         webView.post(new Runnable() {
@@ -1495,14 +1572,34 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
             }
             WritableMap data = mRNCWebViewClient.createWebViewEvent(webView, webView.getUrl());
             data.putString("data", message);
-            dispatchEvent(webView, new TopMessageEvent(webView.getId(), data));
+
+            if (mCatalystInstance != null) {
+              mContext.sendDirectMessage("onMessage", data);
+            } else {
+              dispatchEvent(webView, new TopMessageEvent(webView.getId(), data));
+            }
           }
         });
       } else {
         WritableMap eventData = Arguments.createMap();
         eventData.putString("data", message);
-        dispatchEvent(this, new TopMessageEvent(this.getId(), eventData));
+
+        if (mCatalystInstance != null) {
+          this.sendDirectMessage("onMessage", eventData);
+        } else {
+          dispatchEvent(this, new TopMessageEvent(this.getId(), eventData));
+        }
       }
+    }
+
+    protected void sendDirectMessage(final String method, WritableMap data) {
+      WritableNativeMap event = new WritableNativeMap();
+      event.putMap("nativeEvent", data);
+
+      WritableNativeArray params = new WritableNativeArray();
+      params.pushMap(event);
+
+      mCatalystInstance.callFunction(messagingModuleName, method, params);
     }
 
     protected void onScrollChanged(int x, int y, int oldX, int oldY) {

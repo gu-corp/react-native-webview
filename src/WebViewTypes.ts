@@ -281,6 +281,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   saveFormDataDisabled?: boolean;
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
+  messagingModuleName?: string;
   urlPrefixesForDefaultIntent?: readonly string[];
   adblockRules?: string[];
 }

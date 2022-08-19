@@ -12,10 +12,12 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.Parcelable;
 import android.provider.MediaStore;
+import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+import androidx.core.util.Pair;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -39,6 +41,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Map;
 import java.util.List;
 
@@ -67,6 +70,37 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private Uri outputFileUri;
   private String intentTypeAfterPermissionGranted;
   private DownloadManager.Request downloadRequest;
+
+  protected static class ShouldOverrideUrlLoadingLock {
+    protected enum ShouldOverrideCallbackState {
+      UNDECIDED,
+      SHOULD_OVERRIDE,
+      DO_NOT_OVERRIDE,
+    }
+
+    private int nextLockIdentifier = 0;
+    private final HashMap<Integer, AtomicReference<ShouldOverrideCallbackState>> shouldOverrideLocks = new HashMap<>();
+
+    public synchronized Pair<Integer, AtomicReference<ShouldOverrideCallbackState>> getNewLock() {
+      final int lockIdentifier = nextLockIdentifier++;
+      final AtomicReference<ShouldOverrideCallbackState> shouldOverride = new AtomicReference<>(ShouldOverrideCallbackState.UNDECIDED);
+      shouldOverrideLocks.put(lockIdentifier, shouldOverride);
+      return new Pair<>(lockIdentifier, shouldOverride);
+    }
+
+    @Nullable
+    public synchronized AtomicReference<ShouldOverrideCallbackState> getLock(Integer lockIdentifier) {
+      return shouldOverrideLocks.get(lockIdentifier);
+    }
+
+    public synchronized void removeLock(Integer lockIdentifier) {
+      shouldOverrideLocks.remove(lockIdentifier);
+    }
+  }
+
+  protected static final ShouldOverrideUrlLoadingLock shouldOverrideUrlLoadingLock = new ShouldOverrideUrlLoadingLock();
+
+
   private PermissionListener webviewFileDownloaderPermissionListener = new PermissionListener() {
     @Override
     public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -118,6 +152,17 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
       result = true;
     }
     promise.resolve(result);
+  }
+
+  @ReactMethod(isBlockingSynchronousMethod = true)
+  public void onShouldStartLoadWithRequestCallback(final boolean shouldStart, final int lockIdentifier) {
+    final AtomicReference<ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState> lockObject = shouldOverrideUrlLoadingLock.getLock(lockIdentifier);
+    if (lockObject != null) {
+      synchronized (lockObject) {
+        lockObject.set(shouldStart ? ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.DO_NOT_OVERRIDE : ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE);
+        lockObject.notify();
+      }
+    }
   }
 
   public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
