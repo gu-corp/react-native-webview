@@ -13,7 +13,7 @@ import invariant from 'invariant';
 import {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
-  createOnShouldCreateNewWindow,
+  // createOnShouldCreateNewWindow,
   defaultRenderError,
   defaultRenderLoading,
 } from './WebViewShared';
@@ -365,10 +365,10 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       onShouldStartLoadWithRequestProp,
     );
 
-    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
-      this.onShouldCreateNewWindowCallback,
-      onShouldCreateNewWindowProp,
-    );
+    // const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+    //   this.onShouldCreateNewWindowCallback,
+    //   onShouldCreateNewWindowProp,
+    // );
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
@@ -386,12 +386,12 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         onLoadingFinish={this.onLoadingFinish}
         onLoadingProgress={this.onLoadingProgress}
         onLoadingStart={this.onLoadingStart}
-        onNavigationStateChange={this.updateNavigationState}
+        // onNavigationStateChange={this.updateNavigationState}
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
         onScroll={this.props.onScroll}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onShouldCreateNewWindow={onShouldCreateNewWindow}
+        // onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
         ref={this.webViewRef}
         // TODO: find a better way to type this.

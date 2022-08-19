@@ -107,13 +107,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
-  captureScreen = (type: string) => {
-    UIManager.dispatchViewManagerCommand(
-      this.getWebViewHandle(),
-      this.getCommands().captureScreen,
-      [String(type)],
-    );
-  };
+
 
   requestFocus = () => {
     UIManager.dispatchViewManagerCommand(
@@ -252,22 +246,6 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
-  /**
-   * Allows custom handling of window.open() by a JS handler. Return true
-   * or false from this method to use default behavior.
-  */
-  onCreateNewWindow = (event: WebViewNavigationEvent) => {
-    if (this.props.onShouldCreateNewWindow) {
-      this.props.onShouldCreateNewWindow(event.nativeEvent);
-    }
-  };
-
-  onCaptureScreen = (event: WebViewMessageEvent) => {
-    const { onCaptureScreen } = this.props;
-    if (onCaptureScreen) {
-      onCaptureScreen(event.nativeEvent);
-    }
-  };
 
   findInPage = (data: string) => {
     UIManager.dispatchViewManagerCommand(
@@ -342,9 +320,9 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onHttpError={this.onHttpError}
         onMessage={this.onMessage}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
-        onShouldCreateNewWindow={this.onCreateNewWindow}
-        onNavigationStateChange={this.updateNavigationState}
-        onCaptureScreen={this.onCaptureScreen}
+        // onShouldCreateNewWindow={this.onCreateNewWindow}
+        // onNavigationStateChange={this.updateNavigationState}
+        // onCaptureScreen={this.onCaptureScreen}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
