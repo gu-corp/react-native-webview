@@ -20,6 +20,7 @@
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
+
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
@@ -367,9 +368,14 @@ static NSDictionary* customCertificatesForHost;
     }
 #endif
       
-    UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
-    longGesture.delegate = self;
-    [_webView addGestureRecognizer:longGesture];
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000
+#else
+      UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
+      longGesture.delegate = self;
+      [_webView addGestureRecognizer:longGesture];
+#endif
+    
+    
 
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
@@ -1407,7 +1413,8 @@ static NSDictionary* customCertificatesForHost;
 }
 
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
-  return YES;
+    // Only allow long press gesture
+    return YES;
 }
 
 -(void)handleRefresh:(UIRefreshControl *)refresh {
@@ -1418,7 +1425,38 @@ static NSDictionary* customCertificatesForHost;
 
 // Disable previews for the given element.
 -(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
-    return NO;
+    return YES;
+}
+
+
+- (void)webView:(WKWebView *)webView contextMenuConfigurationForElement:(WKContextMenuElementInfo *)elementInfo completionHandler:(void (^)(UIContextMenuConfiguration * _Nullable))completionHandler  API_AVAILABLE(ios(13.0)){
+    
+    UIContextMenuConfiguration *configuration = [UIContextMenuConfiguration configurationWithIdentifier:NULL previewProvider:NULL actionProvider:^UIMenu * _Nullable(NSArray<UIMenuElement *> * _Nonnull suggestedActions) {
+        
+        UIAction *newTabAction = [UIAction actionWithTitle:@"Open link in New Tab" image:nil identifier:NULL handler:^(__kindof UIAction * _Nonnull action) {
+            NSLog(@"Open link in New Tab.!");
+            self.onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"showActionSheet", @"data":@"newTabAction"}});
+        }];
+        
+        UIAction *backgroundAction = [UIAction actionWithTitle:@"Open in Background Tab" image:nil identifier:NULL handler:^(__kindof UIAction * _Nonnull action) {
+            NSLog(@"Open link in New Tab.!");
+            self.onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"showActionSheet", @"data":@"backgroundAction"}});
+        }];
+        
+        UIAction *copyAction = [UIAction actionWithTitle:@"Copy Link URL" image:nil identifier:NULL handler:^(__kindof UIAction * _Nonnull action) {
+            NSLog(@"Open link in New Tab.!");
+            self.onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"showActionSheet", @"data":@"copyAction"}});
+        }];
+        
+        NSMutableArray *children = [[NSMutableArray alloc] init];
+        [children addObject:newTabAction];
+        [children addObject:backgroundAction];
+        [children addObject:copyAction];
+        return [UIMenu menuWithTitle:elementInfo.linkURL.absoluteString children:children];
+    }];
+    
+    completionHandler(configuration);
+    
 }
 
 @end
