@@ -1475,8 +1475,28 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         throw new RuntimeException(e);
       }
     }
+    public String loadSearchWebviewFile() {
+      String jsString = null;
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        jsString = new String(readBytes);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return jsString;
+    }
 
     public void callInjectedJavaScript() {
+      if(getSettings().getJavaScriptEnabled()){
+        String jsSearch = loadSearchWebviewFile();
+        if(jsSearch!=null) this.evaluateJavascriptWithFallback(jsSearch);
+      }
+
       if (getSettings().getJavaScriptEnabled() &&
         injectedJS != null &&
         !TextUtils.isEmpty(injectedJS)) {
@@ -1596,27 +1616,23 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       String[] highlightColors = {
         "yellow", "cyan", "magenta", "greenyellow", "tomato", "lightskyblue"
       };
-      try {
-        InputStream fileInputStream;
-        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
-        byte[] readBytes = new byte[fileInputStream.available()];
-        fileInputStream.read(readBytes);
-        String jsString = new String(readBytes);
+
+//        InputStream fileInputStream;
+//        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+//        byte[] readBytes = new byte[fileInputStream.available()];
+//        fileInputStream.read(readBytes);
+//        String jsString = new String(readBytes);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("MyApp_RemoveAllHighlights();");
+//        sb.append("MyApp_RemoveAllHighlights();");
         for (int i = 0; i < words.length; i++) {
           String color = i < highlightColors.length ? highlightColors[i] : highlightColors[highlightColors.length - 1];
           sb.append("MyApp_HighlightAllOccurencesOfString('" + words[i] + "','" + color + "');");
         }
-        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
-        sb.append("MyApp_ScrollToHighlightTop();");
-        this.loadUrl("javascript:" + jsString + sb.toString());
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+//        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
+//        sb.append("MyApp_ScrollToHighlightTop();");
+        this.loadUrl("javascript:" + sb.toString());
+
     }
   }
 }
