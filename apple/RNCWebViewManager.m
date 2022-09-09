@@ -312,10 +312,40 @@ RCT_EXPORT_METHOD(findInPage:(nonnull NSNumber *)reactTag searchString:(NSString
     if (![view isKindOfClass:[RNCWebView class]]) {
       RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
     } else {
-      NSLog(@"Search webview with string: %@", searchString);
-        [view findInPage:searchString completed:^(NSInteger count) {
-            resolve(@(count));
-        }];
+      [view findInPage:searchString];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(findNext:(nonnull NSNumber *)reactTag) {
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view findNext];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(findPrevious:(nonnull NSNumber *)reactTag) {
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view findPrevious];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(removeAllHighlights:(nonnull NSNumber *)reactTag) {
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view removeAllHighlights];
     }
   }];
 }

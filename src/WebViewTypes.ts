@@ -12,10 +12,9 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 
-type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus' | 'captureScreen' | 'findInPage';
+type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus' | 'captureScreen' | 'findInPage' | 'findNext' | 'findPrevious' | 'removeAllHighlights';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearCache' | 'clearFormData';
-
 
 interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   getViewManagerConfig: (
@@ -25,6 +24,9 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   };
   evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
   findInPage: (viewTag: number, js: string) => Promise<number>;
+  findNext: (viewTag: number) => void;
+  findPrevious: (viewTag: number) => void;
+  removeAllHighlights: (viewTag: number) => void;
   captureScreen: (viewTag: number) => Promise<string>;
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
@@ -259,6 +261,9 @@ export interface ViewManager {
   captureScreen: Function;
   capturePage: Function;
   findInPage: Function;
+  findNext: Function;
+  findPrevious: Function;
+  removeAllHighlights: Function;
   printContent: Function;
 }
 
