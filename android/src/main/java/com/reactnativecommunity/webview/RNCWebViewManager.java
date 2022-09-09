@@ -2204,17 +2204,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       String jsSearch = "MyApp_HighlightAllOccurencesOfString('" + keyword + "');";
       this.loadUrl("javascript:" + jsSearch);
     }
-
+    
     public void searchNext() {
-      this.loadUrl("javascript:findNext()");
+      this.loadUrl("javascript:myAppSearchNextInThePage()");
     }
 
     public void searchPrevious() {
-      this.loadUrl("javascript:findPrevious()");
+      this.loadUrl("javascript:myAppSearchPreviousInThePage()");
     }
 
     public void removeAllHighlights() {
-      this.loadUrl("javascript:findDone()");
+      this.loadUrl("javascript:myAppSearchDoneInThePage()");
     }
 
     protected static class ProgressChangedFilter {
