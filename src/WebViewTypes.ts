@@ -21,6 +21,9 @@ export interface WebViewCommands {
   requestFocus: number;
   captureScreen: number;
   findInPage: number;
+  findNext: number;
+  findPrevious: number;
+  removeAllHighlights: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -31,6 +34,9 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   };
   evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
   findInPage: (viewTag: number, js: string) => Promise<number>;
+  findNext: (viewTag: number) => void;
+  findPrevious: (viewTag: number) => void;
+  removeAllHighlights: (viewTag: number) => void;
   captureScreen: (viewTag: number) => Promise<string>;
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
@@ -207,6 +213,9 @@ export interface ViewManager {
   captureScreen: Function;
   capturePage: Function;
   findInPage: Function;
+  findNext: Function;
+  findPrevious: Function;
+  removeAllHighlights: Function;
   printContent: Function;
 }
 

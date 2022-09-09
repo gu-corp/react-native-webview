@@ -6,8 +6,9 @@
 
 @interface WKWebView (Highlight)
 
-- (NSInteger)highlightAllOccurencesOfString:(NSString*)str;
-- (void)scrollToHighlightTop;
+- (void)highlightAllOccurencesOfString:(NSString*)str;
+- (void)findNext;
+- (void)findPrevious;
 - (void)removeAllHighlights;
 
 @end

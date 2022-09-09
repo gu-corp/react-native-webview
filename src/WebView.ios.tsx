@@ -164,6 +164,18 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     return RNCWebViewManager.findInPage(this.getWebViewHandle(), searchString);
   }
 
+  findNext = () => {
+    return RNCWebViewManager.findNext(this.getWebViewHandle());
+  }
+
+  findPrevious = () => {
+    return RNCWebViewManager.findPrevious(this.getWebViewHandle());
+  }
+
+  removeAllHighlights = () => {
+    return RNCWebViewManager.removeAllHighlights(this.getWebViewHandle());
+  }
+
   /**
    * Posts a message to the web view, which will emit a `message` event.
    * Accepts one argument, `data`, which must be a string.

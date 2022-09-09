@@ -80,7 +80,10 @@ typedef enum {
 - (void)stopLoading;
 
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
-- (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
+- (void)findInPage:(nonnull NSString *)searchString;
+- (void)findNext;
+- (void)findPrevious;
+- (void)removeAllHighlights;
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
 - (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
 - (void)printContent;

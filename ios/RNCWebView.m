@@ -1326,15 +1326,28 @@ static NSDictionary* customCertificatesForHost;
   [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
 }
 
-- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
+- (void)findInPage:(NSString *)searchString {
   if (searchString && searchString.length > 0) {
-    [_webView removeAllHighlights];
-    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
-    [_webView scrollToHighlightTop];
-    callback(results);
-  } else {
-    callback(0);
-  }
+    // [_webView removeAllHighlights];
+    [_webView highlightAllOccurencesOfString:searchString];
+    // [_webView scrollToHighlightTop];
+    // callback(results);
+  } 
+  // else {
+  //   // callback(0);
+  // }
+}
+
+- (void)findNext {
+  [_webView findNext];
+}
+
+- (void)findPrevious {
+  [_webView findPrevious];
+}
+
+- (void)removeAllHighlights {
+  [_webView removeAllHighlights];
 }
 
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
