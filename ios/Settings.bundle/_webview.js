@@ -383,5 +383,6 @@ MyAppOperation.prototype.complete = function () {
 
 // the main entry point to start the search
 function MyApp_HighlightAllOccurencesOfString(keyword) {
+  myAppSearchDoneInThePage();
   myAppSearchKeywordInThePage(keyword);
 }

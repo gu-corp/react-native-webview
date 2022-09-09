@@ -380,5 +380,6 @@ MyAppOperation.prototype.complete = function () {
 };
 
 function MyApp_HighlightAllOccurencesOfString(keyword) {
-  myAppSearchKeywordInThePage(keyword)
+  myAppSearchDoneInThePage();
+  myAppSearchKeywordInThePage(keyword);
 }
