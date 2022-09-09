@@ -1630,25 +1630,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     public void searchInPage(String keyword) {
-      // String[] words = keyword.split(" |　");
-      // String[] highlightColors = {
-      //   "yellow", "cyan", "magenta", "greenyellow", "tomato", "lightskyblue"
-      // };
-
-//        InputStream fileInputStream;
-//        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
-//        byte[] readBytes = new byte[fileInputStream.available()];
-//        fileInputStream.read(readBytes);
-//        String jsString = new String(readBytes);
-
-        // StringBuilder sb = new StringBuilder();
-//        sb.append("MyApp_RemoveAllHighlights();");
-        // for (int i = 0; i < words.length; i++) {
-        //   String color = i < highlightColors.length ? highlightColors[i] : highlightColors[highlightColors.length - 1];
-        //   sb.append("MyApp_HighlightAllOccurencesOfString('" + words[i] + "','" + color + "');");
-        // }
-//        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
-//        sb.append("MyApp_ScrollToHighlightTop();");
       String jsSearch = "MyApp_HighlightAllOccurencesOfString('" + keyword + "');";
       this.loadUrl("javascript:" + jsSearch);
     }

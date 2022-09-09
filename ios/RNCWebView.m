@@ -1328,14 +1328,8 @@ static NSDictionary* customCertificatesForHost;
 
 - (void)findInPage:(NSString *)searchString {
   if (searchString && searchString.length > 0) {
-    // [_webView removeAllHighlights];
     [_webView highlightAllOccurencesOfString:searchString];
-    // [_webView scrollToHighlightTop];
-    // callback(results);
   } 
-  // else {
-  //   // callback(0);
-  // }
 }
 
 - (void)findNext {
