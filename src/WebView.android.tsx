@@ -273,6 +273,30 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  findNext = () => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().findNext,
+      undefined
+    );
+  };
+
+  findPrevious = () => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().findPrevious,
+      undefined
+    );
+  };
+
+  removeAllHighlights = () => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().removeAllHighlights,
+      undefined
+    );
+  };
+
   render() {
     const {
       onMessage,
