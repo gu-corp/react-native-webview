@@ -543,7 +543,6 @@ RCTAutoInsetsProtocol>
       _webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = _savedAutomaticallyAdjustsScrollIndicatorInsets;
     }
 #endif
-    
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
@@ -551,15 +550,13 @@ RCTAutoInsetsProtocol>
   }
 #if !TARGET_OS_OSX
   // Allow this object to recognize gestures
-  if (self.menuItems != nil) {
-    UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(startLongPress:)];
-    longPress.delegate = self;
-    
-    longPress.minimumPressDuration = 0.4f;
-    longPress.numberOfTouchesRequired = 1;
-    longPress.cancelsTouchesInView = YES;
-    [self addGestureRecognizer:longPress];
-  }
+  UILongPressGestureRecognizer *longPress = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(startLongPress:)];
+  longPress.delegate = self;
+  
+  longPress.minimumPressDuration = 0.4f;
+  longPress.numberOfTouchesRequired = 1;
+  longPress.cancelsTouchesInView = YES;
+  [self addGestureRecognizer:longPress];
 #endif // !TARGET_OS_OSX
 }
 
