@@ -897,13 +897,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       case "clearHistory":
         root.clearHistory();
         break;
-      case COMMAND_SEARCH_NEXT:
+      case "findNext":
         ((RNCWebView) root).searchNext();
         break;
-      case COMMAND_SEARCH_PREVIOUS:
+      case "findPrevious":
         ((RNCWebView) root).searchPrevious();
         break;
-      case COMMAND_REMOVE_ALL_HIGHLIGHTS:
+      case "removeAllHighlights":
         ((RNCWebView) root).removeAllHighlights();
         break;
     }
