@@ -110,7 +110,6 @@ import java.lang.IllegalArgumentException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -119,17 +118,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import okhttp3.Headers;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
-import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
-import android.os.Message;
 import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
