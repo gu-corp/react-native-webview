@@ -49,6 +49,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
@@ -105,10 +106,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.IllegalArgumentException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -117,17 +118,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import okhttp3.Headers;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 
-import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
-import android.os.Message;
 import android.widget.TextView;
 
 import com.brave.adblock.BlockerResult;
@@ -171,7 +165,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_LOAD_URL = 7;
   public static final int COMMAND_FOCUS = 8;
   public static final int COMMAND_CAPTURE_SCREEN = 9;
+
+  // SearchInPage
   public static final int COMMAND_SEARCH_IN_PAGE = 10;
+  public static final int COMMAND_SEARCH_NEXT = 11;
+  public static final int COMMAND_SEARCH_PREVIOUS = 12;
+  public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
+
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
@@ -189,12 +189,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   // state and release page resources (including any running JavaScript).
   protected static final String BLANK_URL = "about:blank";
   protected static final int SHOULD_OVERRIDE_URL_LOADING_TIMEOUT = 250;
+  protected static final String DEFAULT_DOWNLOADING_MESSAGE = "Downloading";
+  protected static final String DEFAULT_LACK_PERMISSION_TO_DOWNLOAD_MESSAGE =
+    "Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files.";
   protected WebViewConfig mWebViewConfig;
 
   protected RNCWebChromeClient mWebChromeClient = null;
   protected boolean mAllowsFullscreenVideo = false;
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
+  protected @Nullable String mDownloadingMessage = null;
+  protected @Nullable String mLackPermissionToDownloadMessage = null;
 
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
@@ -292,7 +297,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         RNCWebViewModule module = getModule(reactContext);
 
-        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        DownloadManager.Request request;
+        try {
+          request = new DownloadManager.Request(Uri.parse(url));
+        } catch (IllegalArgumentException e) {
+          Log.w(TAG, "Unsupported URI, aborting download", e);
+          return;
+        }
 
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
         String downloadMessage = "Downloading " + fileName;
@@ -305,8 +316,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           String cookie = CookieManager.getInstance().getCookie(baseUrl);
           request.addRequestHeader("Cookie", cookie);
         } catch (MalformedURLException e) {
-          System.out.println("Error getting cookie for DownloadManager: " + e.toString());
-          e.printStackTrace();
+          Log.w(TAG, "Error getting cookie for DownloadManager", e);
         }
 
         //Finish setting up request
@@ -319,13 +329,21 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         module.setDownloadRequest(request);
 
-        if (module.grantFileDownloaderPermissions()) {
-          module.downloadFile();
+        if (module.grantFileDownloaderPermissions(getDownloadingMessage(), getLackPermissionToDownloadMessage())) {
+          module.downloadFile(getDownloadingMessage());
         }
       }
     });
 
     return webView;
+  }
+
+  private String getDownloadingMessage() {
+    return  mDownloadingMessage == null ? DEFAULT_DOWNLOADING_MESSAGE : mDownloadingMessage;
+  }
+
+  private String getLackPermissionToDownloadMessage() {
+    return  mDownloadingMessage == null ? DEFAULT_LACK_PERMISSION_TO_DOWNLOAD_MESSAGE : mLackPermissionToDownloadMessage;
   }
 
   @ReactProp(name = "javaScriptEnabled")
@@ -358,18 +376,25 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     view.setVerticalScrollBarEnabled(enabled);
   }
 
+  @ReactProp(name = "downloadingMessage")
+  public void setDownloadingMessage(WebView view, String message) {
+    mDownloadingMessage = message;
+  }
+
+  @ReactProp(name = "lackPermissionToDownloadMessage")
+  public void setLackPermissionToDownlaodMessage(WebView view, String message) {
+    mLackPermissionToDownloadMessage = message;
+  }
+
   @ReactProp(name = "cacheEnabled")
   public void setCacheEnabled(WebView view, boolean enabled) {
     if (enabled) {
       Context ctx = view.getContext();
       if (ctx != null) {
-        view.getSettings().setAppCachePath(ctx.getCacheDir().getAbsolutePath());
         view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        view.getSettings().setAppCacheEnabled(true);
       }
     } else {
       view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-      view.getSettings().setAppCacheEnabled(false);
     }
   }
 
@@ -568,7 +593,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // Disable caching
     view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-    view.getSettings().setAppCacheEnabled(false);
     view.clearHistory();
     view.clearCache(true);
 
@@ -731,6 +755,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
   }
 
+  @ReactProp(name = "minimumFontSize")
+  public void setMinimumFontSize(WebView view, int fontSize) {
+    view.getSettings().setMinimumFontSize(fontSize);
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -752,6 +781,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     if (export == null) {
       export = MapBuilder.newHashMap();
     }
+    // Default events but adding them here explicitly for clarity
+    export.put(TopLoadingStartEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingStart"));
+    export.put(TopLoadingFinishEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingFinish"));
+    export.put(TopLoadingErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingError"));
+    export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
+    // !Default events but adding them here explicitly for clarity
+
     export.put(TopLoadingProgressEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingProgress"));
     export.put(TopShouldStartLoadWithRequestEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldStartLoadWithRequest"));
     export.put(ScrollEventType.getJSEventName(ScrollEventType.SCROLL), MapBuilder.of("registrationName", "onScroll"));
@@ -779,6 +815,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       .put("requestFocus", COMMAND_FOCUS)
       .put("captureScreen", COMMAND_CAPTURE_SCREEN)
       .put("findInPage", COMMAND_SEARCH_IN_PAGE)
+      .put("findNext", COMMAND_SEARCH_NEXT)
+      .put("findPrevious", COMMAND_SEARCH_PREVIOUS)
+      .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
       .put("clearFormData", COMMAND_CLEAR_FORM_DATA)
       .put("clearCache", COMMAND_CLEAR_CACHE)
       .put("clearHistory", COMMAND_CLEAR_HISTORY)
@@ -786,21 +825,21 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   }
 
   @Override
-  public void receiveCommand(WebView root, int commandId, @Nullable ReadableArray args) {
+  public void receiveCommand(@NonNull WebView root, String commandId, @Nullable ReadableArray args) {
     switch (commandId) {
-      case COMMAND_GO_BACK:
+      case "goBack":
         root.goBack();
         break;
-      case COMMAND_GO_FORWARD:
+      case "goForward":
         root.goForward();
         break;
-      case COMMAND_RELOAD:
+      case "reload":
         root.reload();
         break;
-      case COMMAND_STOP_LOADING:
+      case "stopLoading":
         root.stopLoading();
         break;
-      case COMMAND_POST_MESSAGE:
+      case "postMessage":
         try {
           RNCWebView reactWebView = (RNCWebView) root;
           JSONObject eventInitDict = new JSONObject();
@@ -820,37 +859,47 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           throw new RuntimeException(e);
         }
         break;
-      case COMMAND_INJECT_JAVASCRIPT:
+      case "injectJavaScript":
         RNCWebView reactWebView = (RNCWebView) root;
         reactWebView.evaluateJavascriptWithFallback(args.getString(0));
         break;
-      case COMMAND_LOAD_URL:
+      case "loadUrl":
         if (args == null) {
           throw new RuntimeException("Arguments for loading an url are null!");
         }
         ((RNCWebView) root).progressChangedFilter.setWaitingForCommandLoadUrl(false);
         root.loadUrl(args.getString(0));
         break;
-      case COMMAND_FOCUS:
+      case "requestFocus":
         root.requestFocus();
         break;
-      case COMMAND_CAPTURE_SCREEN:
+      case "captureScreen":
         ((RNCWebView) root).captureScreen(args.getString(0));
         break;
-      case COMMAND_SEARCH_IN_PAGE:
+      case "findInPage":
         ((RNCWebView) root).searchInPage(args.getString(0));
         break;
-      case COMMAND_CLEAR_FORM_DATA:
+      case "clearFormData":
         root.clearFormData();
         break;
-      case COMMAND_CLEAR_CACHE:
+      case "clearCache":
         boolean includeDiskFiles = args != null && args.getBoolean(0);
         root.clearCache(includeDiskFiles);
         break;
-      case COMMAND_CLEAR_HISTORY:
+      case "clearHistory":
         root.clearHistory();
         break;
+      case "findNext":
+        ((RNCWebView) root).searchNext();
+        break;
+      case "findPrevious":
+        ((RNCWebView) root).searchPrevious();
+        break;
+      case "removeAllHighlights":
+        ((RNCWebView) root).removeAllHighlights();
+        break;
     }
+    super.receiveCommand(root, commandId, args);
   }
 
   @Override
@@ -994,6 +1043,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     protected Uri mainUrl;
+    protected boolean isMainDocumentException;
 
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
@@ -1125,19 +1175,35 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           mainUrl = url;
         }
 
-        if (adblockEngines != null) {
+        if (adblockEngines != null && !this.isMainDocumentException) {
           BlockerResult blockerResult;
 
+          boolean matched = false;
+          boolean exception = false;
           for (Engine engine : adblockEngines) {
             synchronized (engine) {
               if (request.isForMainFrame()) {
-                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "document");
               } else {
                 blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
               }
-            }
 
-            if (blockerResult.matched) {
+              matched |= blockerResult.matched;
+              if (blockerResult.important) {
+                break;
+              }
+
+              if (blockerResult.exception) {
+                exception = true;
+                break;
+              }
+            }
+          }
+
+          if (request.isForMainFrame() && exception) {
+            this.isMainDocumentException = true;
+          } else {
+            if (matched && !exception) {
               return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
             }
           }
@@ -1165,7 +1231,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         if (!topWindowUrl.equalsIgnoreCase(failingUrl)) {
           // If error is not due to top-level navigation, then do not call onReceivedError()
-          Log.w("RNCWebViewManager", "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
+          Log.w(TAG, "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
           return;
         }
 
@@ -1274,10 +1340,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         super.onRenderProcessGone(webView, detail);
 
         if(detail.didCrash()){
-          Log.e("RNCWebViewManager", "The WebView rendering process crashed.");
+          Log.e(TAG, "The WebView rendering process crashed.");
         }
         else{
-          Log.w("RNCWebViewManager", "The WebView rendering process was killed by the system.");
+          Log.w(TAG, "The WebView rendering process was killed by the system.");
         }
 
         // if webView is null, we cannot return any event
@@ -1812,7 +1878,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       injectedJSBeforeContentLoaded = parentView.injectedJSBeforeContentLoaded;
       injectedJavaScriptBeforeContentLoadedForMainFrameOnly = parentView.injectedJavaScriptBeforeContentLoadedForMainFrameOnly;
       injectedJavaScriptForMainFrameOnly = parentView.injectedJavaScriptForMainFrameOnly;
-      messagingEnabled = parentView.messagingEnabled;
+      setMessagingEnabled(parentView.messagingEnabled);
       sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
@@ -1964,8 +2030,28 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         throw new RuntimeException(e);
       }
     }
+    public String loadSearchWebviewFile() {
+      String jsString = null;
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        jsString = new String(readBytes);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return jsString;
+    }
 
     public void callInjectedJavaScript() {
+      if(getSettings().getJavaScriptEnabled()){
+        String jsSearch = loadSearchWebviewFile();
+        if(jsSearch!=null) this.evaluateJavascriptWithFallback(jsSearch);
+      }
+
       if (getSettings().getJavaScriptEnabled() &&
         injectedJS != null &&
         !TextUtils.isEmpty(injectedJS)) {
@@ -2127,31 +2213,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     public void searchInPage(String keyword) {
-      String[] words = keyword.split(" |　");
-      String[] highlightColors = {
-        "yellow", "cyan", "magenta", "greenyellow", "tomato", "lightskyblue"
-      };
-      try {
-        InputStream fileInputStream;
-        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
-        byte[] readBytes = new byte[fileInputStream.available()];
-        fileInputStream.read(readBytes);
-        String jsString = new String(readBytes);
+      String jsSearch = "MyApp_HighlightAllOccurencesOfString('" + keyword + "');";
+      this.loadUrl("javascript:" + jsSearch);
+    }
+    
+    public void searchNext() {
+      this.loadUrl("javascript:myAppSearchNextInThePage()");
+    }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("MyApp_RemoveAllHighlights();");
-        for (int i = 0; i < words.length; i++) {
-          String color = i < highlightColors.length ? highlightColors[i] : highlightColors[highlightColors.length - 1];
-          sb.append("MyApp_HighlightAllOccurencesOfString('" + words[i] + "','" + color + "');");
-        }
-        sb.append("alert('" + this.getContext().getString(R.string.dialog_found) + ": ' + MyApp_SearchResultCount);");
-        sb.append("MyApp_ScrollToHighlightTop();");
-        this.loadUrl("javascript:" + jsString + sb.toString());
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+    public void searchPrevious() {
+      this.loadUrl("javascript:myAppSearchPreviousInThePage()");
+    }
+
+    public void removeAllHighlights() {
+      this.loadUrl("javascript:myAppSearchDoneInThePage()");
     }
 
     protected static class ProgressChangedFilter {

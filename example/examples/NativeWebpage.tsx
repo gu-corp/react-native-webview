@@ -1,5 +1,5 @@
-import React, {Component} from 'react';
-import {View} from 'react-native';
+import React, { Component } from 'react';
+import { View } from 'react-native';
 
 import WebView from 'react-native-webview';
 
@@ -11,11 +11,10 @@ export default class NativeWebpage extends Component<Props, State> {
 
   render() {
     return (
-      <View style={{height: 400}}>
+      <View style={{ height: 400 }}>
         <WebView
-          source={{uri: 'https://infinite.red'}}
-          style={{width: '100%', height: '100%'}}
-          // setSupportMultipleWindows={false}
+          source={{ uri: 'https://infinite.red' }}
+          style={{ width: '100%', height: '100%' }}
         />
       </View>
     );

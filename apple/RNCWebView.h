@@ -11,11 +11,11 @@
 #import <React/RCTBridge.h>
 
 typedef enum RNCWebViewPermissionGrantType : NSUInteger {
-    RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt,
-    RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny,
-    RNCWebViewPermissionGrantType_Deny,
-    RNCWebViewPermissionGrantType_Grant,
-    RNCWebViewPermissionGrantType_Prompt
+  RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt,
+  RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny,
+  RNCWebViewPermissionGrantType_Deny,
+  RNCWebViewPermissionGrantType_Grant,
+  RNCWebViewPermissionGrantType_Prompt
 } RNCWebViewPermissionGrantType;
 
 @class RNCWebView;
@@ -23,7 +23,7 @@ typedef enum RNCWebViewPermissionGrantType : NSUInteger {
 @protocol RNCWebViewDelegate <NSObject>
 
 - (BOOL)webView:(RNCWebView *_Nonnull)webView
-   shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *_Nonnull)request
+shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *_Nonnull)request
    withCallback:(RCTDirectEventBlock _Nonnull)callback;
 - (RNCWebView* _Nullable)webView:(RNCWebView* _Nonnull)webView
 shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
@@ -60,6 +60,7 @@ typedef enum {
 @property (nonatomic, assign) BOOL pagingEnabled;
 @property (nonatomic, assign) CGFloat decelerationRate;
 @property (nonatomic, assign) BOOL allowsInlineMediaPlayback;
+@property (nonatomic, assign) BOOL allowsAirPlayForMediaPlayback;
 @property (nonatomic, assign) BOOL bounces;
 @property (nonatomic, assign) BOOL mediaPlaybackRequiresUserAction;
 #if WEBKIT_IOS_10_APIS_AVAILABLE
@@ -107,9 +108,14 @@ typedef enum {
 @property (nonatomic, assign) BOOL limitsNavigationsToAppBoundDomains;
 #endif
 
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140500 /* iOS 14.5 */
+@property (nonatomic, assign) BOOL textInteractionEnabled;
+#endif
+
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 /* iOS 15 */
 @property (nonatomic, assign) RNCWebViewPermissionGrantType mediaCapturePermissionGrantType;
 #endif
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable adBlockAllowList;
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
@@ -120,13 +126,17 @@ typedef enum {
 - (void)goBack;
 - (void)reload;
 - (void)stopLoading;
+- (void)requestFocus;
 #if !TARGET_OS_OSX
 - (void)addPullToRefreshControl;
 - (void)pullToRefresh:(UIRefreshControl *_Nonnull)refreshControl;
 #endif
 
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
-- (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
+- (void)findInPage:(nonnull NSString *)searchString;
+- (void)findNext;
+- (void)findPrevious;
+- (void)removeAllHighlights;
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
 - (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
 - (void)printContent;

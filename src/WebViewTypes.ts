@@ -12,29 +12,43 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 
-type WebViewCommands = 'goForward' | 'goBack' | 'reload' | 'stopLoading' | 'postMessage' | 'injectJavaScript' | 'loadUrl' | 'requestFocus' | 'captureScreen' | 'findInPage';
+type WebViewCommands =
+  | 'goForward'
+  | 'goBack'
+  | 'reload'
+  | 'stopLoading'
+  | 'postMessage'
+  | 'injectJavaScript'
+  | 'loadUrl'
+  | 'requestFocus'
+  | 'captureScreen' 
+  | 'findInPage'
+  | 'findNext' 
+  | 'findPrevious' 
+  | 'removeAllHighlights';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearCache' | 'clearFormData';
 
-
 interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
-  getViewManagerConfig: (
-    name: string,
-  ) => {
-    Commands: {[key in Commands]: number};
+  getViewManagerConfig: (name: string) => {
+    Commands: { [key in Commands]: number };
   };
   evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
   findInPage: (viewTag: number, js: string) => Promise<number>;
+  findNext: (viewTag: number) => void;
+  findPrevious: (viewTag: number) => void;
+  removeAllHighlights: (viewTag: number) => void;
   captureScreen: (viewTag: number) => Promise<string>;
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
 }
 
-export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<WebViewCommands | AndroidWebViewCommands>
-export type RNCWebViewUIManagerIOS = RNCWebViewUIManager<WebViewCommands>
-export type RNCWebViewUIManagerMacOS = RNCWebViewUIManager<WebViewCommands>
-export type RNCWebViewUIManagerWindows = RNCWebViewUIManager<WebViewCommands>
-
+export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
+  WebViewCommands | AndroidWebViewCommands
+>;
+export type RNCWebViewUIManagerIOS = RNCWebViewUIManager<WebViewCommands>;
+export type RNCWebViewUIManagerMacOS = RNCWebViewUIManager<WebViewCommands>;
+export type RNCWebViewUIManagerWindows = RNCWebViewUIManager<WebViewCommands>;
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
 
@@ -55,33 +69,25 @@ interface ErrorState extends BaseState {
 export type State = NormalState | ErrorState;
 
 // eslint-disable-next-line react/prefer-stateless-function
-declare class NativeWebViewIOSComponent extends Component<
-  IOSNativeWebViewProps
-> {}
+declare class NativeWebViewIOSComponent extends Component<IOSNativeWebViewProps> {}
 declare const NativeWebViewIOSBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewIOSComponent;
 export class NativeWebViewIOS extends NativeWebViewIOSBase {}
 
 // eslint-disable-next-line react/prefer-stateless-function
-declare class NativeWebViewMacOSComponent extends Component<
-  MacOSNativeWebViewProps
-> {}
+declare class NativeWebViewMacOSComponent extends Component<MacOSNativeWebViewProps> {}
 declare const NativeWebViewMacOSBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewMacOSComponent;
 export class NativeWebViewMacOS extends NativeWebViewMacOSBase {}
 
 // eslint-disable-next-line react/prefer-stateless-function
-declare class NativeWebViewAndroidComponent extends Component<
-  AndroidNativeWebViewProps
-> {}
+declare class NativeWebViewAndroidComponent extends Component<AndroidNativeWebViewProps> {}
 declare const NativeWebViewAndroidBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewAndroidComponent;
 export class NativeWebViewAndroid extends NativeWebViewAndroidBase {}
 
 // eslint-disable-next-line react/prefer-stateless-function
-declare class NativeWebViewWindowsComponent extends Component<
-  WindowsNativeWebViewProps
-> {}
+declare class NativeWebViewWindowsComponent extends Component<WindowsNativeWebViewProps> {}
 declare const NativeWebViewWindowsBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewWindowsComponent;
 export class NativeWebViewWindows extends NativeWebViewWindowsBase {}
@@ -157,9 +163,8 @@ export interface WebViewRenderProcessGoneDetail {
 
 export type WebViewEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
-export type WebViewProgressEvent = NativeSyntheticEvent<
-  WebViewNativeProgressEvent
->;
+export type WebViewProgressEvent =
+  NativeSyntheticEvent<WebViewNativeProgressEvent>;
 
 export type WebViewFullScreenEvent = NativeSyntheticEvent<
 WebViewNativeFullScreenEvent
@@ -167,7 +172,8 @@ WebViewNativeFullScreenEvent
 
 export type WebViewNavigationEvent = NativeSyntheticEvent<WebViewNavigation>;
 
-export type ShouldStartLoadRequestEvent = NativeSyntheticEvent<ShouldStartLoadRequest>;
+export type ShouldStartLoadRequestEvent =
+  NativeSyntheticEvent<ShouldStartLoadRequest>;
 
 export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
 
@@ -179,7 +185,8 @@ export type WebViewTerminatedEvent = NativeSyntheticEvent<WebViewNativeEvent>;
 
 export type WebViewHttpErrorEvent = NativeSyntheticEvent<WebViewHttpError>;
 
-export type WebViewRenderProcessGoneEvent = NativeSyntheticEvent<WebViewRenderProcessGoneDetail>;
+export type WebViewRenderProcessGoneEvent =
+  NativeSyntheticEvent<WebViewRenderProcessGoneDetail>;
 
 export type WebViewScrollEvent = NativeSyntheticEvent<NativeScrollEvent>;
 
@@ -196,7 +203,11 @@ export type DataDetectorTypes =
 
 export type OverScrollModeType = 'always' | 'content' | 'never';
 
-export type CacheMode = 'LOAD_DEFAULT' | 'LOAD_CACHE_ONLY' | 'LOAD_CACHE_ELSE_NETWORK' | 'LOAD_NO_CACHE';
+export type CacheMode =
+  | 'LOAD_DEFAULT'
+  | 'LOAD_CACHE_ONLY'
+  | 'LOAD_CACHE_ELSE_NETWORK'
+  | 'LOAD_NO_CACHE';
 
 export type AndroidLayerType = 'none' | 'software' | 'hardware';
 
@@ -259,6 +270,9 @@ export interface ViewManager {
   captureScreen: Function;
   capturePage: Function;
   findInPage: Function;
+  findNext: Function;
+  findPrevious: Function;
+  removeAllHighlights: Function;
   printContent: Function;
 }
 
@@ -266,7 +280,10 @@ export interface WebViewNativeConfig {
   /**
    * The native component used to render the WebView.
    */
-  component?: typeof NativeWebViewIOS | typeof NativeWebViewMacOS | typeof NativeWebViewAndroid;
+  component?:
+    | typeof NativeWebViewIOS
+    | typeof NativeWebViewMacOS
+    | typeof NativeWebViewAndroid;
   /**
    * Set props directly on the native component WebView. Enables custom props which the
    * original WebView doesn't pass through.
@@ -317,7 +334,6 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onLoadingStart: (event: WebViewNavigationEvent) => void;
   onHttpError: (event: WebViewHttpErrorEvent) => void;
   onMessage: (event: WebViewMessageEvent) => void;
-  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   onWebViewClosed?: (event: WebViewNavigationEvent) => void;
   onShouldStartLoadWithRequest: (event: ShouldStartLoadRequestEvent) => void;
   showsHorizontalScrollIndicator?: boolean;
@@ -338,6 +354,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   allowFileAccess?: boolean;
   scalesPageToFit?: boolean;
   allowFileAccessFromFileURLs?: boolean;
+  allowsFullscreenVideo?: boolean;
   allowUniversalAccessFromFileURLs?: boolean;
   androidHardwareAccelerationDisabled?: boolean;
   androidLayerType?: AndroidLayerType;
@@ -348,21 +365,29 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   onContentSizeChange?: (event: WebViewEvent) => void;
   onRenderProcessGone?: (event: WebViewRenderProcessGoneEvent) => void;
   onCaptureScreen?: (event: WebViewMessageEvent) => void;
+  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
   overScrollMode?: OverScrollModeType;
   saveFormDataDisabled?: boolean;
   setSupportMultipleWindows?: boolean;
   textZoom?: number;
   thirdPartyCookiesEnabled?: boolean;
   messagingModuleName?: string;
-  setBuiltInZoomControls?: boolean,
-  setDisplayZoomControls?: boolean,
+  setBuiltInZoomControls?: boolean;
+  setDisplayZoomControls?: boolean;
   nestedScrollEnabled?: boolean;
   readonly urlPrefixesForDefaultIntent?: string[];
   forceDarkOn?: boolean;
   adblockRules?: string[];
+  minimumFontSize?: number;
+  downloadingMessage?: string;
+  lackPermissionToDownloadMessage?: string;
 }
 
-export declare type ContentInsetAdjustmentBehavior = 'automatic' | 'scrollableAxes' | 'never' | 'always';
+export declare type ContentInsetAdjustmentBehavior =
+  | 'automatic'
+  | 'scrollableAxes'
+  | 'never'
+  | 'always';
 
 export declare type MediaCapturePermissionGrantType =
   | 'grantIfSameHostElsePrompt'
@@ -377,6 +402,7 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowingReadAccessToURL?: string;
   allowsBackForwardNavigationGestures?: boolean;
   allowsInlineMediaPlayback?: boolean;
+  allowsAirPlayForMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
   allowFileAccessFromFileURLs?: boolean;
   allowUniversalAccessFromFileURLs?: boolean;
@@ -390,16 +416,25 @@ export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
   decelerationRate?: number;
   directionalLockEnabled?: boolean;
   hideKeyboardAccessoryView?: boolean;
+  javaScriptEnabled?: boolean;
   pagingEnabled?: boolean;
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
   onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
   contentRuleLists?: string[];
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adBlockAllowList?: string[];
   injectedJavaScriptForMainFrameOnly?: boolean;
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
   onFileDownload?: (event: FileDownloadEvent) => void;
   limitsNavigationsToAppBoundDomains?: boolean;
+  textInteractionEnabled?: boolean;
   mediaCapturePermissionGrantType?: MediaCapturePermissionGrantType;
+  onShouldCreateNewWindow: (event: WebViewNavigationEvent) => void;
 }
 
 export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -408,6 +443,7 @@ export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
   allowUniversalAccessFromFileURLs?: boolean;
   allowsBackForwardNavigationGestures?: boolean;
   allowsInlineMediaPlayback?: boolean;
+  allowsAirPlayForMediaPlayback?: boolean;
   allowsLinkPreview?: boolean;
   automaticallyAdjustContentInsets?: boolean;
   bounces?: boolean;
@@ -415,6 +451,7 @@ export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
   contentInsetAdjustmentBehavior?: ContentInsetAdjustmentBehavior;
   directionalLockEnabled?: boolean;
   hideKeyboardAccessoryView?: boolean;
+  javaScriptEnabled?: boolean;
   pagingEnabled?: boolean;
   scrollEnabled?: boolean;
   useSharedProcessPool?: boolean;
@@ -422,7 +459,11 @@ export interface MacOSNativeWebViewProps extends CommonNativeWebViewProps {
 }
 
 export interface WindowsNativeWebViewProps extends CommonNativeWebViewProps {
-  testID?: string
+  testID?: string;
+}
+
+export interface WindowsWebViewProps extends WebViewSharedProps {
+  useWebView2?: boolean;
 }
 
 export interface IOSWebViewProps extends WebViewSharedProps {
@@ -543,6 +584,11 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    */
   allowsInlineMediaPlayback?: boolean;
   /**
+   * A Boolean value indicating whether AirPlay is allowed. The default value is `false`.
+   * @platform ios
+   */
+  allowsAirPlayForMediaPlayback?: boolean;
+  /**
    * Hide the accessory view when the keyboard is open. Default is false to be
    * backward compatible.
    */
@@ -654,14 +700,14 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * If `true` (default), loads the `injectedJavaScript` only into the main frame.
    * If `false`, loads it into all frames (e.g. iframes).
    * @platform ios
-  */
+   */
   injectedJavaScriptForMainFrameOnly?: boolean;
 
   /**
    * If `true` (default), loads the `injectedJavaScriptBeforeContentLoaded` only into the main frame.
    * If `false`, loads it into all frames (e.g. iframes).
    * @platform ios
-  */
+   */
   injectedJavaScriptBeforeContentLoadedForMainFrameOnly?: boolean;
 
   /**
@@ -670,7 +716,7 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * If `true`, sets `bounces` automatically to `true`
    * @platform ios
    *
-  */
+   */
   pullToRefreshEnabled?: boolean;
 
   /**
@@ -680,6 +726,12 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    lockScroll?: number;
    adjustOffset?: object;
    contentRuleLists?: string[];
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adBlockAllowList?: string[];
 
   /**
    * Function that is invoked when the client needs to download a file.
@@ -703,12 +755,21 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * A Boolean value which, when set to `true`, indicates to WebKit that a WKWebView
    * will only navigate to app-bound domains. Once set, any attempt to navigate away
    * from an app-bound domain will fail with the error “App-bound domain failure.”
-   * 
+   *
    * Applications can specify up to 10 “app-bound” domains using a new
    * Info.plist key `WKAppBoundDomains`.
    * @platform ios
    */
   limitsNavigationsToAppBoundDomains?: boolean;
+
+  /**
+   * If false indicates to WebKit that a WKWebView will not interact with text, thus
+   * not showing a text selection loop. Only applicable for iOS 14.5 or greater.
+   *
+   * Defaults to true.
+   * @platform ios
+   */
+  textInteractionEnabled?: boolean;
 
   /**
    * This property specifies how to handle media capture permission requests.
@@ -732,10 +793,10 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    */
   enableApplePay?: boolean;
 
-  /** 
+  /**
    * An array of objects which will be added to the UIMenu controller when selecting text.
    * These will appear after a long press to select text.
-  */
+   */
   menuItems?: WebViewCustomMenuItems[];
 
   /**
@@ -807,6 +868,11 @@ export interface MacOSWebViewProps extends WebViewSharedProps {
    * @platform macos
    */
   allowsInlineMediaPlayback?: boolean;
+  /**
+   * A Boolean value indicating whether AirPlay is allowed. The default value is `false`.
+   * @platform macos
+   */
+  allowsAirPlayForMediaPlayback?: boolean;
   /**
    * Hide the accessory view when the keyboard is open. Default is false to be
    * backward compatible.
@@ -949,7 +1015,6 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    */
   geolocationEnabled?: boolean;
 
-
   /**
    * Boolean that sets whether JavaScript running in the context of a file
    * scheme URL should be allowed to access content from other file scheme URLs.
@@ -1001,7 +1066,7 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    */
   androidHardwareAccelerationDisabled?: boolean;
 
-    /**
+  /**
    * https://developer.android.com/reference/android/webkit/WebView#setLayerType(int,%20android.graphics.Paint)
    * Sets the layerType. Possible values are:
    *
@@ -1065,13 +1130,13 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
 
   /**
    * Configuring Dark Theme
-   * 
+   *
    * *NOTE* : The force dark setting is not persistent. You must call the static method every time your app process is started.
-   *  
+   *
    * *NOTE* : The change from day<->night mode is a configuration change so by default the activity will be restarted
-   * and pickup the new values to apply the theme. 
+   * and pickup the new values to apply the theme.
    * Take care when overriding this default behavior to ensure this method is still called when changes are made.
-   * 
+   *
    * @platform android
    */
   forceDarkOn?: boolean;
@@ -1083,16 +1148,16 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   setBuiltInZoomControls?: boolean;
-   
+
   /**
    * Boolean value to control whether built-in zooms controls are displayed. Used only in Android.
    * Default to false
    * Controls will always be hidden if setBuiltInZoomControls is set to `false`
-   * 
+   *
    * @platform android
    */
   setDisplayZoomControls?: boolean;
-  
+
   /**
    * Allows to scroll inside the webview when used inside a scrollview.
    * Behaviour already existing on iOS.
@@ -1103,6 +1168,28 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
   nestedScrollEnabled?: boolean;
 
   adblockRules?: string[];
+  
+  /**
+   * Sets the minimum font size.
+   * A non-negative integer between 1 and 72. Any number outside the specified range will be pinned.
+   * Default is 8.
+   * @platform android
+   */
+  minimumFontSize?: number;
+
+  /**
+   * Sets the message to be shown in the toast when downloading via the webview.
+   * Default is 'Downloading'.
+   * @platform android
+   */
+  downloadingMessage?: string;
+
+  /**
+   * Sets the message to be shown in the toast when webview is unable to download due to permissions issue.
+   * Default is 'Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files.'.
+   * @platform android
+   */
+  lackPermissionToDownloadMessage?: string;
 }
 
 export interface WebViewSharedProps extends ViewProps {
