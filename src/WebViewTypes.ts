@@ -24,7 +24,7 @@ export interface WebViewCommands {
   findNext: number;
   findPrevious: number;
   removeAllHighlights: number;
-  printContent:number
+  printContent: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {

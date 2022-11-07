@@ -297,6 +297,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  printContent = ()=>{
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().printContent,
+      undefined
+    )
+  }
+
   render() {
     const {
       onMessage,
