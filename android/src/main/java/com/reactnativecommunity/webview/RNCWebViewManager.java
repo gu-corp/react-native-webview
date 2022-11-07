@@ -1509,6 +1509,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return jsString;
     }
 
+    @TargetApi(19)
+    @SuppressLint("NewApi")
+    private void printContent(WebView webView) {
+
+        PrintManager printManager = (PrintManager) this.getSystemService(Context.PRINT_SERVICE);
+
+        PrintDocumentAdapter printAdapter = webView.createPrintDocumentAdapter();
+
+        String jobName = getString(R.string.app_name) + " Print Test";
+
+        printManager.print(jobName, printAdapter,new PrintAttributes.Builder().build());
+    }
+
     public void callInjectedJavaScript() {
       if(getSettings().getJavaScriptEnabled()){
         String jsSearch = loadSearchWebviewFile();
