@@ -18,6 +18,12 @@ import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
+
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintDocumentInfo;
+import android.print.PrintJob;
+import android.print.PrintManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
@@ -157,6 +163,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_SEARCH_NEXT = 11;
   public static final int COMMAND_SEARCH_PREVIOUS = 12;
   public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
+  public static final int COMMAND_PRINT_CONTENT = 14;
 
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
@@ -653,6 +660,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("findNext", COMMAND_SEARCH_NEXT);
     map.put("findPrevious", COMMAND_SEARCH_PREVIOUS);
     map.put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS);
+    map.put("printContent", COMMAND_PRINT_CONTENT);
     return map;
   }
 
@@ -718,6 +726,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_REMOVE_ALL_HIGHLIGHTS:
         ((RNCWebView) root).removeAllHighlights();
+        break;
+      case COMMAND_PRINT_CONTENT:
+        ((RNCWebView) root).printContent(root);
         break;
     }
   }
@@ -1507,6 +1518,26 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         e.printStackTrace();
       }
       return jsString;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    @SuppressWarnings("deprecation")
+    public void printContent(WebView webView) {
+
+      PrintManager printManager = (PrintManager) webView.getContext().getSystemService(Context.PRINT_SERVICE);
+
+      String jobName = "Print Document";
+      
+      PrintDocumentAdapter printAdapter;
+      if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        printAdapter = webView.createPrintDocumentAdapter(jobName);
+      }
+      else {
+        printAdapter = webView.createPrintDocumentAdapter();
+      }
+
+      printManager.print(jobName, printAdapter,
+        new PrintAttributes.Builder().build());
     }
 
     public void callInjectedJavaScript() {
