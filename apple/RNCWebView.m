@@ -224,7 +224,10 @@ RCTAutoInsetsProtocol>
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebView*)parentView {
   if (self = [self initWithFrame:parentView.frame]) {
-        _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
+      if (parentView.userAgent) {
+      _webView.customUserAgent = parentView.userAgent;
+    }
   }
   return self;
 }
