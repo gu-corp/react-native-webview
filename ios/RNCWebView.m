@@ -152,6 +152,9 @@ static NSDictionary* customCertificatesForHost;
     wkWebViewConfig = configuration;
     [self setupConfiguration:parentView];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    if (parentView.userAgent) {
+      _webView.customUserAgent = parentView.userAgent;
+    }
   }
   return self;
 }
