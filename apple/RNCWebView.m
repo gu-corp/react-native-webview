@@ -1061,7 +1061,7 @@ RCTAutoInsetsProtocol>
 
 - (void)setAdjustOffset:(CGPoint)adjustOffset {
   CGRect scrollBounds = _webView.scrollView.bounds;
-  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);;
+  scrollBounds.origin = CGPointMake(_webView.scrollView.contentOffset.x + adjustOffset.x, _webView.scrollView.contentOffset.y + adjustOffset.y);
   _webView.scrollView.bounds = scrollBounds;
   
   lastOffset = _webView.scrollView.contentOffset;
