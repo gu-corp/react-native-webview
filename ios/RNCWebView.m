@@ -186,6 +186,12 @@ static NSDictionary* customCertificatesForHost;
   }
 
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
+    NSString *jsFile = @"__firefox__";
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    [wkWebViewConfig.userContentController addUserScript:script];
 #if WEBKIT_IOS_10_APIS_AVAILABLE
   wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
     ? WKAudiovisualMediaTypeAll
@@ -1318,7 +1324,6 @@ static NSDictionary* customCertificatesForHost;
 - (WKWebView*)webview {
   return _webView;
 }
-
 - (void)setScrollToTop:(BOOL)scrollToTop {
   _webView.scrollView.scrollsToTop = scrollToTop;
 }
