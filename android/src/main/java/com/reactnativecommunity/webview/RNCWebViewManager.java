@@ -218,11 +218,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     reactContext.addLifecycleEventListener(webView);
     mWebViewConfig.configWebView(webView);
     WebSettings settings = webView.getSettings();
+    Log.d('~~~~~~~~~~~~~~~',settings.setTextZoomOut());
     settings.setBuiltInZoomControls(true);
     settings.setDisplayZoomControls(false);
     settings.setDomStorageEnabled(true);
     settings.setSupportMultipleWindows(true);
-
+    settings.setTextZoomOut(settings.setTextZoomOut());
     settings.setAllowFileAccess(true);
     settings.setAllowContentAccess(false);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -386,6 +387,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "textZoom")
   public void setTextZoom(WebView view, int value) {
     view.getSettings().setTextZoom(value);
+  }
+
+  @ReactProp(name = "setTextZoomOut")
+  public void setTextZoomOut(WebView view, int value) {
+    view.getSettings().setTextZoomOut(value);
   }
 
   @ReactProp(name = "scalesPageToFit")
@@ -1389,16 +1395,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void cloneSettings(RNCWebView parentView) {
       WebSettings settings = getSettings();
       WebSettings parentSettings = parentView.getSettings();
-
+      Log.d('===========',parentSettings.setTextZoomOut());
       settings.setBuiltInZoomControls(true);
       settings.setDisplayZoomControls(false);
       settings.setSupportMultipleWindows(true);
-
+      settings.setTextZoomOut(parentSettings.setTextZoomOut())
       settings.setJavaScriptEnabled(parentSettings.getJavaScriptEnabled());
       settings.setDomStorageEnabled(parentSettings.getDomStorageEnabled());
       settings.setLoadWithOverviewMode(parentSettings.getLoadWithOverviewMode());
       settings.setUseWideViewPort(parentSettings.getUseWideViewPort());
-      settings.setTextZoom(parentSettings.getTextZoom());
+      settings.setTextZoom(parentSettings.setTextZoom());
       settings.setUserAgentString(parentSettings.getUserAgentString());
       settings.setMediaPlaybackRequiresUserGesture(parentSettings.getMediaPlaybackRequiresUserGesture());
 
