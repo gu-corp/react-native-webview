@@ -1802,6 +1802,14 @@ didFinishNavigation:(WKNavigation *)navigation
   ];
   WKUserScript *script = [[WKUserScript alloc] initWithSource:html5HistoryAPIShimSource injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
   [wkWebViewConfig.userContentController addUserScript:script];
+
+  // enable picture-in-picture on Youtube
+  NSString *jsFile = @"__firefox__";
+  NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+  NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+  NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+  WKUserScript *pictureInPictureScript = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+  [wkWebViewConfig.userContentController addUserScript:pictureInPictureScript];
   
   if(_sharedCookiesEnabled) {
     // More info to sending cookies with WKWebView
