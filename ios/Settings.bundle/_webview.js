@@ -125,9 +125,6 @@ window.__firefox__.includeOnce("MediaBackgrounding", function($) {
         element.addEventListener('webkitpresentationmodechanged', $(function(e) {
           e.stopPropagation();
         }), true);
-        setTimeout($(function() {
-          element.webkitSetPresentationMode('picture-in-picture');
-        }), 2000);
     }
   });
   const queue = [];
