@@ -30,7 +30,7 @@ import styles from './WebView.styles';
 const codegenNativeCommands = codegenNativeCommandsUntyped as <T extends {}>(options: { supportedCommands: (keyof T)[] }) => T;
 
 const Commands = codegenNativeCommands({
-  supportedCommands: ['goBack', 'goForward', 'reload', 'stopLoading', 'injectJavaScript', 'requestFocus', 'postMessage', 'clearFormData', 'clearCache', 'clearHistory', 'loadUrl', 'captureScreen', 'findInPage', 'findNext', 'findPrevious', 'removeAllHighlights'],
+  supportedCommands: ['goBack', 'goForward', 'reload', 'stopLoading', 'injectJavaScript', 'requestFocus', 'postMessage', 'clearFormData', 'clearCache', 'clearHistory', 'loadUrl', 'captureScreen', 'findInPage', 'findNext', 'findPrevious', 'removeAllHighlights', 'printContent'],
 });
 
 const { resolveAssetSource } = Image;
@@ -125,6 +125,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(({
     findNext: () => Commands.findNext(webViewRef.current),
     findPrevious: () => Commands.findPrevious(webViewRef.current),
     removeAllHighlights: () => Commands.removeAllHighlights(webViewRef.current),
+    printContent: () => Commands.printContent(webViewRef.current),
     clearFormData: () => Commands.clearFormData(webViewRef.current),
     clearCache: (includeDiskFiles: boolean) => Commands.clearCache(webViewRef.current, includeDiskFiles),
     clearHistory: () => Commands.clearHistory(webViewRef.current),

@@ -224,7 +224,10 @@ RCTAutoInsetsProtocol>
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebView*)parentView {
   if (self = [self initWithFrame:parentView.frame]) {
-        _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
+      _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: configuration];
+      if (parentView.userAgent) {
+      _webView.customUserAgent = parentView.userAgent;
+    }
   }
   return self;
 }
@@ -1058,7 +1061,7 @@ RCTAutoInsetsProtocol>
 
 - (void)setAdjustOffset:(CGPoint)adjustOffset {
   CGRect scrollBounds = _webView.scrollView.bounds;
-  scrollBounds.origin = CGPointMake(0, _webView.scrollView.contentOffset.y + adjustOffset.y);;
+  scrollBounds.origin = CGPointMake(_webView.scrollView.contentOffset.x + adjustOffset.x, _webView.scrollView.contentOffset.y + adjustOffset.y);
   _webView.scrollView.bounds = scrollBounds;
   
   lastOffset = _webView.scrollView.contentOffset;
@@ -1350,9 +1353,13 @@ RCTAutoInsetsProtocol>
   
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    if (request.mainDocumentURL) {
+      [event addEntriesFromDictionary: @{
+        @"mainDocumentURL": (request.mainDocumentURL).absoluteString,
+      }];
+    }
     [event addEntriesFromDictionary: @{
       @"url": (request.URL).absoluteString,
-      @"mainDocumentURL": (request.mainDocumentURL).absoluteString,
       @"navigationType": navigationTypes[@(navigationType)],
       @"isTopFrame": @(isTopFrame)
     }];

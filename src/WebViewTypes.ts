@@ -25,7 +25,8 @@ type WebViewCommands =
   | 'findInPage'
   | 'findNext' 
   | 'findPrevious' 
-  | 'removeAllHighlights';
+  | 'removeAllHighlights'
+  | 'printContent';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearCache' | 'clearFormData';
 
