@@ -175,7 +175,9 @@ class WebView extends React.Component<IOSWebViewProps, State> {
   removeAllHighlights = () => {
     return RNCWebViewManager.removeAllHighlights(this.getWebViewHandle());
   }
-
+  setFontSize = (size?: number) => {
+    return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
+  }
   /**
    * Posts a message to the web view, which will emit a `message` event.
    * Accepts one argument, `data`, which must be a string.
