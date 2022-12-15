@@ -272,6 +272,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       [String(data)]
     );
   };
+  setFontSize = (data: number) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().setFontSize,
+      [Number(data)]
+    );
+  };
 
   findNext = () => {
     UIManager.dispatchViewManagerCommand(
