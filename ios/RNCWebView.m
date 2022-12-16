@@ -505,6 +505,7 @@ static NSDictionary* customCertificatesForHost;
         _webView.scrollView.contentInsetAdjustmentBehavior = behavior;
         _webView.scrollView.contentOffset = contentOffset;
     }
+    }
 }
 #endif
 
@@ -1106,7 +1107,11 @@ static NSDictionary* customCertificatesForHost;
     if (@available(iOS 11.0, *)) {
      
       BOOL isAllowWebsite = false;
-        
+      NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
+      NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
+      NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
+      NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
+      WKUserScript *scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
       if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
         isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
@@ -1119,6 +1124,7 @@ static NSDictionary* customCertificatesForHost;
               [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
                 if (!error) {
                   [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                  [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
                 }
               }];
             }
