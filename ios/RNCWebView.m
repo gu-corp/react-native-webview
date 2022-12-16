@@ -505,7 +505,6 @@ static NSDictionary* customCertificatesForHost;
         _webView.scrollView.contentInsetAdjustmentBehavior = behavior;
         _webView.scrollView.contentOffset = contentOffset;
     }
-    }
 }
 #endif
 
