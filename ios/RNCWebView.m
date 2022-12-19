@@ -1123,6 +1123,7 @@ static NSDictionary* customCertificatesForHost;
               [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
                 if (!error) {
                   [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                  // add youtubeAdblock
                   [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
                 }
               }];
@@ -1130,6 +1131,8 @@ static NSDictionary* customCertificatesForHost;
           }
         }];
       } else {
+        // remove youtubeAdblock --> resetUpScript
+        [self resetupScripts:_webView.configuration];
         [webView.configuration.userContentController removeAllContentRuleLists];
       }
     }
@@ -1304,6 +1307,158 @@ static NSDictionary* customCertificatesForHost;
   _bounces = bounces;
   _webView.scrollView.bounces = bounces;
 }
+
+- (void)resetupScripts:(WKWebViewConfiguration *)wkWebViewConfig {
+  [wkWebViewConfig.userContentController removeAllUserScripts];
+  [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
+//  if(self.enableApplePay){
+//    if (self.postMessageScript){
+//      [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
+//                                                                name:MessageHandlerName];
+//    }
+//    return;
+//  }
+  
+//  NSString *html5HistoryAPIShimSource = [NSString stringWithFormat:
+//                                           @"(function(history) {\n"
+//                                         "  function notify(type) {\n"
+//                                         "    setTimeout(function() {\n"
+//                                         "      window.webkit.messageHandlers.%@.postMessage(type)\n"
+//                                         "    }, 0)\n"
+//                                         "  }\n"
+//                                         "  function shim(f) {\n"
+//                                         "    return function pushState() {\n"
+//                                         "      notify('other')\n"
+//                                         "      return f.apply(history, arguments)\n"
+//                                         "    }\n"
+//                                         "  }\n"
+//                                         "  history.pushState = shim(history.pushState)\n"
+//                                         "  history.replaceState = shim(history.replaceState)\n"
+//                                         "  window.addEventListener('popstate', function() {\n"
+//                                         "    notify('backforward')\n"
+//                                         "  })\n"
+//                                         "})(window.history)\n", HistoryShimName
+//  ];
+//  WKUserScript *script = [[WKUserScript alloc] initWithSource:html5HistoryAPIShimSource injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+//  [wkWebViewConfig.userContentController addUserScript:script];
+  
+  if(_sharedCookiesEnabled) {
+    // More info to sending cookies with WKWebView
+    // https://stackoverflow.com/questions/26573137/can-i-set-the-cookies-to-be-used-by-a-wkwebview/26577303#26577303
+    if (@available(iOS 11.0, *)) {
+      // Set Cookies in iOS 11 and above, initialize websiteDataStore before setting cookies
+      // See also https://forums.developer.apple.com/thread/97194
+      // check if websiteDataStore has not been initialized before
+      if(!_incognito && !_cacheEnabled) {
+        wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+      }
+//      [self syncCookiesToWebView:nil];
+        for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
+                [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+        }
+    } else {
+      NSMutableString *script = [NSMutableString string];
+      
+      // Clear all existing cookies in a direct called function. This ensures that no
+      // javascript error will break the web content javascript.
+      // We keep this code here, if someone requires that Cookies are also removed within the
+      // the WebView and want to extends the current sharedCookiesEnabled option with an
+      // additional property.
+      // Generates JS: document.cookie = "key=; Expires=Thu, 01 Jan 1970 00:00:01 GMT;"
+      // for each cookie which is already available in the WebView context.
+      /*
+       [script appendString:@"(function () {\n"];
+       [script appendString:@"  var cookies = document.cookie.split('; ');\n"];
+       [script appendString:@"  for (var i = 0; i < cookies.length; i++) {\n"];
+       [script appendString:@"    if (cookies[i].indexOf('=') !== -1) {\n"];
+       [script appendString:@"      document.cookie = cookies[i].split('=')[0] + '=; Expires=Thu, 01 Jan 1970 00:00:01 GMT';\n"];
+       [script appendString:@"    }\n"];
+       [script appendString:@"  }\n"];
+       [script appendString:@"})();\n\n"];
+       */
+      
+      // Set cookies in a direct called function. This ensures that no
+      // javascript error will break the web content javascript.
+      // Generates JS: document.cookie = "key=value; Path=/; Expires=Thu, 01 Jan 20xx 00:00:01 GMT;"
+      // for each cookie which is available in the application context.
+      [script appendString:@"(function () {\n"];
+      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
+        [script appendFormat:@"document.cookie = %@ + '=' + %@",
+         RCTJSONStringify(cookie.name, NULL),
+         RCTJSONStringify(cookie.value, NULL)];
+        if (cookie.path) {
+          [script appendFormat:@" + '; Path=' + %@", RCTJSONStringify(cookie.path, NULL)];
+        }
+        if (cookie.expiresDate) {
+          [script appendFormat:@" + '; Expires=' + new Date(%f).toUTCString()",
+           cookie.expiresDate.timeIntervalSince1970 * 1000
+          ];
+        }
+        [script appendString:@";\n"];
+      }
+      [script appendString:@"})();\n"];
+      
+      WKUserScript* cookieInScript = [[WKUserScript alloc] initWithSource:script
+                                                            injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                         forMainFrameOnly:YES];
+      [wkWebViewConfig.userContentController addUserScript:cookieInScript];
+    }
+  }
+  
+    if (_messagingEnabled) {
+        [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
+
+        NSString *source = [NSString stringWithFormat:
+          @"window.%@ = {"
+           "  postMessage: function (data) {"
+           "    window.webkit.messageHandlers.%@.postMessage(String(data));"
+           "  }"
+           "};", MessageHandlerName, MessageHandlerName
+        ];
+
+        WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        [wkWebViewConfig.userContentController addUserScript:script];
+      }
+    
+        if (_injectedJavaScriptBeforeDocumentLoad) {
+          WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
+                                                                injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                             forMainFrameOnly:YES];
+          [wkWebViewConfig.userContentController addUserScript:script];
+        }
+    
+        // enable picture-in-picture on youtube
+        NSString *jsFile = @"__firefox__";
+        NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+        NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+        NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+        WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        [wkWebViewConfig.userContentController addUserScript:script];
+
+        if (resourceBundle) {
+          NSString *jsFile = @"_webview";
+
+          NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+          NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+          NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+          [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+        }
+//  if(_messagingEnabled){
+//    if (self.postMessageScript){
+//      [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
+//                                                                name:MessageHandlerName];
+//      [wkWebViewConfig.userContentController addUserScript:self.postMessageScript];
+//    }
+//    if (self.atEndScript) {
+//      [wkWebViewConfig.userContentController addUserScript:self.atEndScript];
+//    }
+//  }
+//  // Whether or not messaging is enabled, add the startup script if it exists.
+//  if (self.atStartScript) {
+//    [wkWebViewConfig.userContentController addUserScript:self.atStartScript];
+//  }
+}
+
 
 - (NSURLRequest *)requestForSource:(id)json {
   NSURLRequest *request = [RCTConvert NSURLRequest:self.source];
