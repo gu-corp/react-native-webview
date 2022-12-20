@@ -81,6 +81,8 @@ static NSDictionary* customCertificatesForHost;
   BOOL longPress;
   NSBundle* resourceBundle;
   WKWebViewConfiguration *wkWebViewConfig;
+  // Youtube Videos Without Ads
+  WKUserScript *scriptYoutubeAdblock;
     
   CGPoint lastOffset;
   BOOL decelerating;
@@ -1106,15 +1108,19 @@ static NSDictionary* customCertificatesForHost;
     if (@available(iOS 11.0, *)) {
      
       BOOL isAllowWebsite = false;
-      NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
-      NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
-      NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
-      NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
-      WKUserScript *scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+      if(scriptYoutubeAdblock == nil) {
+        NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
+        NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
+        NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
+        NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
+        scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+      }
+      
       if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
         isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
-
+        
+      bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
       if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
         WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
         [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
@@ -1123,17 +1129,21 @@ static NSDictionary* customCertificatesForHost;
               [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
                 if (!error) {
                   [webView.configuration.userContentController addContentRuleList:contentRuleList];
-                  // add youtubeAdblock
-                  [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
+                  // add youtubeAdblock 
+                  if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
+                    [webView.configuration.userContentController addUserScript:self->scriptYoutubeAdblock];
+                  }
                 }
               }];
             }
           }
         }];
       } else {
-        // remove youtubeAdblock --> resetUpScript
-        [self resetupScripts:_webView.configuration];
         [webView.configuration.userContentController removeAllContentRuleLists];
+        // remove youtubeAdblock --> remove all userScripts and then add common scripts
+        if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true){
+          [self resetupScripts:_webView.configuration];
+        }
       }
     }
   }
@@ -1143,7 +1153,10 @@ static NSDictionary* customCertificatesForHost;
 }
 
 
-
+- (bool)isYoutubeWebsite:(NSString *)domain
+{
+  return [domain  isEqual: @"m.youtube.com"] || [domain  isEqual: @"www.youtube.com"];
+}
 
 /**
  * Called when the web view’s content process is terminated.
@@ -1322,10 +1335,9 @@ static NSDictionary* customCertificatesForHost;
       if(!_incognito && !_cacheEnabled) {
         wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
       }
-//      [self syncCookiesToWebView:nil];
-        for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
-                [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
-        }
+      for (NSHTTPCookie *cookie in [[NSHTTPCookieStorage sharedHTTPCookieStorage] cookies]) {
+              [wkWebViewConfig.websiteDataStore.httpCookieStore setCookie:cookie completionHandler:nil];
+      }
     } else {
       NSMutableString *script = [NSMutableString string];
       
@@ -1404,15 +1416,6 @@ static NSDictionary* customCertificatesForHost;
   NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
   WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
   [wkWebViewConfig.userContentController addUserScript:script];
-
-  if (resourceBundle) {
-    NSString *jsFile = @"_webview";
-
-    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
-  }
 }
 
 
