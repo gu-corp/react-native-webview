@@ -157,5 +157,3 @@
   setJS('ytInitialPlayerResponse.adPlacements', 'undefined');
   setJS('playerResponse.adPlacements', 'undefined');
 })();
-
-console.log('=====> run __youtubeAdblock__.js ');

@@ -602,5 +602,3 @@ window.__firefox__.includeOnce("MediaBackgrounding", function($) {
     characterDataOldValue: false
   });
 });
-
-console.log('=====> run __firefox__.js ');

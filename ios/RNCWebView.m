@@ -1311,36 +1311,6 @@ static NSDictionary* customCertificatesForHost;
 - (void)resetupScripts:(WKWebViewConfiguration *)wkWebViewConfig {
   [wkWebViewConfig.userContentController removeAllUserScripts];
   [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
-//  if(self.enableApplePay){
-//    if (self.postMessageScript){
-//      [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
-//                                                                name:MessageHandlerName];
-//    }
-//    return;
-//  }
-  
-//  NSString *html5HistoryAPIShimSource = [NSString stringWithFormat:
-//                                           @"(function(history) {\n"
-//                                         "  function notify(type) {\n"
-//                                         "    setTimeout(function() {\n"
-//                                         "      window.webkit.messageHandlers.%@.postMessage(type)\n"
-//                                         "    }, 0)\n"
-//                                         "  }\n"
-//                                         "  function shim(f) {\n"
-//                                         "    return function pushState() {\n"
-//                                         "      notify('other')\n"
-//                                         "      return f.apply(history, arguments)\n"
-//                                         "    }\n"
-//                                         "  }\n"
-//                                         "  history.pushState = shim(history.pushState)\n"
-//                                         "  history.replaceState = shim(history.replaceState)\n"
-//                                         "  window.addEventListener('popstate', function() {\n"
-//                                         "    notify('backforward')\n"
-//                                         "  })\n"
-//                                         "})(window.history)\n", HistoryShimName
-//  ];
-//  WKUserScript *script = [[WKUserScript alloc] initWithSource:html5HistoryAPIShimSource injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-//  [wkWebViewConfig.userContentController addUserScript:script];
   
   if(_sharedCookiesEnabled) {
     // More info to sending cookies with WKWebView
@@ -1405,58 +1375,44 @@ static NSDictionary* customCertificatesForHost;
     }
   }
   
-    if (_messagingEnabled) {
-        [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
+  if (_messagingEnabled) {
+    [wkWebViewConfig.userContentController addScriptMessageHandler:self name:MessageHandlerName];
 
-        NSString *source = [NSString stringWithFormat:
-          @"window.%@ = {"
-           "  postMessage: function (data) {"
-           "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-           "  }"
-           "};", MessageHandlerName, MessageHandlerName
-        ];
+    NSString *source = [NSString stringWithFormat:
+      @"window.%@ = {"
+        "  postMessage: function (data) {"
+        "    window.webkit.messageHandlers.%@.postMessage(String(data));"
+        "  }"
+        "};", MessageHandlerName, MessageHandlerName
+    ];
 
-        WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-        [wkWebViewConfig.userContentController addUserScript:script];
-      }
-    
-        if (_injectedJavaScriptBeforeDocumentLoad) {
-          WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
-                                                                injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                             forMainFrameOnly:YES];
-          [wkWebViewConfig.userContentController addUserScript:script];
-        }
-    
-        // enable picture-in-picture on youtube
-        NSString *jsFile = @"__firefox__";
-        NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-        NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-        NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-        WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-        [wkWebViewConfig.userContentController addUserScript:script];
+    WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    [wkWebViewConfig.userContentController addUserScript:script];
+  }
+  
+  if (_injectedJavaScriptBeforeDocumentLoad) {
+    WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad
+                                                  injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                  forMainFrameOnly:YES];
+    [wkWebViewConfig.userContentController addUserScript:script];
+  }
+  
+  // enable picture-in-picture on youtube
+  NSString *jsFile = @"__firefox__";
+  NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+  NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+  NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+  WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+  [wkWebViewConfig.userContentController addUserScript:script];
 
-        if (resourceBundle) {
-          NSString *jsFile = @"_webview";
+  if (resourceBundle) {
+    NSString *jsFile = @"_webview";
 
-          NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-          NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-          NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-          [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
-        }
-//  if(_messagingEnabled){
-//    if (self.postMessageScript){
-//      [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
-//                                                                name:MessageHandlerName];
-//      [wkWebViewConfig.userContentController addUserScript:self.postMessageScript];
-//    }
-//    if (self.atEndScript) {
-//      [wkWebViewConfig.userContentController addUserScript:self.atEndScript];
-//    }
-//  }
-//  // Whether or not messaging is enabled, add the startup script if it exists.
-//  if (self.atStartScript) {
-//    [wkWebViewConfig.userContentController addUserScript:self.atStartScript];
-//  }
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+  }
 }
 
 
