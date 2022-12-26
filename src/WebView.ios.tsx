@@ -175,6 +175,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
   removeAllHighlights = () => {
     return RNCWebViewManager.removeAllHighlights(this.getWebViewHandle());
   }
+  
   setFontSize = (size?: number) => {
     return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
   }
@@ -188,6 +189,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
    * document.addEventListener('message', e => { document.title = e.data; });
    * ```
    */
+  
   postMessage = (data: string) => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
