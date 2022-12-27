@@ -120,7 +120,7 @@ RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adjustOffset, CGPoint)
 RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
-RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
+// RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 
 /**
  * Expose methods to enable messaging the webview.
