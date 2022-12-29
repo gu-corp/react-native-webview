@@ -1471,6 +1471,11 @@ static NSDictionary* customCertificatesForHost;
   [_webView removeAllHighlights];
 }
 
+- (void)setFontSize:(nonnull NSNumber *)size {
+    double fontSize = [size doubleValue];
+    [_webView setValue:[NSNumber numberWithDouble:fontSize] forKey:@"viewScale"];
+}
+
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
   [_webView contentFrameCapture:^(UIImage *capturedImage) {
     NSDate *date = [NSDate new];

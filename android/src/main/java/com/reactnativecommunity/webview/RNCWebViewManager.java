@@ -164,7 +164,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_SEARCH_PREVIOUS = 12;
   public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
   public static final int COMMAND_PRINT_CONTENT = 14;
-
+  public static final int COMMAND_SET_FONT_SIZE = 15;
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
@@ -222,7 +222,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     settings.setDisplayZoomControls(false);
     settings.setDomStorageEnabled(true);
     settings.setSupportMultipleWindows(true);
-
     settings.setAllowFileAccess(true);
     settings.setAllowContentAccess(false);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -661,6 +660,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("findPrevious", COMMAND_SEARCH_PREVIOUS);
     map.put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS);
     map.put("printContent", COMMAND_PRINT_CONTENT);
+    map.put("setFontSize", COMMAND_SET_FONT_SIZE);
+
     return map;
   }
 
@@ -717,6 +718,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_SEARCH_IN_PAGE:
         ((RNCWebView) root).searchInPage(args.getString(0));
+        break;
+      case COMMAND_SET_FONT_SIZE:
+        ((RNCWebView) root).setFontSize(args.getInt(0));
         break;
       case COMMAND_SEARCH_NEXT:
         ((RNCWebView) root).searchNext();
@@ -1675,6 +1679,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void removeAllHighlights() {
       this.loadUrl("javascript:myAppSearchDoneInThePage()");
+    }
+    public void setFontSize(Number size) {
+      WebView webView = this;
+      webView.getSettings().setTextZoom((int) size);
     }
   }
 }

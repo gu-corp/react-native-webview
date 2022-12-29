@@ -25,6 +25,7 @@ export interface WebViewCommands {
   findPrevious: number;
   removeAllHighlights: number;
   printContent: number;
+  setFontSize: number; // Only Support IOS OS
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -41,6 +42,7 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   captureScreen: (viewTag: number) => Promise<string>;
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
+  setFontSize: (viewTag: number) => Promise<number>;
 }
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
@@ -218,6 +220,7 @@ export interface ViewManager {
   findPrevious: Function;
   removeAllHighlights: Function;
   printContent: Function;
+  setFontSize: Function; // Only Support IOS OS
 }
 
 export interface WebViewNativeConfig {
