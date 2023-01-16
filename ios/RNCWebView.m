@@ -83,6 +83,8 @@ static NSDictionary* customCertificatesForHost;
   WKWebViewConfiguration *wkWebViewConfig;
   // Youtube Videos Without Ads
   WKUserScript *scriptYoutubeAdblock;
+  // Picture-in-picture feature on Youtube page
+  WKUserScript *scriptYoutubePictureInPicture;
     
   CGPoint lastOffset;
   BOOL decelerating;
@@ -188,12 +190,6 @@ static NSDictionary* customCertificatesForHost;
   }
 
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
-    NSString *jsFile = @"__firefox__";
-    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-    WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-    [wkWebViewConfig.userContentController addUserScript:script];
 #if WEBKIT_IOS_10_APIS_AVAILABLE
   wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
     ? WKAudiovisualMediaTypeAll
@@ -1106,7 +1102,6 @@ static NSDictionary* customCertificatesForHost;
     
     // allowlist function
     if (@available(iOS 11.0, *)) {
-     
       BOOL isAllowWebsite = false;
       if(scriptYoutubeAdblock == nil) {
         NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
@@ -1129,7 +1124,7 @@ static NSDictionary* customCertificatesForHost;
               [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
                 if (!error) {
                   [webView.configuration.userContentController addContentRuleList:contentRuleList];
-                  // add youtubeAdblock 
+                  // add youtubeAdblock
                   if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
                     [webView.configuration.userContentController addUserScript:self->scriptYoutubeAdblock];
                   }
@@ -1143,6 +1138,26 @@ static NSDictionary* customCertificatesForHost;
         // remove youtubeAdblock --> remove all userScripts and then add common scripts
         if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true){
           [self resetupScripts:_webView.configuration];
+        }
+      }
+    }
+  }
+    
+  // enable picture-in-picture feature on youtube page
+  // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
+  // Ref: https://github.com/brave/brave-ios  /blob/development/Client/Frontend/Browser/UserScriptManager.swift#L64
+  if (@available(iOS 14.0, *)) {
+    if(request.mainDocumentURL.host != nil) {
+      if([self isYoutubeWebsite:request.mainDocumentURL.host]) {
+        if(scriptYoutubePictureInPicture == nil) {
+          NSString *jsFile = @"__firefox__";
+          NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+          NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+          NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+          scriptYoutubePictureInPicture = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        }
+        if([webView.configuration.userContentController.userScripts containsObject:scriptYoutubePictureInPicture] == false) {
+          [wkWebViewConfig.userContentController addUserScript:scriptYoutubePictureInPicture];
         }
       }
     }
@@ -1408,14 +1423,6 @@ static NSDictionary* customCertificatesForHost;
                                                   forMainFrameOnly:YES];
     [wkWebViewConfig.userContentController addUserScript:script];
   }
-  
-  // enable picture-in-picture on youtube
-  NSString *jsFile = @"__firefox__";
-  NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-  NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-  NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-  WKUserScript *script = [[WKUserScript alloc] initWithSource:javascriptCode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-  [wkWebViewConfig.userContentController addUserScript:script];
 }
 
 

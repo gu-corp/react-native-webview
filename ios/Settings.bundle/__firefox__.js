@@ -1,4 +1,4 @@
-
+// https://github.com/brave/brave-ios  /blob/development/Client/Frontend/UserContent/UserScripts/__firefox__.js
 
 "use strict";
 
@@ -481,7 +481,7 @@ if (!window.__firefox__) {
   $.deepFreeze(webkit.messageHandlers);
 }
 
-
+// https://github.com/brave/brave-ios  /blob/development/Client/Frontend/UserContent/UserScripts/Scripts_Dynamic/Scripts/Paged/MediaBackgroundingScript.js
 window.__firefox__.includeOnce("MediaBackgrounding", function($) {
   var descriptor = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
   var visibilityState_Get = descriptor.get;
