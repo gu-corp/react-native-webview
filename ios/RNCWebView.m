@@ -190,6 +190,11 @@ static NSDictionary* customCertificatesForHost;
   }
 
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
+
+  // feature: zooming webpage with any value of viewport = "... user-scalable= no/yes "
+  // Enables Zoom in website by ignoring their javascript based viewport Scale limits.
+  wkWebViewConfig.ignoresViewportScaleLimits = true;
+
 #if WEBKIT_IOS_10_APIS_AVAILABLE
   wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
     ? WKAudiovisualMediaTypeAll
