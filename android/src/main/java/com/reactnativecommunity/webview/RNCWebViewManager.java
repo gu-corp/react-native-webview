@@ -1,5 +1,7 @@
 package com.reactnativecommunity.webview;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
@@ -110,7 +112,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-import static okhttp3.internal.Util.UTF_8;
 import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
