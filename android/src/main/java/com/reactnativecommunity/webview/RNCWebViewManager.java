@@ -857,6 +857,32 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       mainUrl = parentClient.mainUrl;
     }
 
+    private String currentPageUrl = null;
+
+    @Override
+    public void onLoadResource(WebView view, String url) {
+      super.onLoadResource(view, url);
+      String newRequestURL = view.getUrl();
+      if(newRequestURL != null && !newRequestURL.equals((currentPageUrl))){
+        currentPageUrl = newRequestURL;
+        dispatchEvent(
+          view,
+          new TopLoadingStartEvent(
+            view.getId(),
+            createWebViewEvent(view, currentPageUrl)));
+      }
+    }
+
+    @Override
+    public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+      super.doUpdateVisitedHistory(view, url, isReload);
+      dispatchEvent(
+        view,
+        new TopLoadingStartEvent(
+          view.getId(),
+          createWebViewEvent(view, currentPageUrl)));
+    }
+
     @Override
     public void onPageFinished(WebView webView, String url) {
       super.onPageFinished(webView, url);
