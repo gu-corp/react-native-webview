@@ -858,13 +858,16 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     private String currentPageUrl = null;
+    private String currentPageTitle = null;
 
     @Override
     public void onLoadResource(WebView view, String url) {
       super.onLoadResource(view, url);
       String newRequestURL = view.getUrl();
-      if(newRequestURL != null && !newRequestURL.equals((currentPageUrl))){
+      String newRequestTitle = view.getTitle();
+      if(newRequestURL != null && (!newRequestURL.equals((currentPageUrl)) || !newRequestTitle.equals((currentPageTitle)) )){
         currentPageUrl = newRequestURL;
+        currentPageTitle = newRequestTitle;
         dispatchEvent(
           view,
           new TopLoadingStartEvent(
