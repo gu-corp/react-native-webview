@@ -1554,6 +1554,22 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return jsString;
     }
 
+    public String loadYouTubeAdblockFile() {
+      String jsString = null;
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("youtubeAdblock.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        jsString = new String(readBytes);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return jsString;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @SuppressWarnings("deprecation")
     public void printContent(WebView webView) {
@@ -1577,7 +1593,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void callInjectedJavaScript() {
       if(getSettings().getJavaScriptEnabled()){
         String jsSearch = loadSearchWebviewFile();
-        if(jsSearch!=null) this.evaluateJavascriptWithFallback(jsSearch);
+        if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
+
+        String youtubeAdblockJs = loadYouTubeAdblockFile();
+        if(youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
       }
 
       if (getSettings().getJavaScriptEnabled() &&
