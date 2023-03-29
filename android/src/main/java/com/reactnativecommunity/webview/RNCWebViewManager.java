@@ -860,6 +860,41 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private String currentPageUrl = null;
     private String currentPageTitle = null;
 
+    public boolean getEnableYoutubeVideoAdblocker(String urlString) {
+      boolean enable = false;
+      try {
+        if(adblockEngines != null && checkYoutubeDomain(urlString)) {
+          BlockerResult blockerResult;
+          URL url = new URL(urlString);
+          for (Engine engine : adblockEngines) {
+            synchronized (engine) {
+              blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+              if (blockerResult.exception) {
+                enable = false;
+                break;
+              }
+            }
+          }
+          enable = true;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      return enable;
+    }
+
+    public boolean checkYoutubeDomain(String urlString) {
+      boolean result = false;
+      try {
+        URL url = new URL(urlString);
+        String host = url.getHost();
+        result = "m.youtube.com".equals(host) || "www.youtube.com".equals(host);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+      return result;
+    }
+
     @Override
     public void onLoadResource(WebView view, String url) {
       super.onLoadResource(view, url);
@@ -892,8 +927,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
       if (!mLastLoadFailed) {
         RNCWebView reactWebView = (RNCWebView) webView;
-
-        reactWebView.callInjectedJavaScript();
+        boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webView.getUrl());
+        reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
 
         emitFinishEvent(webView, url);
       }
@@ -1590,13 +1625,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         new PrintAttributes.Builder().build());
     }
 
-    public void callInjectedJavaScript() {
+    public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
       if(getSettings().getJavaScriptEnabled()){
         String jsSearch = loadSearchWebviewFile();
         if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
 
-        String youtubeAdblockJs = loadYouTubeAdblockFile();
-        if(youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
+        if(enableYoutubeAdblocker) {
+          String youtubeAdblockJs = loadYouTubeAdblockFile();
+          if (youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
+        }
       }
 
       if (getSettings().getJavaScriptEnabled() &&
