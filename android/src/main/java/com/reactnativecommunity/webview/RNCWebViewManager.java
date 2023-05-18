@@ -762,7 +762,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
           mVideoView = view;
           mCustomViewCallback = callback;
-
+          mVideoView.setId(R.id.focus_video_in_webview_fullscreen);
           mReactContext.getCurrentActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
 
           WritableMap data = Arguments.createMap();;

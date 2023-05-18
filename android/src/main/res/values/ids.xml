@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <item name="focus_video_in_webview_fullscreen" type="id" />
+</resources>
