@@ -198,7 +198,7 @@ static NSDictionary* customCertificatesForHost;
       "};", PrintScriptHandler
   ];
   
-  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
   [wkWebViewConfig.userContentController addUserScript:scriptPrint];
 
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
@@ -1450,7 +1450,7 @@ static NSDictionary* customCertificatesForHost;
       "};", PrintScriptHandler
   ];
 
-  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
   [wkWebViewConfig.userContentController addUserScript:scriptPrint];
   
   if (_injectedJavaScriptBeforeDocumentLoad) {
