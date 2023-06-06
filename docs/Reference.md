@@ -1037,6 +1037,14 @@ reload();
 
 Reloads the current page.
 
+### `printContent()`
+
+```javascript
+printContent();
+```
+
+Print the current page.
+
 ### `stopLoading()`
 
 ```javascript
@@ -1054,6 +1062,14 @@ injectJavaScript('... javascript string ...');
 Executes the JavaScript string.
 
 To learn more, read the [Communicating between JS and Native](Guide.md#communicating-between-js-and-native) guide.
+
+
+## Window Object
+
+### Methods
+
+- `print()`: Prints the content of the main window
+
 
 ## Other Docs
 
