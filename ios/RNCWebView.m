@@ -22,6 +22,7 @@
 
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
+static NSString *const PrintScriptHandler = @"printScriptHandler";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
 
@@ -188,6 +189,17 @@ static NSDictionary* customCertificatesForHost;
     WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
     [wkWebViewConfig.userContentController addUserScript:script];
   }
+    
+  // override window.print script
+  [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
+  NSString *sourcePrintScript = [NSString stringWithFormat:
+    @"window.print = function () {"
+      "    window.webkit.messageHandlers.%@.postMessage(String());"
+      "};", PrintScriptHandler
+  ];
+  
+  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+  [wkWebViewConfig.userContentController addUserScript:scriptPrint];
 
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
 
@@ -514,14 +526,19 @@ static NSDictionary* customCertificatesForHost;
 /**
  * This method is called whenever JavaScript running within the web view calls:
  *   - window.webkit.messageHandlers[MessageHandlerName].postMessage
+ *   - window.webkit.messageHandlers[PrintScriptHandler].postMessage
  */
 - (void)userContentController:(WKUserContentController *)userContentController
        didReceiveScriptMessage:(WKScriptMessage *)message
 {
-  if (_onMessage != nil) {
-    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-    [event addEntriesFromDictionary: @{@"data": message.body}];
-    _onMessage(event);
+  if(message.name == MessageHandlerName){
+    if (_onMessage != nil) {
+      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+      [event addEntriesFromDictionary: @{@"data": message.body}];
+      _onMessage(event);
+    }
+  } else if(message.name == PrintScriptHandler){
+    [self printContent];
   }
 }
 
@@ -1341,9 +1358,12 @@ static NSDictionary* customCertificatesForHost;
   _webView.scrollView.bounces = bounces;
 }
 
+
+// similar setupConfiguration
 - (void)resetupScripts:(WKWebViewConfiguration *)wkWebViewConfig {
   [wkWebViewConfig.userContentController removeAllUserScripts];
   [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
+  [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:PrintScriptHandler];
   
   if(_sharedCookiesEnabled) {
     // More info to sending cookies with WKWebView
@@ -1421,6 +1441,17 @@ static NSDictionary* customCertificatesForHost;
     WKUserScript *script = [[WKUserScript alloc] initWithSource:source injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
     [wkWebViewConfig.userContentController addUserScript:script];
   }
+
+  // override window.print script
+  [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
+  NSString *sourcePrintScript = [NSString stringWithFormat:
+    @"window.print = function () {"
+      "    window.webkit.messageHandlers.%@.postMessage(String());"
+      "};", PrintScriptHandler
+  ];
+
+  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+  [wkWebViewConfig.userContentController addUserScript:scriptPrint];
   
   if (_injectedJavaScriptBeforeDocumentLoad) {
     WKUserScript* script = [[WKUserScript alloc] initWithSource:_injectedJavaScriptBeforeDocumentLoad

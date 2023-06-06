@@ -23,8 +23,6 @@ import androidx.core.content.ContextCompat;
 
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
-import android.print.PrintDocumentInfo;
-import android.print.PrintJob;
 import android.print.PrintManager;
 import android.text.TextUtils;
 import android.util.Log;
@@ -173,6 +171,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected static final String HTML_ENCODING = "UTF-8";
   protected static final String HTML_MIME_TYPE = "text/html";
   protected static final String JAVASCRIPT_INTERFACE = "ReactNativeWebView";
+  protected static final String NATIVE_SCRIPT_INTERFACE = "nativeScriptHandler";
   protected static final String HTTP_METHOD_POST = "POST";
   // Use `webView.loadUrl("about:blank")` to reliably reset the view
   // state and release page resources (including any running JavaScript).
@@ -207,8 +206,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     return REACT_CLASS;
   }
 
+  @SuppressLint("AddJavascriptInterface")
   protected RNCWebView createRNCWebViewInstance(ThemedReactContext reactContext) {
-    return RNCWebView.createNewInstance(reactContext);
+    RNCWebView rncWebview = RNCWebView.createNewInstance(reactContext);
+    rncWebview.addJavascriptInterface(rncWebview.createRNCNativeWebViewBridge(rncWebview), NATIVE_SCRIPT_INTERFACE);
+    return rncWebview;
   }
 
   @Override
@@ -733,7 +735,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         ((RNCWebView) root).removeAllHighlights();
         break;
       case COMMAND_PRINT_CONTENT:
-        ((RNCWebView) root).printContent(root);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          ((RNCWebView) root).printContent();
+        }
         break;
     }
   }
@@ -929,6 +933,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         RNCWebView reactWebView = (RNCWebView) webView;
         boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webView.getUrl());
         reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
+        
+        reactWebView.linkWindowObject();
 
         emitFinishEvent(webView, url);
       }
@@ -1545,6 +1551,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return new RNCWebViewBridge(webView);
     }
 
+    protected RNCNativeWebviewBridge createRNCNativeWebViewBridge(RNCWebView webView) {
+      return new RNCNativeWebviewBridge(webView);
+    }
+
     @SuppressLint("AddJavascriptInterface")
     public void setMessagingEnabled(boolean enabled) {
       if (messagingEnabled == enabled) {
@@ -1607,22 +1617,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @SuppressWarnings("deprecation")
-    public void printContent(WebView webView) {
-
-      PrintManager printManager = (PrintManager) webView.getContext().getSystemService(Context.PRINT_SERVICE);
+    public void printContent() {
+      PrintManager printManager = (PrintManager) this.getContext().getSystemService(Context.PRINT_SERVICE);
 
       String jobName = "Print Document";
       
       PrintDocumentAdapter printAdapter;
       if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        printAdapter = webView.createPrintDocumentAdapter(jobName);
-      }
-      else {
-        printAdapter = webView.createPrintDocumentAdapter();
+        printAdapter = this.createPrintDocumentAdapter(jobName);
+      } else {
+        printAdapter = this.createPrintDocumentAdapter();
       }
 
-      printManager.print(jobName, printAdapter,
-        new PrintAttributes.Builder().build());
+      printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
     }
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
@@ -1641,6 +1648,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         !TextUtils.isEmpty(injectedJS)) {
         evaluateJavascriptWithFallback("(function() {\n" + injectedJS + ";\n})();");
       }
+    }
+
+    public void linkWindowObject() {
+      // override window.print method to call native function
+      this.evaluateJavascriptWithFallback("("+
+        "window.print = function () {"+
+          "window."+ NATIVE_SCRIPT_INTERFACE + ".print();"
+        +"});"
+        );
     }
 
     public void onMessage(String message) {
@@ -1711,6 +1727,26 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       @JavascriptInterface
       public void postMessage(String message) {
         mContext.onMessage(message);
+      }
+    }
+
+    public class RNCNativeWebviewBridge {
+      RNCWebView mContext;
+
+      RNCNativeWebviewBridge(RNCWebView c) {
+        mContext = c;
+      }
+
+      @JavascriptInterface
+      public void print() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          mContext.post(new Runnable() {
+            @Override
+            public void run() {
+              mContext.printContent();
+            }
+          });
+        }
       }
     }
 
