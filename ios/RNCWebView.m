@@ -165,6 +165,11 @@ static NSDictionary* customCertificatesForHost;
 }
 
 - (void)setupConfiguration:(RNCWebView*)sender {
+  // allow pop-ups
+  // TODO: need to check if we're going to upgradde react-native-webview to lastest version
+  // https://developer.apple.com/documentation/webkit/wkpreferences/1536573-javascriptcanopenwindowsautomati?changes=_3_10&language=objc
+  wkWebViewConfig.preferences.javaScriptCanOpenWindowsAutomatically = sender.javaScriptCanOpenWindowsAutomatically;
+
   if (sender.incognito) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
   } else if (sender.cacheEnabled) {
@@ -357,7 +362,6 @@ static NSDictionary* customCertificatesForHost;
       [self setupConfiguration:self];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
-
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
     _webView.UIDelegate = self;

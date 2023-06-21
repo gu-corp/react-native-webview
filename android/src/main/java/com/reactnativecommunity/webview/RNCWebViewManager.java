@@ -227,6 +227,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     settings.setSupportMultipleWindows(true);
     settings.setAllowFileAccess(true);
     settings.setAllowContentAccess(false);
+
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
       settings.setAllowFileAccessFromFileURLs(false);
       setAllowUniversalAccessFromFileURLs(webView, false);
@@ -439,6 +440,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "mediaPlaybackRequiresUserAction")
   public void setMediaPlaybackRequiresUserAction(WebView view, boolean requires) {
     view.getSettings().setMediaPlaybackRequiresUserGesture(requires);
+  }
+
+  @ReactProp(name = "javaScriptCanOpenWindowsAutomatically")
+  public void setJavaScriptCanOpenWindowsAutomatically(WebView view, boolean enabled) {
+    view.getSettings().setJavaScriptCanOpenWindowsAutomatically(enabled);
   }
 
   @ReactProp(name = "allowUniversalAccessFromFileURLs")
@@ -1476,6 +1482,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       settings.setTextZoom(parentSettings.getTextZoom());
       settings.setUserAgentString(parentSettings.getUserAgentString());
       settings.setMediaPlaybackRequiresUserGesture(parentSettings.getMediaPlaybackRequiresUserGesture());
+
+      settings.setJavaScriptCanOpenWindowsAutomatically(parentSettings.getJavaScriptCanOpenWindowsAutomatically());
 
       mRNCWebViewClient.cloneAdblockRules(parentView.mRNCWebViewClient);
       injectedJS = parentView.injectedJS;
