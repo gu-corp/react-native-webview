@@ -637,6 +637,15 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   onVideoFullScreen?: (event: WebViewFullScreenEvent) => void;
+  
+  /**
+   * Allows to scroll inside the webview when used inside a scrollview.
+   * Behaviour already existing on iOS.
+   * Default to false
+   *
+   * @platform android
+   */
+  nestedScrollEnabled?: boolean;
 }
 
 export interface WebViewSharedProps extends ViewProps {
