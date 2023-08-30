@@ -41,6 +41,7 @@ This document lays out the current public properties and methods for the React N
 - [`contentInsetAdjustmentBehavior`](Reference.md#contentInsetAdjustmentBehavior)
 - [`dataDetectorTypes`](Reference.md#datadetectortypes)
 - [`scrollEnabled`](Reference.md#scrollenabled)
+- [`nestedScrollEnabled`](Reference.md#nestedscrollenabled)
 - [`directionalLockEnabled`](Reference.md#directionalLockEnabled)
 - [`geolocationEnabled`](Reference.md#geolocationenabled)
 - [`allowUniversalAccessFromFileURLs`](Reference.md#allowUniversalAccessFromFileURLs)
@@ -807,6 +808,18 @@ Boolean value that determines whether scrolling is enabled in the `WebView`. The
 | Type | Required | Platform |
 | ---- | -------- | -------- |
 | bool | No       | iOS      |
+
+---
+
+### `nestedScrollEnabled`[⬆](#props-index)
+
+Boolean value that determines whether scrolling is possible in the `WebView` when used inside a `ScrollView` on Android. The default value is `false`. 
+
+Setting this to `true` will prevent the `ScrollView` to scroll when scrolling from inside the `WebView`.
+
+| Type | Required | Platform      |
+| ---- | -------- | ------------- |
+| bool | No       | Android       |
 
 ---
 
