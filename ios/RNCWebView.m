@@ -93,6 +93,7 @@ static NSDictionary* customCertificatesForHost;
   WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
+  WKUserScript *scriptNightMode;
     
   CGPoint lastOffset;
   BOOL decelerating;
@@ -1172,6 +1173,19 @@ static NSDictionary* customCertificatesForHost;
         }
       }
     }
+
+  if (@available(iOS 13.0, *)) {
+    if(scriptNightMode == nil) {
+      NSString *jsFileNightMode = @"__NightModeScript__";
+      NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
+      NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
+      NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path encoding:NSUTF8StringEncoding error:nil];
+      scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    }
+    if([webView.configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
+      [wkWebViewConfig.userContentController addUserScript:scriptNightMode];
+    }
+  }
     
   // enable picture-in-picture feature on youtube page
   // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
@@ -1674,6 +1688,10 @@ static NSDictionary* customCertificatesForHost;
 // Disable previews for the given element.
 -(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
     return NO;
+}
+
+- (void)setEnableNightMode:(NSString *)enable {
+  [_webView setEnableNightMode:enable];
 }
 
 @end

@@ -176,6 +176,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
   public static final int COMMAND_PRINT_CONTENT = 14;
   public static final int COMMAND_SET_FONT_SIZE = 15;
+  public static final int COMMAND_SET_ENABLE_NIGHT_MODE = 16;
 
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
@@ -409,15 +410,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "cacheEnabled")
   public void setCacheEnabled(WebView view, boolean enabled) {
     if (enabled) {
-      Context ctx = view.getContext();
-      if (ctx != null) {
-        view.getSettings().setAppCachePath(ctx.getCacheDir().getAbsolutePath());
-        view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        view.getSettings().setAppCacheEnabled(true);
-      }
+      view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
     } else {
       view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-      view.getSettings().setAppCacheEnabled(false);
     }
   }
 
@@ -562,7 +557,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // Disable caching
     view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-    view.getSettings().setAppCacheEnabled(!enabled);
     view.clearHistory();
     view.clearCache(enabled);
 
@@ -759,6 +753,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS);
     map.put("printContent", COMMAND_PRINT_CONTENT);
     map.put("setFontSize", COMMAND_SET_FONT_SIZE);
+    map.put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE);
 
     return map;
   }
@@ -832,6 +827,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       case COMMAND_PRINT_CONTENT:
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
           ((RNCWebView) root).printContent();
+        }
+        break;
+      case COMMAND_SET_ENABLE_NIGHT_MODE:
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+          ((RNCWebView) root).setEnableNightMode(args.getString(0));
         }
         break;
     }
@@ -1940,6 +1940,22 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return jsString;
     }
 
+    public String loadNightModeScriptFile() {
+      String jsString = null;
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("NightModeScript.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        jsString = new String(readBytes);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return jsString;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @SuppressWarnings("deprecation")
     public void printContent() {
@@ -1959,6 +1975,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
       if(getSettings().getJavaScriptEnabled()){
+        String jsNightMode = loadNightModeScriptFile();
+        if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
+
         String jsSearch = loadSearchWebviewFile();
         if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
 
@@ -2170,9 +2189,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void removeAllHighlights() {
       this.loadUrl("javascript:myAppSearchDoneInThePage()");
     }
+
     public void setFontSize(Number size) {
       WebView webView = this;
       webView.getSettings().setTextZoom((int) size);
+    }
+
+    public void setEnableNightMode(String enable) {
+      String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
+      this.loadUrl("javascript:" + jsNightMode);
     }
   }
 }

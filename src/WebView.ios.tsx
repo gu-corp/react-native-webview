@@ -180,6 +180,11 @@ class WebView extends React.Component<IOSWebViewProps, State> {
   setFontSize = (size?: number) => {
     return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
   }
+
+  setEnableNightMode = (enable: string) => {
+    return RNCWebViewManager.setEnableNightMode(this.getWebViewHandle(), enable);
+  }
+
   /**
    * Posts a message to the web view, which will emit a `message` event.
    * Accepts one argument, `data`, which must be a string.
