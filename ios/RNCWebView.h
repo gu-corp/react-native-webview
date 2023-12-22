@@ -88,5 +88,6 @@ typedef enum {
 - (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
 - (void)printContent;
 - (void)setFontSize:(nonnull NSNumber *)size;
+- (void)setEnableNightMode:(nonnull NSString *)enable;
 
 @end
