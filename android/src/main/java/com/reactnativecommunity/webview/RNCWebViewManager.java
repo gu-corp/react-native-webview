@@ -898,6 +898,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private @Nullable String mUserAgent = null; // to append with additional user agent
     protected @Nullable ReadableArray mAdditionalUserAgent = null;
 
+    protected int mLoadingProgress = 0;
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
@@ -1259,7 +1260,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       // Don't use webView.getUrl() here, the URL isn't updated to the new value yet in callbacks
       // like onPageFinished
       event.putString("url", url);
-      event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100);
+      event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100 && mLoadingProgress != 100);
       event.putString("title", webView.getTitle());
       event.putBoolean("canGoBack", webView.canGoBack());
       event.putBoolean("canGoForward", webView.canGoForward());
@@ -1323,6 +1324,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setUserAgent(String userAgent) {
       mUserAgent = userAgent;
+    }
+
+    public void setLoadingProgress(int newProgress) {
+      this.mLoadingProgress = newProgress;
     }
   }
 
@@ -1504,6 +1509,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void onProgressChanged(WebView webView, int newProgress) {
       super.onProgressChanged(webView, newProgress);
       final String url = webView.getUrl();
+
+      RNCWebView rncWebView = (RNCWebView) webView;
+      if (rncWebView.getRNCWebViewClient() != null) {
+        rncWebView.getRNCWebViewClient().setLoadingProgress(newProgress);
+      }
+
       if (
         url != null
         && activeUrl != null
