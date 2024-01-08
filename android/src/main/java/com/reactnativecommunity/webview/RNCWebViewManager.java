@@ -115,6 +115,7 @@ import android.os.Handler;
 import android.webkit.WebView.HitTestResult;
 import android.os.Message;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
@@ -285,6 +286,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+         // block non-http/https download links
+        if (!URLUtil.isNetworkUrl(url)) {
+          Toast.makeText(reactContext.getCurrentActivity(), R.string.download_protocol_not_supported,
+            Toast.LENGTH_LONG).show();
+          return;
+        }
+
         RNCWebViewModule module = getModule(reactContext);
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
