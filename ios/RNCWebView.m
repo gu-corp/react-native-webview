@@ -1038,8 +1038,11 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                   decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
+    
   static NSDictionary<NSNumber *, NSString *> *navigationTypes;
   static dispatch_once_t onceToken;
+    
+    NSLog(@"---debug 1 -- webView:decidePolicyForNavigationAction -- userAgent = %@", webView.customUserAgent);
 
   dispatch_once(&onceToken, ^{
     navigationTypes = @{
@@ -1258,6 +1261,10 @@ static NSDictionary* customCertificatesForHost;
 - (void)      webView:(WKWebView *)webView
   didFinishNavigation:(WKNavigation *)navigation
 {
+  
+  NSLog(@"--debug 2 -- webView:didFinishNavigation -- userAgent = %@", webView.customUserAgent);
+    NSLog(@"--debug 2 -- webView:didFinishNavigation -- webview.url = %@", webView.URL.absoluteString);
+    
   if (resourceBundle) {
     NSString *jsFile = @"_webview";
 
