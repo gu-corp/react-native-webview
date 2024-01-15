@@ -449,6 +449,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
   }
 
+  protected void setAdditionalUserAgentString(WebView view) {
+    Log.i("NghiaTest", "set additional UserAgent");
+  }
+
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
   @ReactProp(name = "mediaPlaybackRequiresUserAction")
   public void setMediaPlaybackRequiresUserAction(WebView view, boolean requires) {
@@ -945,8 +949,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
       if (!mLastLoadFailed) {
         RNCWebView reactWebView = (RNCWebView) webView;
-        boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webView.getUrl());
+        String webviewUrl = webView.getUrl();
+        Log.i("NghiaTest", "-- onPageFinished -- webviewUrl = "+webviewUrl);
+        Log.i("NghiaTest", "-- onPageFinished -- url = "+url);
+        boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webviewUrl);
         reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
+
+        // load additional userAgent
+        if(webviewUrl!=null && webviewUrl.contains("m.genk.vn")){
+          Log.i("NghiaTest", "-- onPageFinished -- old UserAgent = "+ webView.getSettings().getUserAgentString());
+          Log.i("NghiaTest", "-- onPageFinished -- update Additional UserAgent");
+          webView.getSettings().setUserAgentString("Mozilla/5.0 (Linux; Android 11; Joy 4 Build/RKQ1.201105.002) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/120.0.6099.193 Mobile Safari/537.36 Lunascape/x.x.x.x");
+        }
         
         reactWebView.linkWindowObject();
 

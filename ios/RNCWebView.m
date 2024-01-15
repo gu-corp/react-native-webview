@@ -157,6 +157,7 @@ static NSDictionary* customCertificatesForHost;
     wkWebViewConfig = configuration;
     [self setupConfiguration:parentView];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView.inspectable = YES;
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
@@ -356,6 +357,7 @@ static NSDictionary* customCertificatesForHost;
       }
       [self setupConfiguration:self];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+      _webView.inspectable = YES;
     }
 
     [self setBackgroundColor: _savedBackgroundColor];
@@ -569,6 +571,14 @@ static NSDictionary* customCertificatesForHost;
       [self visitSource];
     }
   }
+}
+
+- (void)setAdditionalUserAgent:(NSArray<NSDictionary *> *)additionalUserAgent {
+    NSLog(@"<<<<<<< setAdditionalUserAgent >>>>>> ");
+  _additionalUserAgent = additionalUserAgent;
+//  if (_webView != nil) {
+//    _webView.customUserAgent = userAgent;
+//  }
 }
 
 - (void)setContentInset:(UIEdgeInsets)contentInset
@@ -1043,6 +1053,7 @@ static NSDictionary* customCertificatesForHost;
   static dispatch_once_t onceToken;
     
     NSLog(@"---debug 1 -- webView:decidePolicyForNavigationAction -- userAgent = %@", webView.customUserAgent);
+    NSLog(@"---debug 1 -- webView:decidePolicyForNavigationAction -- webview.url = %@", webView.URL.absoluteURL);
 
   dispatch_once(&onceToken, ^{
     navigationTypes = @{
@@ -1154,7 +1165,17 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-
+    
+ // set customUserAgent
+    NSLog(@"---debug Nghia decidePolicyForNavigationAction -- request.mainDocumentURL.absoluteURL= %@", request.mainDocumentURL.host);
+    NSLog(@"---debug Nghia decidePolicyForNavigationAction -- isLunaNFTDomain= %s", [request.mainDocumentURL.host isEqual: @"dev.issue-nft.lunascape.org"] ? "YES": "NO");
+    // need to use a NSDictionary to compare <Regex, addtiionalUserAgent>
+    if([request.mainDocumentURL.host isEqual: @"dev.issue-nft.lunascape.org"]) {
+        NSLog(@"---debug Nghia changeUserAgent ");
+        // Lunascape/14.0.0.20460 (Info: zJsY/6n1rUEe4gXhHpZYauofB//bQbd0Q2P/HYw4Jf1xDhdtdSz5oO9NInDMM12Q7+03JqhazLOBvP4rU5YCZHcHO72WsitCz0T9rlu0vwud+6T8QeF4pxaMHsZT1JeQts1eEbzrcZrYFlwAscnwk5dhJRxbStERFczorc+smqw=)
+        webView.customUserAgent = @"Mozilla/5.0 (iPhone; CPU iPhone OS 16_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Safari/605.1";
+    }
+    
   // Allow all navigation by default
   decisionHandler(WKNavigationActionPolicyAllow);
 }

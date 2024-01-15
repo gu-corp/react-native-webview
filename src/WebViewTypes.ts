@@ -277,6 +277,15 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Append to the existing user-agent. Overriden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
+
+  // #region Lunascape custom props
+  
+  /**
+   * 
+   */
+  additionalUserAgent?: AdditionalUserAgent[];
+
+  // #endregion
 }
 
 export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
@@ -791,4 +800,11 @@ export interface WebViewSharedProps extends ViewProps {
 
   injectedJavaScriptBeforeDocumentLoad?: string;
   openNewWindowInWebView?: boolean;
+}
+
+
+export interface AdditionalUserAgent {
+  // to match URL
+  domain: string;
+  extendedUserAgent: string;
 }
