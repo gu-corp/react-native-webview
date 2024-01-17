@@ -791,4 +791,19 @@ export interface WebViewSharedProps extends ViewProps {
 
   injectedJavaScriptBeforeDocumentLoad?: string;
   openNewWindowInWebView?: boolean;
+
+  /**
+   * to append to the existing user-agent string in some specific domains
+   * see at
+   * + android: loadAdditionalUserAgent method in RNCWebViewManager.java
+   * + ios: webview:decidePolicyForNavigationAction method in RNCWebViewManager.m
+   */
+  additionalUserAgent?: AdditionalUserAgent[];
+}
+
+
+export interface AdditionalUserAgent {
+  // to match URL
+  domain: string;
+  extendedUserAgent: string;
 }

@@ -120,6 +120,7 @@ import android.widget.Toast;
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
+import com.reactnativecommunity.webview.utils.UrlUtils;
 
 /**
  * Manages instances of {@link WebView}
@@ -438,6 +439,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     this.setUserAgentString(view);
   }
 
+  @ReactProp(name = "additionalUserAgent")
+  public void setAdditionalUserAgent(WebView view, @Nullable ReadableArray additionalUserAgent) {
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if (client != null && additionalUserAgent != null) {
+      client.setAdditionalUserAgent(additionalUserAgent);
+    }
+  }
+
   protected void setUserAgentString(WebView view) {
     if(mUserAgent != null) {
       view.getSettings().setUserAgentString(mUserAgent);
@@ -446,6 +455,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     } else if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
       // handle unsets of `userAgent` prop as long as device is >= API 17
       view.getSettings().setUserAgentString(WebSettings.getDefaultUserAgent(view.getContext()));
+    }
+
+    RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
+    if (client != null) {
+      client.setUserAgent(view.getSettings().getUserAgentString());
     }
   }
 
@@ -842,6 +856,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;
 
+    private @Nullable String mUserAgent = null; // to append with additional user agent
+    protected @Nullable ReadableArray mAdditionalUserAgent = null;
+
     protected boolean mLastLoadFailed = false;
     protected @Nullable
     ReadableArray mUrlPrefixesForDefaultIntent;
@@ -913,6 +930,24 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return result;
     }
 
+    public void loadAdditionalUserAgent(WebView webview, String urlString) {
+      if (mAdditionalUserAgent != null && mAdditionalUserAgent.size() > 0 && mUserAgent != null) {
+        int size = mAdditionalUserAgent.size();
+        for (int i = 0; i< size; i++) {
+          ReadableMap object = mAdditionalUserAgent.getMap(i);
+          String domain = object.getString("domain");
+          if (domain != null && UrlUtils.isMatchDomain(urlString, domain)) {
+            String extendedUserAgent = object.getString("extendedUserAgent");
+            if (extendedUserAgent != null) {
+              String newUserAgent = mUserAgent + " " + extendedUserAgent;
+              webview.getSettings().setUserAgentString(newUserAgent);
+              return;
+            }
+          }
+        }
+      }
+    }
+
     @Override
     public void onLoadResource(WebView view, String url) {
       super.onLoadResource(view, url);
@@ -945,8 +980,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
       if (!mLastLoadFailed) {
         RNCWebView reactWebView = (RNCWebView) webView;
-        boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webView.getUrl());
+        String webviewUrl = webView.getUrl();
+        boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webviewUrl);
         reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
+
+        // load additional userAgent
+        loadAdditionalUserAgent(webView, webviewUrl);
         
         reactWebView.linkWindowObject();
 
@@ -1229,6 +1268,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } else {
         adblockEngines = null;
       }
+    }
+
+    public void setAdditionalUserAgent(ReadableArray additionalUserAgent) {
+      if (additionalUserAgent != null) {
+        mAdditionalUserAgent = additionalUserAgent;
+      } else {
+        mAdditionalUserAgent = null;
+      }
+    }
+
+    public void setUserAgent(String userAgent) {
+      mUserAgent = userAgent;
     }
   }
 
