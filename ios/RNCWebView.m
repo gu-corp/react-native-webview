@@ -157,6 +157,7 @@ static NSDictionary* customCertificatesForHost;
     wkWebViewConfig = configuration;
     [self setupConfiguration:parentView];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
@@ -356,6 +357,7 @@ static NSDictionary* customCertificatesForHost;
       }
       [self setupConfiguration:self];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+      //_webView.inspectable = YES; // to inspect webview for ios 16.4+
     }
 
     [self setBackgroundColor: _savedBackgroundColor];
@@ -569,6 +571,10 @@ static NSDictionary* customCertificatesForHost;
       [self visitSource];
     }
   }
+}
+
+- (void)setAdditionalUserAgent:(NSArray<NSDictionary *> *)additionalUserAgent {
+  _additionalUserAgent = additionalUserAgent;
 }
 
 - (void)setContentInset:(UIEdgeInsets)contentInset
@@ -1038,8 +1044,10 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
                   decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
+    
   static NSDictionary<NSNumber *, NSString *> *navigationTypes;
   static dispatch_once_t onceToken;
+    
 
   dispatch_once(&onceToken, ^{
     navigationTypes = @{
@@ -1151,7 +1159,23 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-
+    
+  // set the additionalUserAgent
+  int count = (int) [_additionalUserAgent count];
+  for (int i = 0; i < count; i++) {
+    NSDictionary* item = [_additionalUserAgent objectAtIndex:i];
+    NSString* domain = [item objectForKey:@"domain"];
+    
+    if (domain != nil && [request.mainDocumentURL.host isEqual: domain]) {
+      NSString* extendedUserAgent = [item objectForKey:@"extendedUserAgent"];
+      if (_userAgent != nil && extendedUserAgent != nil) {
+        NSMutableString* newUserAgent = [[NSMutableString alloc] initWithFormat:@"%@ %@", _userAgent, extendedUserAgent];
+        webView.customUserAgent = newUserAgent;
+        break;
+      }
+    }
+  }
+    
   // Allow all navigation by default
   decisionHandler(WKNavigationActionPolicyAllow);
 }
