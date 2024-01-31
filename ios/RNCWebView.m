@@ -57,6 +57,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
+@property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
@@ -1305,6 +1306,14 @@ static NSDictionary* customCertificatesForHost;
 
   // Disable default long press menu
   [webView evaluateJavaScript:@"document.body.style.webkitTouchCallout='none';" completionHandler:nil];
+    
+  NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
+  NSDictionary *event = @{
+      @"data": favicon ? favicon : @""
+  };
+  if (_onGetFavicon!= nil) {
+     _onGetFavicon(event);
+  }
 }
 
 - (void)injectJavaScript:(NSString *)script

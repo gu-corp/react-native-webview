@@ -72,6 +72,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -174,6 +175,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected static final String HTML_ENCODING = "UTF-8";
   protected static final String HTML_MIME_TYPE = "text/html";
   protected static final String JAVASCRIPT_INTERFACE = "ReactNativeWebView";
+  protected static final String FAVICON_INTERFACE = "FaviconWebView";
   protected static final String NATIVE_SCRIPT_INTERFACE = "nativeScriptHandler";
   protected static final String HTTP_METHOD_POST = "POST";
   // Use `webView.loadUrl("about:blank")` to reliably reset the view
@@ -213,6 +215,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected RNCWebView createRNCWebViewInstance(ThemedReactContext reactContext) {
     RNCWebView rncWebview = RNCWebView.createNewInstance(reactContext);
     rncWebview.addJavascriptInterface(rncWebview.createRNCNativeWebViewBridge(rncWebview), NATIVE_SCRIPT_INTERFACE);
+    rncWebview.addJavascriptInterface(rncWebview.createRNCWebViewBridge(rncWebview), FAVICON_INTERFACE);
     return rncWebview;
   }
 
@@ -666,6 +669,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopHttpErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onHttpError"));
     export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
     export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
+    export.put(TopGetFaviconEvent.EVENT_NAME, MapBuilder.of("registrationName", "onGetFavicon"));
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
     export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
@@ -990,7 +994,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         reactWebView.linkWindowObject();
 
         emitFinishEvent(webView, url);
+
+        reactWebView.getFaviconUrl();
+
       }
+
+
     }
 
     @Override
@@ -1758,6 +1767,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
+    public void onGetFavicon(String favicon) {
+      WritableMap eventData = Arguments.createMap();
+      eventData.putString("data", favicon);
+      dispatchEvent(this, new TopGetFaviconEvent(this.getId(), eventData));
+    }
+
     protected void onScrollChanged(int x, int y, int oldX, int oldY) {
       super.onScrollChanged(x, y, oldX, oldY);
 
@@ -1805,6 +1820,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       @JavascriptInterface
       public void postMessage(String message) {
         mContext.onMessage(message);
+      }
+
+      @JavascriptInterface
+      public void postFavicon(String favicon) {
+        mContext.onGetFavicon(favicon);
       }
     }
 
@@ -1862,6 +1882,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
       }
+    }
+
+    public void getFaviconUrl()  {
+      this.loadUrl("javascript:getFavicons()");
     }
 
     public void searchInPage(String keyword) {
