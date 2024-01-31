@@ -284,6 +284,13 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     }
   };
 
+  onGetFavicon = (event: WebViewMessageEvent) => {
+    const { onGetFavicon } = this.props;
+    if (onGetFavicon) {
+      onGetFavicon(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     if (onLoadProgress) {

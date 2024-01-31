@@ -223,6 +223,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onGetFavicon = (event: WebViewMessageEvent) => {
+    const { onGetFavicon } = this.props;
+    if (onGetFavicon) {
+      onGetFavicon(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;

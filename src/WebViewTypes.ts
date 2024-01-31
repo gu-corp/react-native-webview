@@ -721,6 +721,11 @@ export interface WebViewSharedProps extends ViewProps {
   onMessage?: (event: WebViewMessageEvent) => void;
 
   /**
+   * Function that is invoked when the webview get favicon.
+   */
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
+
+  /**
    * Function that is invoked when the `WebView` is loading.
    */
   onLoadProgress?: (event: WebViewProgressEvent) => void;
