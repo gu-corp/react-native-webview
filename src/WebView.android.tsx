@@ -21,6 +21,7 @@ import {
 import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  FileDownloadEvent,
   WebViewMessageEvent,
   WebViewNavigationEvent,
   WebViewProgressEvent,
@@ -234,6 +235,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     const { onReceiveWebViewStatus } = this.props;
     if (onReceiveWebViewStatus) {
       onReceiveWebViewStatus(event);
+    }
+  };
+
+  onFileDownload = (event: FileDownloadEvent) => {
+    const { onFileDownload } = this.props;
+    if (onFileDownload) {
+      onFileDownload(event);
     }
   };
 

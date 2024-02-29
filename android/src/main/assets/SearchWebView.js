@@ -443,3 +443,46 @@ function getFavicons() {
   }
   window.FaviconWebView.postFavicon(`${favi}`);
 }
+
+function getBase64StringFromBlobUrl(blobUrl) {
+  const fileReaderInstance = new FileReader();
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', blobUrl, true);
+  xhr.setRequestHeader('Content-type', 'application/octet-stream');
+  xhr.responseType = 'blob';
+  xhr.onload = () => {
+    if (xhr.status === 200) {
+      const blobResponse = xhr.response;
+      const blobType = blobResponse.type;
+      const blobSize = blobResponse.size;
+
+      let blobArray = [];
+      const stepSize = 10000000;
+      const loopSize = Math.floor(blobSize / stepSize);
+
+      for (let i = 0; i <= loopSize; i++) {
+        const start = i * stepSize;
+        const next = (i + 1) * stepSize;
+        const end = next > blobSize ? blobSize : next;
+        const tempBlob = blobResponse.slice(start, end, blobType);
+        blobArray.push(tempBlob);
+      }
+
+      convertBlobToBase64(blobArray, fileReaderInstance);
+    }
+  };
+  xhr.send();
+}
+
+function convertBlobToBase64(blobArray, fileReaderInstance) {
+  if (blobArray.length > 0) {
+    const blob = blobArray.shift();
+    fileReaderInstance.onloadend = () => {
+      nativeScriptHandler.sendPartialBase64Data(fileReaderInstance.result);
+      convertBlobToBase64(blobArray, fileReaderInstance);
+    };
+    fileReaderInstance.readAsDataURL(blob);
+  } else {
+    nativeScriptHandler.notifyConvertBlobToBase64Completed();
+  }
+}

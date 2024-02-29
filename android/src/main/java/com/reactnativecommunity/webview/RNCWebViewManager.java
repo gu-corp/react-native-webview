@@ -205,6 +205,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
 
+  private String DOWNLOAD_FOLDER;
+
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
       public void configWebView(WebView webView) {
@@ -307,6 +309,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+        if (url.startsWith("blob")) {
+          String jsConvert = "getBase64StringFromBlobUrl('" + url + "');";
+          webView.loadUrl("javascript:" + jsConvert);
+          return;
+        }
+
          // block non-http/https download links
         if (!URLUtil.isNetworkUrl(url)) {
           Toast.makeText(reactContext.getCurrentActivity(), R.string.download_protocol_not_supported,
@@ -319,6 +327,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+          fileName = DOWNLOAD_FOLDER + "/" + fileName;
+        }
         String downloadMessage = "Downloading " + fileName;
 
         //Attempt to add cookie, if it exists
@@ -679,6 +690,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
     if (client != null) {
       client.setAdblockRules(rules);
+    }
+  }
+
+  @ReactProp(name = "downloadConfig")
+  public void setDownloadConfig(WebView view, @Nullable ReadableMap downloadConfig) {
+    if (downloadConfig != null) {
+      if (downloadConfig.hasKey("downloadFolder")) {
+        String downloadFolder = downloadConfig.getString("downloadFolder");
+        RNCWebViewModule module = getModule((ReactContext) view.getContext());
+        module.setDownloadFolder(downloadFolder);
+        DOWNLOAD_FOLDER = downloadFolder;
+      }
     }
   }
 
@@ -2102,6 +2125,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
               mContext.printContent();
             }
           });
+        }
+      }
+
+      @JavascriptInterface
+      public void sendPartialBase64Data(String base64Data) {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        module.sendPartialBase64Data(base64Data);
+      }
+
+      @JavascriptInterface
+      public void notifyConvertBlobToBase64Completed() {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        if (module.grantFileDownloaderPermissions()) {
+          module.saveBase64DataToFile();
         }
       }
     }
