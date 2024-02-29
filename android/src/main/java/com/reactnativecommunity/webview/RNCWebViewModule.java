@@ -16,6 +16,8 @@ import androidx.annotation.RequiresApi;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
+
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -34,6 +36,8 @@ import com.facebook.react.modules.core.PermissionListener;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -45,6 +49,7 @@ import java.util.List;
 import static android.app.Activity.RESULT_OK;
 
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.utils.Utils;
 
 @ReactModule(name = RNCWebViewModule.MODULE_NAME)
 public class RNCWebViewModule extends ReactContextBaseJavaModule implements ActivityEventListener {
@@ -61,12 +66,14 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private String TAKE_VIDEO = "";
   private String CHOOSE_FILE = "";
   private String CANCEL = "";
+  private String DOWNLOAD_FOLDER;
 
   private ValueCallback<Uri> filePathCallbackLegacy;
   private ValueCallback<Uri[]> filePathCallback;
   private Uri outputFileUri;
   private String intentTypeAfterPermissionGranted;
   private DownloadManager.Request downloadRequest;
+  private ArrayList<String> downloadBase64Data;
   private PermissionListener webviewFileDownloaderPermissionListener = new PermissionListener() {
     @Override
     public boolean onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -76,6 +83,9 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
           if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             if (downloadRequest != null) {
               downloadFile();
+            }
+            if (downloadBase64Data != null) {
+              saveBase64DataToFile();
             }
           } else {
             Toast.makeText(getCurrentActivity().getApplicationContext(), "Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files.", Toast.LENGTH_LONG).show();
@@ -246,6 +256,10 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     return true;
   }
 
+  public void setDownloadFolder(String folder) {
+    this.DOWNLOAD_FOLDER = folder;
+  }
+
   public void setDownloadRequest(DownloadManager.Request request) {
     this.downloadRequest = request;
   }
@@ -257,6 +271,65 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     dm.enqueue(this.downloadRequest);
 
     Toast.makeText(getCurrentActivity().getApplicationContext(), downloadMessage, Toast.LENGTH_LONG).show();
+  }
+
+  public void sendPartialBase64Data(String base64Data) {
+    if (this.downloadBase64Data == null) this.downloadBase64Data = new ArrayList<String>();
+    this.downloadBase64Data.add(base64Data);
+  }
+
+  public void saveBase64DataToFile() {
+    if (downloadBase64Data != null) {
+      String fileName = String.valueOf(System.currentTimeMillis());
+      String fileExtension = null;
+      String mimeType = null;
+      if (!downloadBase64Data.isEmpty()) {
+        fileExtension = Utils.getFileExtensionFromBase64Data(downloadBase64Data.get(0));
+        mimeType = Utils.getMimeTypeFromBase64Data(downloadBase64Data.get(0));
+      }
+      if (fileExtension != null) {
+        fileName = fileName + "." + fileExtension;
+      }
+
+      try {
+        File downloadFolder;
+        if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+          downloadFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FOLDER);
+          if (!downloadFolder.exists()) {
+            downloadFolder.mkdirs();
+          }
+        } else {
+          downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        }
+
+        File downloadPath = new File(downloadFolder, fileName);
+        FileOutputStream fileOutputStream = new FileOutputStream(downloadPath, false);
+
+        for (String base64String : downloadBase64Data) {
+          fileOutputStream.write(Base64.decode(Utils.getBase64Data(base64String), Base64.DEFAULT));
+        }
+        fileOutputStream.flush();
+
+        if (downloadPath.exists()) {
+          Uri fileUri = FileProvider.getUriForFile(
+            getReactApplicationContext(),
+            getReactApplicationContext().getPackageName() + ".provider",
+            downloadPath
+          );
+          Utils.makeNotificationDownloadedBlobFile(getReactApplicationContext(), fileUri, mimeType, fileName);
+        }
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      } catch (NullPointerException e) {
+        e.printStackTrace();
+      } catch (IllegalArgumentException e) {
+        e.printStackTrace();
+      }
+
+      downloadBase64Data = null;
+    }
   }
 
   public boolean grantFileDownloaderPermissions() {
