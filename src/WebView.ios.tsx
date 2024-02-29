@@ -20,6 +20,7 @@ import {
 import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  FileDownloadEvent,
   WebViewMessageEvent,
   WebViewNavigationEvent,
   WebViewProgressEvent,
@@ -290,6 +291,13 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       onGetFavicon(event);
     }
   };
+
+  onFileDownload = (event: FileDownloadEvent) => {
+    const { onFileDownload } = this.props;
+    if (onFileDownload) {
+      onFileDownload(event);
+    }
+  }
 
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
