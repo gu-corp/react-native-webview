@@ -17,6 +17,9 @@
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
+#import "Utility.h"
+#import "DownloadHelper.h"
+#import "DownloadQueue.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -58,6 +61,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
+@property (nonatomic, copy) RCTDirectEventBlock onFileDownload;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
@@ -561,6 +565,11 @@ static NSDictionary* customCertificatesForHost;
   if (_webView != nil) {
     _webView.customUserAgent = userAgent;
   }
+}
+
+- (void)setDownloadConfig:(NSDictionary *)downloadConfig {
+  _downloadConfig = downloadConfig;
+  [Utility setDownloadConfig:downloadConfig];
 }
 
 - (void)setAllowingReadAccessToURL:(NSString *)allowingReadAccessToURL
@@ -1068,6 +1077,19 @@ static NSDictionary* customCertificatesForHost;
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
+    NSURL *requestURL = request.URL;
+    if ( request &&  requestURL) {
+        NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
+        if ([downloadSchemes containsObject:requestURL.scheme]) {
+            [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
+        }
+        
+        NSArray *allowSchemes = @[@"data", @"blob"];
+        if ([allowSchemes containsObject:requestURL.scheme]) {
+            decisionHandler(WKNavigationActionPolicyAllow);
+            return;
+        }
+    }
 
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1097,7 +1119,7 @@ static NSDictionary* customCertificatesForHost;
       }];
       _onLoadingStart(event);
     }
-    
+
     // allowlist function
     if (@available(iOS 11.0, *)) {
       BOOL isAllowWebsite = false;
@@ -1108,11 +1130,11 @@ static NSDictionary* customCertificatesForHost;
         NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
         scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
       }
-      
+
       if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
         isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
-        
+
       bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
       if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
         WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
@@ -1140,7 +1162,7 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-    
+
   // enable picture-in-picture feature on youtube page
   // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
   // Ref: https://github.com/brave/brave-ios  /blob/development/Client/Frontend/Browser/UserScriptManager.swift#L64
@@ -1160,13 +1182,13 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-    
+
   // set the additionalUserAgent
   int count = (int) [_additionalUserAgent count];
   for (int i = 0; i < count; i++) {
     NSDictionary* item = [_additionalUserAgent objectAtIndex:i];
     NSString* domain = [item objectForKey:@"domain"];
-    
+
     if (domain != nil && [request.mainDocumentURL.host isEqual: domain]) {
       NSString* extendedUserAgent = [item objectForKey:@"extendedUserAgent"];
       if (_userAgent != nil && extendedUserAgent != nil) {
@@ -1208,6 +1230,7 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse
                     decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler
 {
+  WKNavigationResponsePolicy policy = WKNavigationResponsePolicyAllow;
   if (_onHttpError && navigationResponse.forMainFrame) {
     if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
       NSHTTPURLResponse *response = (NSHTTPURLResponse *)navigationResponse.response;
@@ -1224,8 +1247,33 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
+  
+  NSURLResponse *response = navigationResponse.response;
+  NSURL *responseURL = [response URL];
+  NSURLRequest *request = nil;
+  if (responseURL) {
+      request = [[DownloadHelper pendingRequests] objectForKey:responseURL.absoluteString];
+      [[DownloadHelper pendingRequests] removeObjectForKey:responseURL.absoluteString];
+  }
+  BOOL canShowInWebView = navigationResponse.canShowMIMEType;
+  WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
+  WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+  DownloadHelper *downloadHelper = [[DownloadHelper alloc] initWithRequest:request response:response cookieStore:cookieStore canShowInWebView:canShowInWebView];
+  if (downloadHelper) {
+      HTTPDownload *download = [[HTTPDownload alloc] initWithCookieStore:cookieStore preflightResponse:response request:request];
+      
+      id downloadAlertAction = ^(HTTPDownload *download) {
+          [[DownloadQueue downloadQueue] enqueue: download];
+      };
+      UIViewController *rootVC = [[UIApplication sharedApplication].delegate window].rootViewController;
+      UIAlertController *alertView = [downloadHelper downloadAlertFromView:rootVC.view okAction:downloadAlertAction];
+      if (alertView) {
+          [rootVC presentViewController:alertView animated:YES completion:nil];
+      }
+      policy = WKNavigationResponsePolicyCancel;
+  }
 
-  decisionHandler(WKNavigationResponsePolicyAllow);
+  decisionHandler(policy);
 }
 
 /**
