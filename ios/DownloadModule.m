@@ -4,12 +4,13 @@
 @implementation DownloadModule
 {
     NSMutableArray<Download *> *_downloads;
+    DownloadQueue *_currentDownloadQueue;
 }
 
 RCT_EXPORT_MODULE(DownloadModule);
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"PassBookError"];
+    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"DownloadCanceled", @"PassBookError"];
 }
 
 static DownloadModule *sharedInstance = nil;
@@ -45,46 +46,17 @@ static DownloadModule *sharedInstance = nil;
             self.combinedTotalBytesExpected = nil;
         }
     }
-    [self sendEventWithName:@"TotalBytesExpectedDidChange" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected}];
+    [self sendEventWithName:@"TotalBytesExpectedDidChange" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected, @"downloadCount": @([_downloads count])}];
 }
-
-- (void)setPercent:(CGFloat)percent {
-    _percent = percent;
-    NSString *downloadedSize = [NSByteCountFormatter stringFromByteCount:_combinedBytesDownloaded countStyle:NSByteCountFormatterCountStyleFile];
-    NSString *expectedSize = _combinedTotalBytesExpected != nil ? [NSByteCountFormatter stringFromByteCount:_combinedTotalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
-}
-
-- (void)setCombinedBytesDownloaded:(int64_t)combinedBytesDownloaded {
-    _combinedBytesDownloaded = combinedBytesDownloaded;
-    [self updatePercent];
-}
-
-- (void)setCombinedTotalBytesExpected:(NSNumber *)combinedTotalBytesExpected {
-    _combinedTotalBytesExpected = combinedTotalBytesExpected;
-    [self updatePercent];
-}
-
-- (void)updatePercent {
-    dispatch_async(dispatch_get_main_queue(), ^{
-        int64_t combinedBytesDownloaded = self.combinedBytesDownloaded;
-        NSNumber *combinedTotalBytesExpected = self.combinedTotalBytesExpected;
-        
-        if (!combinedTotalBytesExpected) {
-            self.percent = 0.0;
-            return;
-        }
-        
-        self.percent = (CGFloat)combinedBytesDownloaded / [combinedTotalBytesExpected doubleValue];
-    });
-}
-
 
 - (void)downloadQueue:(id)downloadQueue didCompleteWithError:(NSError * _Nullable)error {
-    NSString *errorStr = error != nil ? [error description] : @"";
-    [self sendEventWithName:@"DownloadCompleted" body:@{@"error": errorStr}];
-    [_downloads removeAllObjects];
-    self.combinedBytesDownloaded = 0;
-    self.combinedTotalBytesExpected = @0;
+    if (_downloads.count != 0) {
+        NSString *errorStr = error != nil ? [error description] : @"";
+        [self sendEventWithName:@"DownloadCompleted" body:@{@"error": errorStr}];
+        [_downloads removeAllObjects];
+        self.combinedBytesDownloaded = 0;
+        self.combinedTotalBytesExpected = @0;
+    }
 }
 
 - (void)downloadQueue:(id)downloadQueue didDownloadCombinedBytes:(int64_t)combinedBytesDownloaded combinedTotalBytesExpected:(nullable NSNumber *)combinedTotalBytesExpected {
@@ -93,6 +65,7 @@ static DownloadModule *sharedInstance = nil;
 }
 
 - (void)downloadQueue:(id)downloadQueue didStartDownload:(Download *)download {
+    _currentDownloadQueue = downloadQueue;
     if (_downloads.count == 0) {
         [_downloads addObject:download];
         self.combinedTotalBytesExpected = download.totalBytesExpected;
@@ -113,6 +86,17 @@ static DownloadModule *sharedInstance = nil;
 RCT_EXPORT_METHOD(openDownloadFolder)
 {
     [Utility openDownloadFolder];
+}
+
+RCT_EXPORT_METHOD(cancelDownload)
+{
+    if (_currentDownloadQueue && ![_currentDownloadQueue isEmpty]) {
+        [_currentDownloadQueue cancelAll];
+        [_downloads removeAllObjects];
+        self.combinedBytesDownloaded = 0;
+        self.combinedTotalBytesExpected = @0;
+        [self sendEventWithName:@"DownloadCanceled" body:@{}];
+    }
 }
 
 @end
