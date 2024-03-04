@@ -1007,12 +1007,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       super.onPageStarted(webView, url, favicon);
       mLastLoadFailed = false;
 
+      RNCWebView reactWebView = (RNCWebView) webView;
+      String injectedJSBeforeContentLoaded = reactWebView.loadSearchWebviewFile("inpage.js");
+
+      reactWebView.evaluateJavascriptWithFallback("(function() {\n" + injectedJSBeforeContentLoaded + ";\n})();");
+
       dispatchEvent(
         webView,
         new TopLoadingStartEvent(
           webView.getId(),
           createWebViewEvent(webView, url)));
     }
+
 
     private boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
       activeUrl = url;
@@ -1670,11 +1676,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         throw new RuntimeException(e);
       }
     }
-    public String loadSearchWebviewFile() {
+    public String loadSearchWebviewFile(String fileName) {
       String jsString = null;
       try {
         InputStream fileInputStream;
-        fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+        fileInputStream = this.getContext().getAssets().open(fileName);
         byte[] readBytes = new byte[fileInputStream.available()];
         fileInputStream.read(readBytes);
         jsString = new String(readBytes);
@@ -1721,7 +1727,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
       if(getSettings().getJavaScriptEnabled()){
-        String jsSearch = loadSearchWebviewFile();
+        String jsSearch = loadSearchWebviewFile("SearchWebView.js");
         if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
 
         if(enableYoutubeAdblocker) {
