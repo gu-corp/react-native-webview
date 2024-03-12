@@ -94,6 +94,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -168,11 +169,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
   public static final int COMMAND_PRINT_CONTENT = 14;
   public static final int COMMAND_SET_FONT_SIZE = 15;
+
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
-  protected static final String REACT_CLASS = "RNCWebView";
+  protected static final String MIME_UNKNOWN = "application/octet-stream";
   protected static final String HTML_ENCODING = "UTF-8";
+  protected static final long BYTES_IN_MEGABYTE = 1000000;
+
+  protected static final String REACT_CLASS = "RNCWebView";
+
+  protected static final String HEADER_CONTENT_TYPE = "content-type";
+
   protected static final String HTML_MIME_TYPE = "text/html";
   protected static final String JAVASCRIPT_INTERFACE = "ReactNativeWebView";
   protected static final String FAVICON_INTERFACE = "FaviconWebView";
@@ -333,8 +341,37 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     });
 
+    /**
+     * can use the injectedJavaScript prop to inject JavaScript code
+     * TODO: rewrite this code later after refactoring AdBlockEngine in RNCWebViewClient -> shouldInterceptRequest
+     * Ref: https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L319
+     * Ex: inject the web3 Javascript code into app.uniswap.org page (PWA)
+     * */
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+//      ServiceWorkerController swController = ServiceWorkerController.getInstance();
+//      swController.setServiceWorkerClient(new ServiceWorkerClient() {
+//        @androidx.annotation.Nullable
+//        @Override
+//        public WebResourceResponse shouldInterceptRequest(WebResourceRequest request) {
+//          String method = request.getMethod();
+//
+//          if(method.equals("GET")) {
+//            WebResourceResponse response = RNCWebViewManager.this.shouldInterceptRequest(request, false, webView);
+//            if (response != null) {
+//              return response;
+//            }
+//          }
+//
+//          return super.shouldInterceptRequest(request);
+//        }
+//      });
+//    }
+
     return webView;
   }
+
+  // Ref: https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L380C31-L380C53
+  // the shouldInterceptRequest detail at RNCWebViewClient -> shouldInterceptRequest
 
   @ReactProp(name = "javaScriptEnabled")
   public void setJavaScriptEnabled(WebView view, boolean enabled) {
@@ -489,13 +526,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
   @ReactProp(name = "injectedJavaScriptBeforeDocumentLoad")
   public void setInjectedJavaScriptBeforeDocumentLoad(WebView view, @Nullable String injectedJavaScriptBeforeDocumentLoad) {
-    String injectedScript = getModule((ReactContext)view.getContext()).getInjectedScript();
-    if ((injectedScript == null || injectedScript.length() == 0) &&
-        (injectedJavaScriptBeforeDocumentLoad == null || injectedJavaScriptBeforeDocumentLoad.length() == 0)
-    ) {
-      return;
-    }
-    ((RNCWebView) view).setInjectedJavaScriptBeforeDocumentLoad(injectedJavaScriptBeforeDocumentLoad + injectedScript);
+    ((RNCWebView) view).setInjectedJavaScriptBeforeDocumentLoad(injectedJavaScriptBeforeDocumentLoad);
   }
 
   @ReactProp(name = "messagingEnabled")
@@ -1007,6 +1038,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       super.onPageStarted(webView, url, favicon);
       mLastLoadFailed = false;
 
+      // remove the callInjectedJavaScriptBeforeContentLoaded function in this line. We're using another way to inject javascript code. 
+      // Please check RNCWebViewClient -> shouldInterceptRequest
+      // ref: https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L650
+      // RNCWebView reactNativeWebView = (RNCWebView) webView;
+      // reactNativeWebView.callInjectedJavaScriptBeforeContentLoaded();
+
       dispatchEvent(
         webView,
         new TopLoadingStartEvent(
@@ -1038,6 +1075,39 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return this._shouldOverrideUrlLoading(view, url, request.isForMainFrame());
     }
 
+    public static Boolean responseRequiresJSInjection(Response response) {
+      if (response.isRedirect()) {
+        return false;
+      }
+      final String contentTypeAndCharset = response.header(HEADER_CONTENT_TYPE, MIME_UNKNOWN);
+      final int responseCode = response.code();
+
+      boolean contentTypeIsHtml = contentTypeAndCharset.startsWith(HTML_MIME_TYPE);
+      boolean responseCodeIsInjectible = responseCode == 200;
+      String responseBody = "";
+
+      if (contentTypeIsHtml && responseCodeIsInjectible) {
+        try {
+          assert response.body() != null;
+          responseBody = response.peekBody(BYTES_IN_MEGABYTE).string();
+        } catch (IOException e) {
+          e.printStackTrace();
+          return false;
+        }
+
+
+        boolean responseBodyContainsHTMLLikeString = responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*");
+        return responseBodyContainsHTMLLikeString;
+      } else {
+        return false;
+      }
+    }
+
+    /**
+     * fix android injection
+     * https://github.com/MetaMask/metamask-mobile/pull/2070
+     * https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L415
+     * * */
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
@@ -1088,10 +1158,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           }
         }
 
-        if (((RNCWebView) view).injectedJSBeforeDocumentLoad == null) {
-          return null;
-        }
-
         if (!request.isForMainFrame()) {
           return null;
         }
@@ -1114,57 +1180,21 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         Response response = httpClient.newCall(req).execute();
 
-        ResponseBody body = response.body();
-        MediaType type = body != null ? body.contentType() : null;
-        String mimeType = type != null ? type.type() + "/" + type.subtype() : null;
-        Charset charset = type != null ? type.charset(UTF_8) : null;
-        String encoding = charset != null ? charset.displayName() : null;
-        InputStream bis = body != null ? body.byteStream() : null;
-        HashMap<String, String> map = new HashMap<>();
-        Headers headers = response.headers();
-        for (String key : headers.names()) {
-          map.put(key, headers.get(key));
-        }
-        int statusCode = response.code();
-        String message = response.message();
-        if (TextUtils.isEmpty(message)) {
-          message = "Unknown";
-        }
-
-        if (statusCode == 401) {
+        if (!responseRequiresJSInjection(response)) {
           return null;
         }
 
-        if (response.isRedirect()) {
-          String location = response.header("Location");
-          if (location != null) {
-            view.post(new Runnable() {
-              @Override
-              public void run() {
-                view.loadUrl(location, requestHeaders);
-              }
-            });
-          }
-          return new WebResourceResponse("text/html", "utf-8", new InputStream() {
-            @Override
-            public int read() throws IOException {
-              return 0;
-            }
-          });
+        ResponseBody body = response.body();
+        MediaType type = body != null ? body.contentType() : null;
+        Charset charset = type != null ? type.charset(UTF_8) : UTF_8;
+        InputStream is = body != null ? body.byteStream() : null;
+
+        RNCWebView reactWebView = (RNCWebView) view;
+        if (response.code() == HttpURLConnection.HTTP_OK) {
+          is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeDocumentLoad, charset);
         }
 
-        if (mimeType == null || !mimeType.equalsIgnoreCase("text/html")) {
-          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-        }
-
-        if (!response.isSuccessful()) {
-          return new WebResourceResponse(mimeType, encoding, statusCode, message, map, bis);
-        }
-
-        InputStreamWithInjectedJS iis = new InputStreamWithInjectedJS(
-          bis, ((RNCWebView) view).injectedJSBeforeDocumentLoad, charset);
-
-        return new WebResourceResponse(mimeType, encoding, statusCode, message, map, iis);
+        return new WebResourceResponse("text/html", charset.name(), is);
       } catch (Exception e) {
         return null;
       }
@@ -1734,6 +1764,14 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         injectedJS != null &&
         !TextUtils.isEmpty(injectedJS)) {
         evaluateJavascriptWithFallback("(function() {\n" + injectedJS + ";\n})();");
+      }
+    }
+
+    public void callInjectedJavaScriptBeforeContentLoaded() {
+      if (getSettings().getJavaScriptEnabled() &&
+        injectedJSBeforeDocumentLoad != null &&
+        !TextUtils.isEmpty(injectedJSBeforeDocumentLoad)) {
+        evaluateJavascriptWithFallback("(function() {\n" + injectedJSBeforeDocumentLoad + ";\n})();");
       }
     }
 
