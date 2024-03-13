@@ -1440,10 +1440,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       Intent intent = fileChooserParams.createIntent();
       return getModule(mReactContext).startPhotoPickerIntent(filePathCallback, intent, acceptTypes, allowMultiple);
     }
+
+    // similar createRNCWebViewInstance method in RNCWebViewManager
+    protected RNCWebView createNewWindow(ThemedReactContext reactContext) {
+      RNCWebView newView = RNCWebView.createNewWindow(reactContext);
+      newView.addJavascriptInterface(newView.createRNCNativeWebViewBridge(newView), NATIVE_SCRIPT_INTERFACE);
+      newView.addJavascriptInterface(newView.createRNCWebViewBridge(newView), FAVICON_INTERFACE);
+      return newView;
+    }
+
     @Override
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
       // Create a new view
-      RNCWebView newView = RNCWebView.createNewWindow((ThemedReactContext) mReactContext);
+      RNCWebView newView = this.createNewWindow((ThemedReactContext) mReactContext);
+
       newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
@@ -1557,6 +1567,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
       return webView;
     }
+
     public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
       newWindow = new RNCWebView(reactContext);
       return newWindow;
@@ -1922,7 +1933,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
     }
 
-    public void getFaviconUrl()  {
+    public void getFaviconUrl() {
       this.loadUrl("javascript:getFavicons()");
     }
 
