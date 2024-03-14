@@ -225,8 +225,6 @@ static DownloadQueue *_downloadQueue = nil;
         [self.downloads removeObjectAtIndex:index];
         [self.delegate downloadQueue:self download:download didFinishDownloadingTo:location];
         
-        [[NSNotificationCenter defaultCenter] postNotificationName:@"fileDidDownload" object:location];
-        
         if (self.downloads.count == 0) {
             [self.delegate downloadQueue:self didCompleteWithError:self.lastDownloadError];
         }

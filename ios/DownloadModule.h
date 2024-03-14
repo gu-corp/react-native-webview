@@ -2,7 +2,8 @@
 #import <React/RCTBridgeModule.h>
 #import <React/RCTEventEmitter.h>
 #import "DownloadQueue.h"
-@interface DownloadModule : RCTEventEmitter <RCTBridgeModule, DownloadQueueDelegate>
+#import "PassBookHelper.h"
+@interface DownloadModule : RCTEventEmitter <RCTBridgeModule, DownloadQueueDelegate, PassBookHelperDelegate>
 @property (nonatomic, assign) int64_t combinedBytesDownloaded;
 @property (nonatomic, strong) NSNumber *combinedTotalBytesExpected;
 

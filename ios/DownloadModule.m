@@ -10,7 +10,7 @@
 RCT_EXPORT_MODULE(DownloadModule);
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"DownloadCanceled"];
+    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"DownloadCanceled", @"PassBookError"];
 }
 
 static DownloadModule *sharedInstance = nil;
@@ -47,7 +47,7 @@ static DownloadModule *sharedInstance = nil;
             self.combinedTotalBytesExpected = nil;
         }
     }
-    [self sendEventWithName:@"TotalBytesExpectedDidChange" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected ?: @0, @"downloadCount": @([_downloads count])}];
+    [self sendEventWithName:@"TotalBytesExpectedDidChange" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected, @"downloadCount": @([_downloads count])}];
 }
 
 - (void)downloadQueue:(id)downloadQueue didCompleteWithError:(NSError * _Nullable)error {
@@ -62,7 +62,7 @@ static DownloadModule *sharedInstance = nil;
 
 - (void)downloadQueue:(id)downloadQueue didDownloadCombinedBytes:(int64_t)combinedBytesDownloaded combinedTotalBytesExpected:(nullable NSNumber *)combinedTotalBytesExpected {
     self.combinedBytesDownloaded = combinedBytesDownloaded;
-    [self sendEventWithName:@"CombinedBytesDownloadedDidChange" body:@{@"combinedBytesDownloaded": @(self.combinedBytesDownloaded ?: 0)}];
+    [self sendEventWithName:@"CombinedBytesDownloadedDidChange" body:@{@"combinedBytesDownloaded": @(self.combinedBytesDownloaded)}];
 }
 
 - (void)downloadQueue:(id)downloadQueue didStartDownload:(Download *)download {
@@ -70,7 +70,7 @@ static DownloadModule *sharedInstance = nil;
     if (_downloads.count == 0) {
         [_downloads addObject:download];
         self.combinedTotalBytesExpected = download.totalBytesExpected;
-        [self sendEventWithName:@"DownloadStarted" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected ?: @0}];
+        [self sendEventWithName:@"DownloadStarted" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected}];
     } else {
         [self addDownload:download];
     }
@@ -78,6 +78,10 @@ static DownloadModule *sharedInstance = nil;
 
 - (void)downloadQueue:(id)downloadQueue download:(Download *)download didFinishDownloadingTo:(NSURL *)location {
     
+}
+
+- (void) passBookdidCompleteWithError {
+    [self sendEventWithName:@"PassBookError" body:@{}];
 }
 
 RCT_EXPORT_METHOD(openDownloadFolder)

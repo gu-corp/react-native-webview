@@ -10,4 +10,11 @@
 + (NSURL *)uniqueDownloadPathForFilename:(NSString *)filename;
 + (NSURL *)getDownloadFolder;
 + (void)openDownloadFolder;
+
+// AppInfo
++ (NSBundle *)applicationBundle;
++ (NSString *)bundleIdentifier;
++ (NSString *)appVersion;
++ (NSString *)buildNumber;
++ (NSString *)displayName;
 @end

@@ -137,4 +137,33 @@ static NSDictionary *_downloadConfig = nil;
         [[UIApplication sharedApplication] openURL:downloadFolderURL options:@{} completionHandler:nil];
     });
 }
+
++ (NSBundle *)applicationBundle {
+    NSBundle *bundle = [NSBundle mainBundle];
+    NSString *pathExtension = bundle.bundleURL.pathExtension;
+    if ([pathExtension isEqualToString:@"app"]) {
+        return bundle;
+    } else if ([pathExtension isEqualToString:@"appex"]) {
+        return [NSBundle bundleWithURL:[[bundle.bundleURL URLByDeletingLastPathComponent] URLByDeletingLastPathComponent]];
+    } else {
+        NSLog(@"Unable to get application Bundle (Bundle.main.bundlePath=%@)", bundle.bundlePath);
+        return nil;
+    }
+}
+
++ (NSString *)bundleIdentifier {
+    return [[self applicationBundle] objectForInfoDictionaryKey:@"CFBundleIdentifier"];
+}
+
++ (NSString *)appVersion {
+    return [[self applicationBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+}
+
++ (NSString *)buildNumber {
+    return [[self applicationBundle] objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
+}
+
++ (NSString *)displayName {
+    return [[self applicationBundle] objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+}
 @end
