@@ -1,3 +1,6 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #import "DownloadHelper.h"
 #import "Utility.h"
 
@@ -115,7 +118,7 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
 
     UIAlertController *downloadAlert = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 
-    NSString *downloadActionText = NSLocalizedString(@"Download", @"Download action text");
+    NSString *downloadActionText = [[Utility downloadConfig] objectForKey:@"downloadButton"] ?: @"Download";
     // The download can be of undetermined size, adding expected size only if it's available.
     if (expectedSize) {
         downloadActionText = [NSString stringWithFormat:@"%@ (%@)", downloadActionText, expectedSize];
@@ -127,7 +130,8 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
         }
     }];
 
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:NSLocalizedString(@"Cancel", @"Cancel button title") style:UIAlertActionStyleCancel handler:nil];
+    NSString *cancelButton = [[Utility downloadConfig] objectForKey:@"downloadCancelButton"] ?: @"Cancel";
+    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle: cancelButton style:UIAlertActionStyleCancel handler:nil];
 
     [downloadAlert addAction:doneAction];
     [downloadAlert addAction:cancelAction];
