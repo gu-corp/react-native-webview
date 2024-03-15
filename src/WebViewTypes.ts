@@ -81,6 +81,8 @@ export class NativeWebViewAndroid extends NativeWebViewAndroidBase {}
 
 export interface DownloadConfigProp {
   downloadFolder?: string;
+  downloadButton?: string;
+  downloadCancelButton?: string;
 }
 export interface ContentInsetProp {
   top?: number;
