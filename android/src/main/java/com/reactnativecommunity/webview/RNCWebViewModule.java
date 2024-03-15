@@ -333,7 +333,8 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   }
 
   public boolean grantFileDownloaderPermissions() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+      || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       return true;
     }
 
