@@ -304,7 +304,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
       if (MediaStore.ACTION_IMAGE_CAPTURE.equals(intentType)) {
         intent = getPhotoIntent();
       } else if (MediaStore.ACTION_VIDEO_CAPTURE.equals(intentType)) {
-        intent = getPhotoIntent();
+        intent = getVideoIntent();
       }
 
       getCurrentActivity().startActivityForResult(intent, OPEN_CAMERA);
@@ -366,10 +366,49 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private Intent getFileChooserIntent(String[] acceptTypes, boolean allowMultiple) {
     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
     intent.addCategory(Intent.CATEGORY_OPENABLE);
-    intent.setType("*/*");
-    intent.putExtra(Intent.EXTRA_MIME_TYPES, getAcceptedMimeType(acceptTypes));
+    String[] acceptedMimes;
+    if (acceptsVideo(acceptTypes)) {
+      intent.setType("video/*");
+      acceptedMimes = convertMediaAcceptTypes(acceptTypes);
+    } else if (acceptsAudio(acceptTypes)) {
+      intent.setType("audio/*");
+      acceptedMimes = null;
+    } else if (acceptsImages(acceptTypes)) {
+      intent.setType("image/*");
+      acceptedMimes = convertMediaAcceptTypes(acceptTypes);
+    } else {
+      intent.setType("*/*");
+      acceptedMimes = getAcceptedMimeType(acceptTypes);
+    }
+
+    if (acceptedMimes != null && acceptedMimes.length > 0) {
+      intent.putExtra(Intent.EXTRA_MIME_TYPES, acceptedMimes);
+    }
     intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple);
     return intent;
+  }
+
+  private String[] convertMediaAcceptTypes(String[] acceptTypes) {
+    if (acceptTypes == null || acceptTypes.length == 0) return new String[]{};
+
+    ArrayList<String> convertList = new ArrayList<String>();
+    String baseMimeType = "*/*";
+    if (acceptsVideo(acceptTypes)) {
+      baseMimeType = "video/*";
+    } else if (acceptsImages(acceptTypes)) {
+      baseMimeType = "image/*";
+    } else {
+      return new String[]{};
+    }
+    for (String type : acceptTypes) {
+      if (type != null && type.startsWith(".")) {
+        String mime = baseMimeType.replace("*", type.substring(1));
+        convertList.add(mime);
+      }
+    }
+    String[] convertValues = new String[convertList.size()];
+    convertList.toArray(convertValues);
+    return convertValues;
   }
 
   private Boolean acceptsImages(String types) {
@@ -398,9 +437,23 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     return isArrayEmpty(mimeTypes) || arrayContainsString(mimeTypes, "video");
   }
 
+  private Boolean acceptsAudio(String types) {
+    String mimeType = types;
+    if (types.matches("\\.\\w+")) {
+      mimeType = getMimeTypeFromExtension(types.replace(".", ""));
+    }
+    return mimeType.isEmpty() || mimeType.toLowerCase().contains("audio");
+  }
+
+  private Boolean acceptsAudio(String[] types) {
+    String[] mimeTypes = getAcceptedMimeType(types);
+    return isArrayEmpty(mimeTypes) || arrayContainsString(mimeTypes, "audio");
+  }
+
   private Boolean arrayContainsString(String[] array, String pattern) {
+    if (array == null) return false;
     for (String content : array) {
-      if (content.contains(pattern)) {
+      if (content != null && pattern != null && content.contains(pattern)) {
         return true;
       }
     }
