@@ -2,6 +2,10 @@
 
 This document lays out the current public properties and methods for the React Native WebView.
 
+## Function
+
+- [iOS] support pkpass file and add them to the Apple wallet 
+
 ## Props Index
 
 - [`source`](Reference.md#source)
