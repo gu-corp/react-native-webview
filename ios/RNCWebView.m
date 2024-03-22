@@ -17,6 +17,8 @@
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
+#import "PassBookHelper.h"
+#import "DownloadModule.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -1208,6 +1210,7 @@ static NSDictionary* customCertificatesForHost;
   decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse
                     decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler
 {
+  WKNavigationResponsePolicy policy = WKNavigationResponsePolicyAllow;
   if (_onHttpError && navigationResponse.forMainFrame) {
     if ([navigationResponse.response isKindOfClass:[NSHTTPURLResponse class]]) {
       NSHTTPURLResponse *response = (NSHTTPURLResponse *)navigationResponse.response;
@@ -1224,8 +1227,24 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-
-  decisionHandler(WKNavigationResponsePolicyAllow);
+  
+  NSURLResponse *response = navigationResponse.response;
+    WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
+    WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+    
+    if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+        PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                      cookieStore:cookieStore
+                                                                   viewController:[self topViewController]];
+        // Open our helper and nullify the helper when done with it
+        [passBookHelper open];
+        passBookHelper.delegate = [DownloadModule sharedInstance];
+        
+        // Cancel this response from the webview.
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+  decisionHandler(policy);
 }
 
 /**
