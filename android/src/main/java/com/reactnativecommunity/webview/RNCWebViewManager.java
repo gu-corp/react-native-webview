@@ -103,6 +103,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 
@@ -1052,14 +1054,27 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     private boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
-      activeUrl = url;
-      WritableMap event = createWebViewEvent(view, url);
-      event.putBoolean("mainFrame", isMainFrame);
-      dispatchEvent(
-        view,
-        new TopShouldStartLoadWithRequestEvent(
-          view.getId(),
-          event));
+      Uri uri = Uri.parse(url);
+      // Get the fragment part of the URL
+      String fragment = uri.getFragment();
+      // Define regex pattern to extract S.browser_fallback_url
+      Pattern pattern = Pattern.compile("S\\.browser_fallback_url=([^;]+)");
+      Matcher matcher = pattern.matcher(fragment);
+      // Find and print S.browser_fallback_url value
+      if (matcher.find()) {
+        String browserFallbackUrl = matcher.group(1);
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(browserFallbackUrl));
+        mReactContext.startActivity(intent);
+      } else {
+        activeUrl = url;
+        WritableMap event = createWebViewEvent(view, url);
+        event.putBoolean("mainFrame", isMainFrame);
+        dispatchEvent(
+          view,
+          new TopShouldStartLoadWithRequestEvent(
+            view.getId(),
+            event));
+        }
       return true;
     }
 
@@ -1453,10 +1468,35 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
       // Create a new view
       RNCWebView newView = this.createNewWindow((ThemedReactContext) mReactContext);
-
+    
       newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
+          if (url != null && url.startsWith("intent://")) {
+              Uri uri = Uri.parse(url);
+              // Get the fragment part of the URL
+              String fragment = uri.getFragment();
+              // Define regex pattern to extract S.browser_fallback_url
+              Pattern pattern = Pattern.compile("S\\.browser_fallback_url=([^;]+)");
+              Matcher matcher = pattern.matcher(fragment);
+              // Find and print S.browser_fallback_url value
+              if (matcher.find()) {
+                String browserFallbackUrl = matcher.group(1);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(browserFallbackUrl));
+                mReactContext.startActivity(intent);
+                return ;
+              } else {
+                WritableMap eventData = Arguments.createMap();
+                eventData.putDouble("target", webView.getId());
+                eventData.putString("url", url);
+                eventData.putBoolean("loading", false);
+                eventData.putDouble("progress", webView.getProgress());
+                eventData.putString("title", webView.getTitle());
+                eventData.putBoolean("canGoBack", webView.canGoBack());
+                eventData.putBoolean("canGoForward", webView.canGoForward());
+                dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
+              }            
+          }
           WritableMap eventData = Arguments.createMap();
           eventData.putDouble("target", webView.getId());
           eventData.putString("url", url);
