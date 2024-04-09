@@ -127,6 +127,7 @@ import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 import com.reactnativecommunity.webview.utils.UrlUtils;
+import com.reactnativecommunity.webview.utils.Utils;
 
 /**
  * Manages instances of {@link WebView}
@@ -321,7 +322,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 
-        String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String fileName = Utils.getFileNameDownload(url, contentDisposition, mimetype);
         if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
           fileName = DOWNLOAD_FOLDER + "/" + fileName;
         }
