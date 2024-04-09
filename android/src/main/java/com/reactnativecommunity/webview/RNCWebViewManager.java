@@ -690,6 +690,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       if (downloadConfig.hasKey("downloadFolder")) {
         String downloadFolder = downloadConfig.getString("downloadFolder");
         RNCWebViewModule module = getModule((ReactContext) view.getContext());
+        RNCWebView rncWebView = (RNCWebView) view;
+        rncWebView.setDownloadFolder(downloadFolder);
         module.setDownloadFolder(downloadFolder);
         DOWNLOAD_FOLDER = downloadFolder;
       }
@@ -1565,6 +1567,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     private static RNCWebView newWindow;
 
+    private String DOWNLOAD_FOLDER = "";
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -1638,6 +1642,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setNestedScrollEnabled(boolean nestedScrollEnabled) {
       this.nestedScrollEnabled = nestedScrollEnabled;
+    }
+
+    public void setDownloadFolder(String downloadFolder) {
+      this.DOWNLOAD_FOLDER = downloadFolder;
     }
 
     @Override
@@ -1936,11 +1944,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void captureScreen(String type) {
       final String fileName = System.currentTimeMillis() + ".jpg";
-      String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
+      // Old logic: save internal storage
+      // String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
 
-      File d = new File(directory);
-      d.mkdirs();
-      final String localFilePath = directory + fileName;
+      File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+      if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+        saveDir = new File(saveDir, DOWNLOAD_FOLDER);
+        if (!saveDir.exists()) {
+          saveDir.mkdirs();
+        }
+      }
+      File downloadPath = new File(saveDir, fileName);
       boolean success = false;
       try {
         Picture picture = this.capturePicture();
@@ -1950,7 +1964,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         Canvas c = new Canvas(b);
         picture.draw(c);
 
-        FileOutputStream fos = new FileOutputStream(localFilePath);
+        FileOutputStream fos = new FileOutputStream(downloadPath, false);
         if (fos != null) {
           b.compress(Bitmap.CompressFormat.JPEG, 80, fos);
           fos.close();
@@ -1964,7 +1978,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         event.putBoolean("result", success);
         event.putString("type", type);
         if (success) {
-          event.putString("data", localFilePath);
+          event.putString("data", downloadPath.getAbsolutePath());
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
       }
