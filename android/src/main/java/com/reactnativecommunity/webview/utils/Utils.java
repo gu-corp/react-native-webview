@@ -8,12 +8,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.webkit.MimeTypeMap;
 
 import androidx.core.app.NotificationCompat;
 
 import com.reactnativecommunity.webview.R;
 
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class Utils {
+
+  private static final Pattern CONTENT_DISPOSITION_PATTERN =
+    Pattern.compile("attachment;\\s*filename\\s*=\\s*(\"?)([^\"]*)\\1\\s*$",
+      Pattern.CASE_INSENSITIVE);
 
   public static String getBase64Data(String base64Data) {
     String[] parts = base64Data.split(",");
@@ -80,6 +89,87 @@ public class Utils {
     }
 
     notificationManager.notify(1, notificationBuilder.build());
+  }
+
+  public static String getFileNameDownload(String url, String contentDisposition, String mimeType) {
+    String filename = null;
+    String extension = null;
+
+    // If we couldn't do anything with the hint, move toward the content disposition
+    filename = parseContentDisposition(contentDisposition);
+    if (filename != null) {
+      int index = filename.lastIndexOf('/') + 1;
+      if (index > 0) {
+        filename = filename.substring(index);
+      }
+      // Check extension
+      int dotIndex = filename.indexOf('.');
+      if (dotIndex > 0) {
+        return filename;
+      }
+    }
+    // If all the other http-related approaches failed, use the plain uri
+    if (filename == null) {
+      String decodedUrl = Uri.decode(url);
+      if (decodedUrl != null) {
+        int queryIndex = decodedUrl.indexOf('?');
+        // If there is a query string strip it, same as desktop browsers
+        if (queryIndex > 0) {
+          decodedUrl = decodedUrl.substring(0, queryIndex);
+        }
+        if (!decodedUrl.endsWith("/")) {
+          int index = decodedUrl.lastIndexOf('/') + 1;
+          if (index > 0) {
+            filename = decodedUrl.substring(index);
+          }
+          if (filename != null) {
+            // Check extension
+            int dotIndex = filename.indexOf('.');
+            if (dotIndex > 0) {
+              return filename;
+            }
+          }
+        }
+      }
+    }
+
+    // Finally, if couldn't get filename from URI, get a generic filename
+    if (filename == null) {
+      filename = String.valueOf(System.currentTimeMillis());
+    }
+
+    // Add an extension if filename does not have one
+    if (mimeType != null) {
+      extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType);
+      if (extension != null) {
+        extension = "." + extension;
+      }
+    }
+    if (extension == null) {
+      if (mimeType != null && mimeType.toLowerCase(Locale.ROOT).startsWith("text/")) {
+        if (mimeType.equalsIgnoreCase("text/html")) {
+          extension = ".html";
+        } else {
+          extension = ".txt";
+        }
+      } else {
+        extension = ".bin";
+      }
+    }
+
+    return filename + extension;
+  }
+
+  public static String parseContentDisposition(String contentDisposition) {
+    try {
+      Matcher m = CONTENT_DISPOSITION_PATTERN.matcher(contentDisposition);
+      if (m.find()) {
+        return m.group(2);
+      }
+    } catch (IllegalStateException ex) {
+      // This function is defined as returning null when it can't parse the header
+    }
+    return null;
   }
 
 }
