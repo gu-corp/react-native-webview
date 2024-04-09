@@ -166,7 +166,7 @@ static NSDictionary* customCertificatesForHost;
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = self;
-//    _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
