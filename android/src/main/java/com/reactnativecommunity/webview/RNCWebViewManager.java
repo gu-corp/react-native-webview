@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.Context;
@@ -52,6 +53,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 
+import com.facebook.react.modules.core.PermissionAwareActivity;
+import com.facebook.react.modules.core.PermissionListener;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
@@ -100,6 +103,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -122,6 +126,7 @@ import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 import com.reactnativecommunity.webview.utils.UrlUtils;
+import com.reactnativecommunity.webview.utils.Utils;
 
 /**
  * Manages instances of {@link WebView}
@@ -187,6 +192,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected boolean mAllowsFullscreenVideo = false;
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
+
+  private String DOWNLOAD_FOLDER;
 
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
@@ -290,6 +297,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+        if (url.startsWith("blob")) {
+          String jsConvert = "getBase64StringFromBlobUrl('" + url + "');";
+          webView.loadUrl("javascript:" + jsConvert);
+          return;
+        }
+
          // block non-http/https download links
         if (!URLUtil.isNetworkUrl(url)) {
           Toast.makeText(reactContext.getCurrentActivity(), R.string.download_protocol_not_supported,
@@ -301,7 +314,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 
-        String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String fileName = Utils.getFileNameDownload(url, contentDisposition, mimetype);
+        if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+          fileName = DOWNLOAD_FOLDER + "/" + fileName;
+        }
         String downloadMessage = "Downloading " + fileName;
 
         //Attempt to add cookie, if it exists
@@ -639,6 +655,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     RNCWebViewClient client = ((RNCWebView) view).getRNCWebViewClient();
     if (client != null) {
       client.setAdblockRules(rules);
+    }
+  }
+
+  @ReactProp(name = "downloadConfig")
+  public void setDownloadConfig(WebView view, @Nullable ReadableMap downloadConfig) {
+    if (downloadConfig != null) {
+      if (downloadConfig.hasKey("downloadFolder")) {
+        String downloadFolder = downloadConfig.getString("downloadFolder");
+        RNCWebViewModule module = getModule((ReactContext) view.getContext());
+        RNCWebView rncWebView = (RNCWebView) view;
+        rncWebView.setDownloadFolder(downloadFolder);
+        module.setDownloadFolder(downloadFolder);
+        DOWNLOAD_FOLDER = downloadFolder;
+      }
     }
   }
 
@@ -1326,39 +1356,145 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     // Fix WebRTC permission request error.
+    private PermissionRequest permissionRequest;
+    private ArrayList<String> grantedPermissions;
+    private final ArrayList<String> pendingPermissions = new ArrayList<>();
+    private boolean permissionsRequestShown = false;
+    protected boolean allowsProtectedMedia = true;
     @Override
     public void onPermissionRequest(final PermissionRequest request) {
-      String[] requestedResources = request.getResources();
-      ArrayList<String> permissions = new ArrayList<>();
-      ArrayList<String> grantedPermissions = new ArrayList<String>();
-      for (int i = 0; i < requestedResources.length; i++) {
-        if (requestedResources[i].equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
-          permissions.add(Manifest.permission.RECORD_AUDIO);
-        } else if (requestedResources[i].equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-          permissions.add(Manifest.permission.CAMERA);
+      grantedPermissions = new ArrayList<>();
+
+      ArrayList<String> requestedAndroidPermissions = new ArrayList<>();
+      for (String requestedResource : request.getResources()) {
+        String androidPermission = null;
+
+        if (requestedResource.equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+          // need define permission android.permission.RECORD_AUDIO and android.permission.MODIFY_AUDIO_SETTINGS in Manifest.xml
+          androidPermission = Manifest.permission.RECORD_AUDIO;
+        } else if (requestedResource.equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+          // need define permission android.permission.CAMERA in Manifest.xml
+          androidPermission = Manifest.permission.CAMERA;
+        } else if(requestedResource.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
+          if (allowsProtectedMedia) {
+            grantedPermissions.add(requestedResource);
+          } else {
+            /**
+             * Legacy handling (Kept in case it was working under some conditions (given Android version or something))
+             *
+             * Try to ask user to grant permission using Activity.requestPermissions
+             *
+             * Find more details here: https://github.com/react-native-webview/react-native-webview/pull/2732
+             */
+            androidPermission = PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID;
+          }
+        } else {
+          androidPermission = requestedResource;
         }
         // TODO: RESOURCE_MIDI_SYSEX, RESOURCE_PROTECTED_MEDIA_ID.
-      }
-
-      for (int i = 0; i < permissions.size(); i++) {
-        if (ContextCompat.checkSelfPermission(mReactContext, permissions.get(i)) != PackageManager.PERMISSION_GRANTED) {
-          continue;
-        }
-        if (permissions.get(i).equals(Manifest.permission.RECORD_AUDIO)) {
-          grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
-        } else if (permissions.get(i).equals(Manifest.permission.CAMERA)) {
-          grantedPermissions.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+        if (androidPermission != null) {
+          if (ContextCompat.checkSelfPermission(this.mWebView.getContext(), androidPermission) == PackageManager.PERMISSION_GRANTED) {
+            grantedPermissions.add(requestedResource);
+          } else {
+            requestedAndroidPermissions.add(androidPermission);
+          }
         }
       }
 
-      if (grantedPermissions.isEmpty()) {
-        request.deny();
-      } else {
-        String[] grantedPermissionsArray = new String[grantedPermissions.size()];
-        grantedPermissionsArray = grantedPermissions.toArray(grantedPermissionsArray);
-        request.grant(grantedPermissionsArray);
+      // If all the permissions are already granted, send the response to the WebView synchronously
+      if (requestedAndroidPermissions.isEmpty()) {
+        request.grant(grantedPermissions.toArray(new String[0]));
+        grantedPermissions = null;
+        return;
+      }
+
+      // Otherwise, ask to Android System for native permissions asynchronously
+      this.permissionRequest = request;
+      requestPermissions(requestedAndroidPermissions);
+    }
+
+    private PermissionAwareActivity getPermissionAwareActivity() {
+      Activity activity = this.mReactContext.getCurrentActivity();
+      if (!(activity instanceof PermissionAwareActivity)) {
+        return null;
+      }
+      return (PermissionAwareActivity) activity;
+    }
+
+    private synchronized void requestPermissions(List<String> permissions) {
+      /*
+       * If permissions request dialog is displayed on the screen and another request is sent to the
+       * activity, the last permission asked is skipped. As a work-around, we use pendingPermissions
+       * to store next required permissions.
+       */
+      if (permissionsRequestShown) {
+        pendingPermissions.addAll(permissions);
+        return;
+      }
+
+      PermissionAwareActivity activity = getPermissionAwareActivity();
+      if (activity != null) {
+        permissionsRequestShown = true;
+        activity.requestPermissions(
+          permissions.toArray(new String[0]),
+          3,
+          webviewPermissionsListener
+        );
+        // Pending permissions have been sent, the list can be cleared
+        pendingPermissions.clear();
       }
     }
+
+    private final PermissionListener webviewPermissionsListener = (requestCode, permissions, grantResults) -> {
+      permissionsRequestShown = false;
+
+      /*
+       * As a "pending requests" approach is used, requestCode cannot help to define if the request
+       * came from geolocation or camera/audio. This is why shouldAnswerToPermissionRequest is used
+       */
+      boolean shouldAnswerToPermissionRequest = false;
+
+      for (int i = 0; i < permissions.length; i++) {
+        String permission = permissions[i];
+        boolean granted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
+
+        if (permission.equals(Manifest.permission.RECORD_AUDIO)) {
+          if (granted && grantedPermissions != null) {
+            grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+          }
+          shouldAnswerToPermissionRequest = true;
+        }
+
+        if (permission.equals(Manifest.permission.CAMERA)) {
+          if (granted && grantedPermissions != null) {
+            grantedPermissions.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+          }
+          shouldAnswerToPermissionRequest = true;
+        }
+
+        if (permission.equals(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID)) {
+          if (granted && grantedPermissions != null) {
+            grantedPermissions.add(PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID);
+          }
+          shouldAnswerToPermissionRequest = true;
+        }
+      }
+
+      if (shouldAnswerToPermissionRequest
+        && permissionRequest != null
+        && grantedPermissions != null) {
+        permissionRequest.grant(grantedPermissions.toArray(new String[0]));
+        permissionRequest = null;
+        grantedPermissions = null;
+      }
+
+      if (!pendingPermissions.isEmpty()) {
+        requestPermissions(pendingPermissions);
+        return false;
+      }
+
+      return true;
+    };
 
     @Override
     public void onProgressChanged(WebView webView, int newProgress) {
@@ -1502,6 +1638,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     private static RNCWebView newWindow;
 
+    private String DOWNLOAD_FOLDER = "";
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -1574,6 +1712,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setNestedScrollEnabled(boolean nestedScrollEnabled) {
       this.nestedScrollEnabled = nestedScrollEnabled;
+    }
+
+    public void setDownloadFolder(String downloadFolder) {
+      this.DOWNLOAD_FOLDER = downloadFolder;
     }
 
     @Override
@@ -1846,15 +1988,35 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           });
         }
       }
+
+      @JavascriptInterface
+      public void sendPartialBase64Data(String base64Data) {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        module.sendPartialBase64Data(base64Data);
+      }
+
+      @JavascriptInterface
+      public void notifyConvertBlobToBase64Completed() {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        if (module.grantFileDownloaderPermissions()) {
+          module.saveBase64DataToFile();
+        }
+      }
     }
 
     public void captureScreen(String type) {
       final String fileName = System.currentTimeMillis() + ".jpg";
-      String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
+      // Old logic: save internal storage
+      // String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
 
-      File d = new File(directory);
-      d.mkdirs();
-      final String localFilePath = directory + fileName;
+      File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+      if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+        saveDir = new File(saveDir, DOWNLOAD_FOLDER);
+        if (!saveDir.exists()) {
+          saveDir.mkdirs();
+        }
+      }
+      File downloadPath = new File(saveDir, fileName);
       boolean success = false;
       try {
         Picture picture = this.capturePicture();
@@ -1864,7 +2026,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         Canvas c = new Canvas(b);
         picture.draw(c);
 
-        FileOutputStream fos = new FileOutputStream(localFilePath);
+        FileOutputStream fos = new FileOutputStream(downloadPath, false);
         if (fos != null) {
           b.compress(Bitmap.CompressFormat.JPEG, 80, fos);
           fos.close();
@@ -1878,7 +2040,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         event.putBoolean("result", success);
         event.putString("type", type);
         if (success) {
-          event.putString("data", localFilePath);
+          event.putString("data", downloadPath.getAbsolutePath());
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
       }

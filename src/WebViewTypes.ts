@@ -79,6 +79,11 @@ declare const NativeWebViewAndroidBase: Constructor<NativeMethodsMixin> &
   typeof NativeWebViewAndroidComponent;
 export class NativeWebViewAndroid extends NativeWebViewAndroidBase {}
 
+export interface DownloadConfigProp {
+  downloadFolder?: string;
+  downloadButton?: string;
+  downloadCancelButton?: string;
+}
 export interface ContentInsetProp {
   top?: number;
   left?: number;
@@ -116,6 +121,10 @@ export interface WebViewNavigation extends WebViewNativeEvent {
   mainDocumentURL?: string;
 }
 
+export interface FileDownload {
+  downloadUrl: string;
+}
+
 export type DecelerationRateConstant = 'normal' | 'fast';
 
 export interface WebViewMessage extends WebViewNativeEvent {
@@ -147,6 +156,8 @@ WebViewNativeFullScreenEvent
 >;
 
 export type WebViewNavigationEvent = NativeSyntheticEvent<WebViewNavigation>;
+
+export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
 
 export type WebViewMessageEvent = NativeSyntheticEvent<WebViewMessage>;
 
@@ -453,6 +464,11 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   userAgent?: string;
 
   /**
+   * Set the download config for the Webview.
+   */
+  downloadConfig?: DownloadConfigProp;
+
+  /**
    * A Boolean value that determines whether pressing on a link
    * displays a preview of the destination for the link.
    *
@@ -610,6 +626,12 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
   userAgent?: string;
 
   /**
+   * Sets the download config for the `WebView`.
+   * @platform android
+   */
+  downloadConfig?: DownloadConfigProp;
+
+  /**
    * Sets number that controls text zoom of the page in percent.
    * @platform android
    */
@@ -724,6 +746,24 @@ export interface WebViewSharedProps extends ViewProps {
    * Function that is invoked when the webview get favicon.
    */
   onGetFavicon?: (event: WebViewMessageEvent) => void;
+
+  /**
+   * Function that is invoked when the client needs to download a file.
+   *
+   * iOS 13+ only: If the webview navigates to a URL that results in an HTTP
+   * response with a Content-Disposition header 'attachment...', then
+   * this will be called.
+   *
+   * iOS 8+: If the MIME type indicates that the content is not renderable by the
+   * webview, that will also cause this to be called. On iOS versions before 13,
+   * this is the only condition that will cause this function to be called.
+   *
+   * The application will need to provide its own code to actually download
+   * the file.
+   *
+   * If not provided, the default is to let the webview try to render the file.
+   */
+  onFileDownload?: (event: FileDownloadEvent) => void;
 
   /**
    * Function that is invoked when the `WebView` is loading.

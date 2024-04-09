@@ -388,52 +388,37 @@ function MyApp_HighlightAllOccurencesOfString(keyword) {
 }
 
 function getFavicons() {
-  var favicons = [];
-  delete favicons.toJSON; // Never inherit Array.prototype.toJSON.
-  var links = document.getElementsByTagName('link');
-  var linkCount = links.length;
-  for (var i = 0; i < linkCount; ++i) {
-    if (links[i].rel) {
-      var rel = links[i].rel.toLowerCase();
-      if (
-        rel == 'alternate icon' ||
-        rel == 'shortcut icon' ||
-        rel == 'icon' ||
-        rel == 'apple-touch-icon' ||
-        rel == 'apple-touch-icon-precomposed'
-      ) {
-        var favicon = { rel: links[i].rel.toLowerCase(), href: links[i].href };
-        if (links[i].sizes && links[i].sizes.value) {
-          favicon.sizes = links[i].sizes.value;
-        } else {
-          favicon.sizes = '';
-        }
-        favicons.push(favicon);
-      } else if (rel && links[i].href && rel.startsWith('shortcut')) {
-        var href = links[i].href;
-        if (
-          href.endsWith('.ico') ||
-          href.endsWith('.png') ||
-          href.endsWith('.jpg') ||
-          href.endsWith('.jpeg') ||
-          href.endsWith('.bmp') ||
-          href.endsWith('.webp') ||
-          href.endsWith('.svg')
-        ) {
-          var favicon = {
-            rel: links[i].rel.toLowerCase(),
-            href: links[i].href,
-          };
+    var favicons = [];
+    delete favicons.toJSON;  // Never inherit Array.prototype.toJSON.
+    var links = document.getElementsByTagName('link');
+    var linkCount = links.length;
+    for (var i = 0; i < linkCount; ++i) {
+      if (links[i].rel) {
+        var rel = links[i].rel.toLowerCase();
+        if (rel == 'alternate icon' || rel == 'shortcut icon' ||
+            rel == 'icon' || rel == 'apple-touch-icon' || rel == 'apple-touch-icon-precomposed') {
+          var favicon = {rel: links[i].rel.toLowerCase(), href: links[i].href};
           if (links[i].sizes && links[i].sizes.value) {
             favicon.sizes = links[i].sizes.value;
-          } else {
-            favicon.sizes = '';
           }
           favicons.push(favicon);
+        } else if (rel && links[i].href && (rel.startsWith("shortcut"))) {
+          var href = links[i].href;
+          if (href.endsWith(".ico") || href.endsWith(".png") ||
+              href.endsWith(".jpg") || href.endsWith(".jpeg") ||
+              href.endsWith(".bmp") || href.endsWith(".webp") ||
+              href.endsWith(".svg")) {
+            var favicon = {rel: links[i].rel.toLowerCase(), href: links[i].href};
+            if (links[i].sizes && links[i].sizes.value) {
+              favicon.sizes = links[i].sizes.value;
+            }
+            favicons.push(favicon);
+          }
         }
       }
     }
-  }
+    
+  console.log(favicons);
 
   var sortFavicons = favicons
     .filter((item) => item.sizes !== '')
@@ -452,3 +437,4 @@ function getFavicons() {
   }
   return favi;
 }
+
