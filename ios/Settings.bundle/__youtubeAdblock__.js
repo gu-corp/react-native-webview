@@ -156,4 +156,5 @@
   
   setJS('ytInitialPlayerResponse.adPlacements', 'undefined');
   setJS('playerResponse.adPlacements', 'undefined');
+  setJS('playerResponse.adSlots', 'undefined');
 })();
