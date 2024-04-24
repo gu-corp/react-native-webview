@@ -1186,7 +1186,7 @@ static NSDictionary* customCertificatesForHost;
 
 - (bool)isYoutubeWebsite:(NSString *)domain
 {
-  return [domain  isEqual: @"m.youtube.com"] || [domain  isEqual: @"www.youtube.com"];
+  return [domain  isEqual: @"m.youtube.com"] || [domain  isEqual: @"www.youtube.com"] || [domain  isEqual: @"music.youtube.com"];
 }
 
 /**
