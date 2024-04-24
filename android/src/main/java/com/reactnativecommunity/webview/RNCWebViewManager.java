@@ -963,7 +963,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       try {
         URL url = new URL(urlString);
         String host = url.getHost();
-        result = "m.youtube.com".equals(host) || "www.youtube.com".equals(host);
+        result = "m.youtube.com".equals(host) || "www.youtube.com".equals(host) || "music.youtube.com".equals(host);
       } catch (Exception e) {
         e.printStackTrace();
       }
