@@ -1,7 +1,7 @@
 
 // PruneJS
 (function() {
-  const prunePaths = ['playerResponse.adPlacements', 'playerResponse.playerAds', 'adPlacements', 'playerAds'];
+  const prunePaths = ['playerResponse.adPlacements', 'playerResponse.playerAds', 'adPlacements', 'playerAds', 'playerResponse.adSlots', 'adSlots'];
   const findOwner = function(root, path) {
     let owner = root;
     let chain = path;
@@ -156,4 +156,5 @@
   
   setJS('ytInitialPlayerResponse.adPlacements', 'undefined');
   setJS('playerResponse.adPlacements', 'undefined');
+  setJS('playerResponse.adSlots', 'undefined');
 })();
