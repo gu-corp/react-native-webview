@@ -1007,6 +1007,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     @Override
     public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
       super.doUpdateVisitedHistory(view, url, isReload);
+      if (url != null && !url.equals(currentPageUrl)) {
+        currentPageUrl = url;
+      }
       dispatchEvent(
         view,
         new TopLoadingStartEvent(
