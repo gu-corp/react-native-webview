@@ -1625,6 +1625,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           eventData.putBoolean("canGoBack", webView.canGoBack());
           eventData.putBoolean("canGoForward", webView.canGoForward());
           dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
+          // release temp webview
+          webView.removeView(view);
+          view.removeAllViews();
+          view.destroy();
         }
 
         @Override
@@ -1699,8 +1703,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean hasScrollEvent = false;
     protected boolean nestedScrollEnabled = false;
 
-    private static RNCWebView newWindow;
-
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -1709,27 +1711,11 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
      */
 
     public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
-      RNCWebView webView = null;
-      if (newWindow != null) {
-        webView = newWindow;
-        try {
-          ViewGroup parent = (ViewGroup)newWindow.getParent();
-          if (parent != null) {
-            parent.removeView(newWindow);
-          }
-        } catch (Exception e) {
-          Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
-        }
-        newWindow = null;
-      } else {
-        webView = new RNCWebView(reactContext);
-      }
-      return webView;
+      return new RNCWebView(reactContext);
     }
 
     public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
-      newWindow = new RNCWebView(reactContext);
-      return newWindow;
+      return new RNCWebView(reactContext);
     }
 
     private RNCWebView(ThemedReactContext reactContext) {
