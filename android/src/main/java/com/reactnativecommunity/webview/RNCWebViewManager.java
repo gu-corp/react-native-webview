@@ -103,6 +103,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -1370,6 +1371,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     // Fix WebRTC permission request error.
     private PermissionRequest permissionRequest;
     private ArrayList<String> grantedPermissions;
+
+    // Webview geolocation permission callback
+    protected GeolocationPermissions.Callback geolocationPermissionCallback;
+    // Webview geolocation permission origin callback
+    protected String geolocationPermissionOrigin;
+
     private final ArrayList<String> pendingPermissions = new ArrayList<>();
     private boolean permissionsRequestShown = false;
     protected boolean allowsProtectedMedia = true;
@@ -1470,6 +1477,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         String permission = permissions[i];
         boolean granted = grantResults[i] == PackageManager.PERMISSION_GRANTED;
 
+        if (permission.equals(Manifest.permission.ACCESS_FINE_LOCATION)
+          && geolocationPermissionCallback != null
+          && geolocationPermissionOrigin != null) {
+
+          if (granted) {
+            geolocationPermissionCallback.invoke(geolocationPermissionOrigin, true, false);
+          } else {
+            geolocationPermissionCallback.invoke(geolocationPermissionOrigin, false, false);
+          }
+
+          geolocationPermissionCallback = null;
+          geolocationPermissionOrigin = null;
+        }
+
         if (permission.equals(Manifest.permission.RECORD_AUDIO)) {
           if (granted && grantedPermissions != null) {
             grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
@@ -1541,7 +1562,21 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     @Override
     public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
-      callback.invoke(origin, true, false);
+
+      if (ContextCompat.checkSelfPermission(mReactContext, Manifest.permission.ACCESS_FINE_LOCATION)
+        != PackageManager.PERMISSION_GRANTED) {
+
+        /*
+         * Keep the trace of callback and origin for the async permission request
+         */
+        geolocationPermissionCallback = callback;
+        geolocationPermissionOrigin = origin;
+
+        requestPermissions(Collections.singletonList(Manifest.permission.ACCESS_FINE_LOCATION));
+
+      } else {
+        callback.invoke(origin, true, false);
+      }
     }
 
     protected void openFileChooser(ValueCallback<Uri> filePathCallback, String acceptType) {
