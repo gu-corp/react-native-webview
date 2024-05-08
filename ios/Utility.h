@@ -10,6 +10,9 @@
 + (NSURL *)uniqueDownloadPathForFilename:(NSString *)filename;
 + (NSURL *)getDownloadFolder;
 + (void)openDownloadFolder;
++ (NSArray *)getDownloadSessionInfo;
++ (void)setDownloadSessionInfo: (NSArray *)sessionInfos;
++ (void) updateDownloadingList;
 
 // AppInfo
 + (NSBundle *)applicationBundle;

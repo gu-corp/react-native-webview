@@ -12,6 +12,13 @@
 
 @end
 
+@interface SessionInfo : NSObject
+
+@property (nonatomic) NSInteger sessionId;
+@property (nonatomic) NSInteger status;
+
+@end
+
 @interface Download : NSObject
 
 @property (nonatomic, weak) id<DownloadDelegate> delegate;
@@ -38,11 +45,16 @@
 
 - (instancetype)initWithCookieStore:(WKHTTPCookieStore *)cookieStore preflightResponse:(NSURLResponse *)preflightResponse request:(NSURLRequest *)request;
 
+- (instancetype)initWithSessionId: (NSString *)sessionId urlStr: (NSString *)str fileName: (NSString *)fileName mimeType: (NSString *)mimeType expectedFileSize: (NSNumber *)length;
+
+- (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSNumber *) status;
+
 @end
 
 @protocol DownloadQueueDelegate <NSObject>
 
 - (void)downloadQueue:(id)downloadQueue didStartDownload:(Download *)download;
+- (void)downloadQueue:(id)downloadQueue didRemoveDownload:(Download *)download;
 - (void)downloadQueue:(id)downloadQueue didDownloadCombinedBytes:(int64_t)combinedBytesDownloaded combinedTotalBytesExpected:(nullable NSNumber *)combinedTotalBytesExpected;
 - (void)downloadQueue:(id)downloadQueue download:(Download *)download didFinishDownloadingTo:(NSURL *)location;
 - (void)downloadQueue:(id)downloadQueue didCompleteWithError:(NSError *_Nullable)error;
@@ -52,6 +64,8 @@
 @interface DownloadQueue : NSObject <DownloadDelegate>
 
 @property (class, nonatomic, strong) DownloadQueue *downloadQueue;
+@property (class, nonatomic, strong) NSArray *downloadingList;
+@property (class, nonatomic, readonly) dispatch_queue_t downloadSerialQueue;
 
 @property (nonatomic, strong) NSMutableArray<Download *> *downloads;
 @property (nonatomic, weak) id<DownloadQueueDelegate> delegate;
@@ -62,6 +76,7 @@
 @property (nonatomic, strong, nullable) NSError *lastDownloadError;
 
 - (void)enqueue:(Download *)download;
+- (void)dequeue:(Download *)download sessionId:(NSString *)sessionId;
 - (void)cancelAll;
 - (void)pauseAll;
 - (void)resumeAll;

@@ -1,5 +1,6 @@
 #import "DownloadModule.h"
 #import "Utility.h"
+#import "DownloadQueue.h"
 
 @implementation DownloadModule
 {
@@ -10,7 +11,7 @@
 RCT_EXPORT_MODULE(DownloadModule);
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"DownloadCanceled", @"PassBookError"];
+    return @[@"DownloadStarted", @"TotalBytesExpectedDidChange", @"CombinedBytesDownloadedDidChange", @"DownloadCompleted", @"DownloadCanceled", @"PassBookError", @"DownloadingFileDidUpdate", @"DownloadingFileItemDidSuccess"];
 }
 
 static DownloadModule *sharedInstance = nil;
@@ -32,6 +33,7 @@ static DownloadModule *sharedInstance = nil;
     if (self) {
         _downloads = [NSMutableArray array];
         sharedInstance = self;
+        [Utility updateDownloadingList];
     }
     return self;
 }
@@ -78,12 +80,34 @@ static DownloadModule *sharedInstance = nil;
     }
 }
 
+- (void)downloadQueue:(id)downloadQueue didRemoveDownload:(Download *)download {
+    [_downloads removeObject:download];
+    if (self.combinedTotalBytesExpected) {
+        NSNumber *totalBytesExpected = download.totalBytesExpected;
+        if (totalBytesExpected) {
+            self.combinedTotalBytesExpected = @(self.combinedTotalBytesExpected.longLongValue - totalBytesExpected.longLongValue);
+        } else {
+            self.combinedTotalBytesExpected = nil;
+        }
+    }
+    [self sendEventWithName:@"TotalBytesExpectedDidChange" body:@{@"totalBytesExpected": self.combinedTotalBytesExpected ?: @0, @"downloadCount": @([_downloads count])}];
+}
+
 - (void)downloadQueue:(id)downloadQueue download:(Download *)download didFinishDownloadingTo:(NSURL *)location {
     
 }
 
 - (void) passBookdidCompleteWithError {
     [self sendEventWithName:@"PassBookError" body:@{}];
+}
+
+- (void) downloadingFileDidUpdate {
+    NSMutableArray *resultArray = [NSMutableArray arrayWithArray:[DownloadQueue downloadingList]];
+    [self sendEventWithName:@"DownloadingFileDidUpdate" body:@{@"downloadingList": resultArray}];
+}
+
+- (void)downloadingFileItemDidSuccess {
+    [self sendEventWithName:@"DownloadingFileItemDidSuccess" body:@{}];
 }
 
 RCT_EXPORT_METHOD(openDownloadFolder)
@@ -100,6 +124,50 @@ RCT_EXPORT_METHOD(cancelDownload)
         self.combinedTotalBytesExpected = @0;
         [self sendEventWithName:@"DownloadCanceled" body:@{}];
     }
+}
+
+RCT_EXPORT_METHOD(pauseDownload: (NSString *)sessionId)
+{
+    if (_currentDownloadQueue && ![_currentDownloadQueue isEmpty]) {
+        for (HTTPDownload *download in _downloads) {
+            if ([download.session.configuration.identifier isEqual: [NSString stringWithFormat:@"sessionId%@", sessionId]]) {
+                [_downloads removeObject:download];
+                [_currentDownloadQueue dequeue:download sessionId:sessionId];
+                break;
+            }
+        }
+    }
+}
+
+RCT_EXPORT_METHOD(resumeDownload: (NSString *)sessionId)
+{
+    NSArray *sessionInfos = [DownloadQueue downloadingList];
+    if (sessionInfos && sessionInfos.count != 0) {
+        NSDictionary *sessionInfo;
+        for (NSDictionary *temp in sessionInfos) {
+            NSString *tempSessionId = [[temp objectForKey:@"sessionId"] stringValue];
+            if ([tempSessionId isEqual:sessionId]) {
+                sessionInfo = temp;
+                break;
+            }
+        }
+        if (!sessionInfo) {
+            return;
+        }
+        NSString *sessionStr = [NSString stringWithFormat:@"sessionId%@", sessionId] ;
+        NSString *url = [sessionInfo objectForKey:@"url"];
+        NSString *fileName = [sessionInfo objectForKey:@"fileName"];
+        NSString *mimeType = [sessionInfo objectForKey:@"mimeType"];
+        NSNumber *length = [sessionInfo objectForKey:@"expectedFileSize"];
+        HTTPDownload *download = [[HTTPDownload alloc] initWithSessionId:sessionStr urlStr: url fileName:fileName mimeType:mimeType expectedFileSize:length];
+        [download updateSessionInfo:sessionId downloadedSize:nil status:@0];
+        [[DownloadQueue downloadQueue] enqueue: download];
+    }
+}
+
+RCT_EXPORT_METHOD(getListDowloading:(RCTResponseSenderBlock)callback) {
+    NSMutableArray *resultArray = [NSMutableArray arrayWithArray:[DownloadQueue downloadingList]];
+    callback(@[[NSNull null], resultArray]);
 }
 
 @end
