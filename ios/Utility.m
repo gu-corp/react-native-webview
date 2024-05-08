@@ -1,4 +1,5 @@
 #import "Utility.h"
+#import "DownloadModule.h"
 
 @implementation Utility
 
@@ -135,6 +136,36 @@ static NSDictionary *_downloadConfig = nil;
     
     dispatch_async(dispatch_get_main_queue(), ^{
         [[UIApplication sharedApplication] openURL:downloadFolderURL options:@{} completionHandler:nil];
+    });
+}
+
++ (NSArray *)getDownloadSessionInfo {
+    NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+    NSArray *sessionInfos = [userDefault arrayForKey:@"kDownloadSessionInfo"];
+    return sessionInfos;
+}
+
++ (void)setDownloadSessionInfo: (NSArray *)sessionInfos {
+    NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+    [userDefault setObject:sessionInfos forKey:@"kDownloadSessionInfo"];
+    [userDefault synchronize];
+}
+
++ (void) updateDownloadingList {
+    NSArray *sessionInfos = [Utility getDownloadSessionInfo];
+    NSMutableArray *newSessionInfos = [NSMutableArray array];
+    for (NSDictionary *sessionInfo in sessionInfos) {
+        if ([sessionInfo[@"status"] isEqual: @0]) {
+            NSMutableDictionary *new = [NSMutableDictionary dictionaryWithDictionary:sessionInfo];
+            new[@"status"] = @1;
+            [newSessionInfos addObject:new];
+        } else {
+            [newSessionInfos addObject:sessionInfo];
+        }
+    }
+    [DownloadQueue setDownloadingList: newSessionInfos];
+    dispatch_async([DownloadQueue downloadSerialQueue], ^{
+        [Utility setDownloadSessionInfo:newSessionInfos];
     });
 }
 
