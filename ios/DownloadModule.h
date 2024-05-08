@@ -9,4 +9,6 @@
 
 + (instancetype)sharedInstance;
 - (void) addDownload: (Download *) download;
+- (void) downloadingFileDidUpdate;
+- (void)downloadingFileItemDidSuccess;
 @end
