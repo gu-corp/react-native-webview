@@ -139,6 +139,18 @@ static NSDictionary *_downloadConfig = nil;
     });
 }
 
++ (NSNumber *)getLastSessionIndex {
+    NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+    NSNumber *index = [userDefault objectForKey:@"kLastSessionIndex"];
+    return index ?: @(0);
+}
+
++ (void)setLastSessionIndex: (NSNumber *)value {
+    NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
+    [userDefault setObject:value forKey:@"kLastSessionIndex"];
+    [userDefault synchronize];
+}
+
 + (NSArray *)getDownloadSessionInfo {
     NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
     NSArray *sessionInfos = [userDefault arrayForKey:@"kDownloadSessionInfo"];
@@ -167,6 +179,66 @@ static NSDictionary *_downloadConfig = nil;
     dispatch_async([DownloadQueue downloadSerialQueue], ^{
         [Utility setDownloadSessionInfo:newSessionInfos];
     });
+}
+
++ (void)removeSessionInfo: (NSNumber *)sessionId {
+    dispatch_async([DownloadQueue downloadSerialQueue], ^{
+        NSMutableArray *sessionInfos =  [NSMutableArray arrayWithArray: [DownloadQueue downloadingList]];
+        for (NSMutableDictionary *sessionInfo in sessionInfos) {
+            if ([sessionInfo[@"sessionId"] isEqual:sessionId]) {
+                [sessionInfos removeObject:sessionInfo];
+                [[DownloadModule sharedInstance] downloadingFileItemDidSuccess];
+                break;
+            }
+        }
+        [Utility setDownloadingInfos:sessionInfos];
+    });
+}
+
++ (void)setDownloadingInfos: (NSArray *)downloadInfos {
+    [DownloadQueue setDownloadingList:downloadInfos];
+    [[DownloadModule sharedInstance] downloadingFileDidUpdate];
+    dispatch_async([DownloadQueue downloadSerialQueue], ^{
+        [Utility setDownloadSessionInfo:downloadInfos];
+    });
+}
+
++ (NSNumber *)getNextIndexSessionInfo: (NSURLRequest *)url fileName: (NSString *)fileName mimeType: (NSString *)mimeType expectedFileSize: (NSNumber *)length {
+    NSNumber *newNumber = [Utility getLastSessionIndex];
+    NSString *newSessionId = [NSString stringWithFormat:@"sessionId%d", newNumber.intValue + 1];
+    NSDictionary *new = @{@"sessionId": @(newNumber.intValue + 1), @"status": @0, @"url": url.URL.absoluteString, @"fileName": fileName ?: @"unknown", @"mimeType": mimeType ?: @"", @"expectedFileSize": length ?: @0, @"downloadedSize": @0};
+    [DownloadQueue setTempSessionInfo:new];
+    return @(newNumber.intValue + 1);
+}
+
++ (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSNumber *) status {
+    dispatch_async([DownloadQueue downloadSerialQueue], ^{
+        NSArray *sessionInfos = [DownloadQueue downloadingList];
+        NSMutableArray *newSessionInfos = [NSMutableArray arrayWithArray:sessionInfos];
+        for (int i = 0; i < newSessionInfos.count; i++) {
+            NSDictionary *sessionInfo = newSessionInfos[i];
+            NSString *sessionIdStr = [sessionInfo[@"sessionId"] stringValue];
+            if ([sessionIdStr isEqual:sessionId]) {
+                NSMutableDictionary *new = [NSMutableDictionary dictionaryWithDictionary:sessionInfo];
+                if (size) {
+                    new[@"downloadedSize"] = size;
+                }
+                
+                if (status) {
+                    new[@"status"] = status;
+                }
+                [newSessionInfos replaceObjectAtIndex:i withObject:new];
+                break;
+            }
+        }
+        [Utility setDownloadingInfos:newSessionInfos];
+    });
+}
+
++ (NSString *)getSessionId: (NSURLSession *)session {
+    NSString *sessionId = session.configuration.identifier;
+    NSString *indexStr = [sessionId substringFromIndex: [@"sessionId" length]];
+    return indexStr;
 }
 
 + (NSBundle *)applicationBundle {
