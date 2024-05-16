@@ -1287,6 +1287,7 @@ static NSDictionary* customCertificatesForHost;
   DownloadHelper *downloadHelper = [[DownloadHelper alloc] initWithRequest:request response:response cookieStore:cookieStore canShowInWebView:canShowInWebView];
   if (downloadHelper) {
     id downloadAlertAction = ^(HTTPDownload *download) {
+        [[DownloadQueue downloadQueue] appendSessionInfo];
         [[DownloadQueue downloadQueue] enqueue: download];
     };
     UIViewController *rootVC = [[UIApplication sharedApplication].delegate window].rootViewController;
