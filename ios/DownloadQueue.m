@@ -242,24 +242,13 @@ static NSArray *_downloadingList;
 - (void)enqueue:(Download *)download {
     [self.downloads addObject:download];
     download.delegate = self;
-    
     HTTPDownload *_download = (HTTPDownload *)download;
     if (!_download.task) {
         [_download.session getAllTasksWithCompletionHandler:^(NSArray<__kindof NSURLSessionTask *> * _Nonnull tasks) {
             for (NSURLSessionTask *task in tasks) {
                 [task suspend];
-                if ([task.taskDescription isEqual: [NSString stringWithFormat:@"sessionId%d", [_download.sessionId intValue]]]) {
-                    if (_download.task) {
-                        [task cancel];
-                    } else {
-                        _download.task = (NSURLSessionDownloadTask *)task;
-                        _download.request = task.originalRequest;
-                    }
-                } else {
-                    [task cancel];
-                }
+                [task cancel];
             }
-            
             if (!_download.task) {
                 _download.task = [_download.session downloadTaskWithRequest:_download.request];
             }
