@@ -160,7 +160,9 @@ static NSDictionary* customCertificatesForHost;
     wkWebViewConfig = configuration;
     [self setupConfiguration:parentView];
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
-    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    _webView.UIDelegate = self;
+    _webView.navigationDelegate = self;
+//    _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
@@ -295,7 +297,12 @@ static NSDictionary* customCertificatesForHost;
       [wkWebViewConfig.userContentController addUserScript:script];
   }
 
+  if (sender.adBlockAllowList) {
+     _adBlockAllowList = [NSArray arrayWithArray:sender.adBlockAllowList];
+  }
+
   if (sender.contentRuleLists) {
+    _contentRuleLists = [NSArray arrayWithArray:sender.contentRuleLists];
     WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
 
     [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
@@ -1100,6 +1107,8 @@ static NSDictionary* customCertificatesForHost;
       _onLoadingStart(event);
     }
     
+  }
+    
     // allowlist function
     if (@available(iOS 11.0, *)) {
       BOOL isAllowWebsite = false;
@@ -1124,15 +1133,15 @@ static NSDictionary* customCertificatesForHost;
               [contentRuleListStore lookUpContentRuleListForIdentifier:identifier completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
                 if (!error) {
                   [webView.configuration.userContentController addContentRuleList:contentRuleList];
-                  // add youtubeAdblock
-                  if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
-                    [webView.configuration.userContentController addUserScript:self->scriptYoutubeAdblock];
-                  }
                 }
               }];
             }
           }
         }];
+        // add youtubeAdblock
+        if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
+          [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
+        }
       } else {
         [webView.configuration.userContentController removeAllContentRuleLists];
         // remove youtubeAdblock --> remove all userScripts and then add common scripts
@@ -1141,7 +1150,6 @@ static NSDictionary* customCertificatesForHost;
         }
       }
     }
-  }
     
   // enable picture-in-picture feature on youtube page
   // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
