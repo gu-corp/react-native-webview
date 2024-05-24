@@ -127,6 +127,7 @@ import android.widget.Toast;
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
+import com.reactnativecommunity.webview.utils.HtmlExtractor;
 import com.reactnativecommunity.webview.utils.UrlUtils;
 
 /**
@@ -1166,6 +1167,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
             }
           }
         }
+        RNCWebView reactWebView = (RNCWebView) view;
+        if(reactWebView.injectedJSBeforeDocumentLoad == null || reactWebView.injectedJSBeforeDocumentLoad.isEmpty()){
+          return null;
+        }
 
         if (!request.isForMainFrame()) {
           return null;
@@ -1195,16 +1200,31 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         ResponseBody body = response.body();
         MediaType type = body != null ? body.contentType() : null;
-        Charset charset = type != null ? type.charset(UTF_8) : UTF_8;
+        // find encoding in response headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+        Charset httpResponseCharset = type != null ? type.charset() : null;
+        
+        Charset defaultCharset = type != null ? type.charset(UTF_8) : UTF_8;
         InputStream is = body != null ? body.byteStream() : null;
 
-        RNCWebView reactWebView = (RNCWebView) view;
-        if (response.code() == HttpURLConnection.HTTP_OK) {
-          is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeDocumentLoad, charset);
+        String encoding = defaultCharset.name();
+
+        if (httpResponseCharset == null) {
+          // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
+          String charsetHtml = HtmlExtractor.findHtmlCharsetFromRequest(httpClient, req);
+          if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
+            encoding = charsetHtml;
+          }
+
+          // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
         }
 
-        return new WebResourceResponse("text/html", charset.name(), is);
+        if (response.code() == HttpURLConnection.HTTP_OK) {
+          is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeDocumentLoad, defaultCharset);
+        }
+
+        return new WebResourceResponse("text/html", encoding, is);
       } catch (Exception e) {
+        e.printStackTrace();
         return null;
       }
     }
