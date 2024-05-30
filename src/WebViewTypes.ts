@@ -26,6 +26,7 @@ export interface WebViewCommands {
   removeAllHighlights: number;
   printContent: number;
   setFontSize: number; // Only Support IOS OS
+  setEnableNightMode: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -43,6 +44,7 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
   setFontSize: (viewTag: number) => Promise<number>;
+  setEnableNightMode: (viewTag: number, enable: string) => void;
 }
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
@@ -232,6 +234,7 @@ export interface ViewManager {
   removeAllHighlights: Function;
   printContent: Function;
   setFontSize: Function; // Only Support IOS OS
+  setEnableNightMode: Function;
 }
 
 export interface WebViewNativeConfig {

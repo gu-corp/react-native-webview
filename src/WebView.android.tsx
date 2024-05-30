@@ -329,6 +329,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     )
   }
 
+  setEnableNightMode = (enable: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().setEnableNightMode,
+      [String(enable)]
+    );
+  };
+
   render() {
     const {
       onMessage,
