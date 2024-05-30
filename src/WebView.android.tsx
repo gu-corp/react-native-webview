@@ -334,7 +334,15 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().printContent,
       undefined
     )
-  }
+  };
+
+  setEnableNightMode = (enable: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().setEnableNightMode,
+      [String(enable)]
+    );
+  };
 
   requestWebViewStatus = () => {
     UIManager.dispatchViewManagerCommand(
@@ -342,7 +350,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().requestWebViewStatus,
       undefined
     )
-  }
+  };
 
   requestWebFavicon = () => {
     UIManager.dispatchViewManagerCommand(
@@ -350,7 +358,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().requestWebFavicon,
       undefined
     )
-  }
+  };
 
   render() {
     const {

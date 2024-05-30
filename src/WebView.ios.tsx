@@ -181,6 +181,10 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
   }
 
+  setEnableNightMode = (enable: string) => {
+    return RNCWebViewManager.setEnableNightMode(this.getWebViewHandle(), enable);
+  }
+
   requestWebViewStatus = () => {
     // no need to implement this for iOS
   }

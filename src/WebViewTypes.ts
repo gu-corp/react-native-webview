@@ -26,6 +26,7 @@ export interface WebViewCommands {
   removeAllHighlights: number;
   printContent: number;
   setFontSize: number;
+  setEnableNightMode: number;
   /**
    * @platform android
    */
@@ -51,6 +52,7 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
   setFontSize: (viewTag: number) => Promise<number>;
+  setEnableNightMode: (viewTag: number, enable: string) => void;
   /**
    * @platform android
    */
@@ -248,6 +250,7 @@ export interface ViewManager {
   removeAllHighlights: Function;
   printContent: Function;
   setFontSize: Function;
+  setEnableNightMode: Function;
   requestWebViewStatus: Function;
   requestWebFavicon: Function;
 }
