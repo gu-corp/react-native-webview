@@ -310,6 +310,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
   adblockRules?: string[];
+  onFileDownload?: (event: FileDownloadEvent) => void;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
