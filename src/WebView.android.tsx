@@ -230,6 +230,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onReceiveWebViewStatus = (event: WebViewProgressEvent) => {
+    const { onReceiveWebViewStatus } = this.props;
+    if (onReceiveWebViewStatus) {
+      onReceiveWebViewStatus(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
@@ -321,6 +328,22 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     )
   }
 
+  requestWebViewStatus = () => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().requestWebViewStatus,
+      undefined
+    )
+  }
+
+  requestWebFavicon = () => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().requestWebFavicon,
+      undefined
+    )
+  }
+
   render() {
     const {
       onMessage,
@@ -389,6 +412,8 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onShouldCreateNewWindow={this.onCreateNewWindow}
         onNavigationStateChange={this.updateNavigationState}
         onCaptureScreen={this.onCaptureScreen}
+        onGetFavicon={this.onGetFavicon}
+        onReceiveWebViewStatus={this.onReceiveWebViewStatus}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}

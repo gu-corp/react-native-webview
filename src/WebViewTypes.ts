@@ -25,7 +25,15 @@ export interface WebViewCommands {
   findPrevious: number;
   removeAllHighlights: number;
   printContent: number;
-  setFontSize: number; // Only Support IOS OS
+  setFontSize: number;
+  /**
+   * @platform android
+   */
+  requestWebViewStatus: number;
+  /**
+   * @platform android
+   */
+  requestWebFavicon: number;
 }
 
 export interface RNCWebViewUIManager extends UIManagerStatic {
@@ -43,6 +51,14 @@ export interface RNCWebViewUIManager extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
   setFontSize: (viewTag: number) => Promise<number>;
+  /**
+   * @platform android
+   */
+  requestWebViewStatus: (viewTag: number) => void;
+  /**
+   * @platform android
+   */
+  requestWebFavicon: (viewTag: number) => void;
 }
 
 type WebViewState = 'IDLE' | 'LOADING' | 'ERROR';
@@ -220,7 +236,9 @@ export interface ViewManager {
   findPrevious: Function;
   removeAllHighlights: Function;
   printContent: Function;
-  setFontSize: Function; // Only Support IOS OS
+  setFontSize: Function;
+  requestWebViewStatus: Function;
+  requestWebFavicon: Function;
 }
 
 export interface WebViewNativeConfig {
@@ -277,6 +295,8 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Append to the existing user-agent. Overriden if `userAgent` is set.
    */
   applicationNameForUserAgent?: string;
+
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
 
 export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
@@ -296,6 +316,11 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
   thirdPartyCookiesEnabled?: boolean;
   urlPrefixesForDefaultIntent?: readonly string[];
   adblockRules?: string[];
+
+  /**
+   * @platform android
+   */
+  onReceiveWebViewStatus?: (event: WebViewProgressEvent) => void;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {
@@ -721,9 +746,15 @@ export interface WebViewSharedProps extends ViewProps {
   onMessage?: (event: WebViewMessageEvent) => void;
 
   /**
-   * Function that is invoked when the webview get favicon.
+   * Function that is invoked when the page content process is finished or the `requestWebFavicon` method is called.
    */
   onGetFavicon?: (event: WebViewMessageEvent) => void;
+
+  /**
+   * @platform android
+   * Function that is invoked when the `requestWebViewStatus` method is called.
+   */
+  onReceiveWebViewStatus?: (event: WebViewProgressEvent) => void;
 
   /**
    * Function that is invoked when the `WebView` is loading.
