@@ -430,6 +430,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onCaptureScreen={this.onCaptureScreen}
         onGetFavicon={this.onGetFavicon}
         onReceiveWebViewStatus={this.onReceiveWebViewStatus}
+        onFileDownload={this.onFileDownload}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}

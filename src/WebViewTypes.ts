@@ -335,6 +335,7 @@ export interface AndroidNativeWebViewProps extends CommonNativeWebViewProps {
    * @platform android
    */
   onReceiveWebViewStatus?: (event: WebViewProgressEvent) => void;
+  onFileDownload?: (event: FileDownloadEvent) => void;
 }
 
 export interface IOSNativeWebViewProps extends CommonNativeWebViewProps {

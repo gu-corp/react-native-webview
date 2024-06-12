@@ -75,6 +75,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
@@ -359,6 +360,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         if (module.grantFileDownloaderPermissions()) {
           module.downloadFile();
+          WritableMap eventData = Arguments.createMap();;
+          eventData.putString("downloadUrl", url);
+          dispatchEvent(webView, new TopFileDownloadEvent(webView.getId(), eventData));
         }
       }
     });
@@ -734,6 +738,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
     export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
+    export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
     return export;
   }
 
