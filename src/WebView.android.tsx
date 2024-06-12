@@ -405,6 +405,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onShouldCreateNewWindow={this.onCreateNewWindow}
         onNavigationStateChange={this.updateNavigationState}
         onCaptureScreen={this.onCaptureScreen}
+        onFileDownload={this.onFileDownload}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
