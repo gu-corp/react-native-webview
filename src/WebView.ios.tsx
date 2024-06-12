@@ -179,6 +179,15 @@ class WebView extends React.Component<IOSWebViewProps, State> {
   setFontSize = (size?: number) => {
     return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
   }
+
+  requestWebViewStatus = () => {
+    // no need to implement this for iOS
+  }
+
+  requestWebFavicon = () => {
+    // no need to implement this for iOS
+  }
+
   /**
    * Posts a message to the web view, which will emit a `message` event.
    * Accepts one argument, `data`, which must be a string.
@@ -416,6 +425,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         onShouldCreateNewWindow={onShouldCreateNewWindow}
         onContentProcessDidTerminate={this.onContentProcessDidTerminate}
+        onGetFavicon={this.onGetFavicon}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(this.props.source as ImageSourcePropType)}

@@ -82,6 +82,7 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
+import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.events.TopCreateNewWindowEvent;
 import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
@@ -175,6 +176,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_REMOVE_ALL_HIGHLIGHTS = 13;
   public static final int COMMAND_PRINT_CONTENT = 14;
   public static final int COMMAND_SET_FONT_SIZE = 15;
+  public static final int COMMAND_REQUEST_WEB_VIEW_STATUS = 16;
+  public static final int COMMAND_REQUEST_WEB_FAVICON = 17;
 
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
@@ -710,6 +713,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopMessageEvent.EVENT_NAME, MapBuilder.of("registrationName", "onMessage"));
     export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
+    export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
     return export;
   }
 
@@ -733,6 +737,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS);
     map.put("printContent", COMMAND_PRINT_CONTENT);
     map.put("setFontSize", COMMAND_SET_FONT_SIZE);
+    map.put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS);
+    map.put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON);
 
     return map;
   }
@@ -807,6 +813,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
           ((RNCWebView) root).printContent();
         }
+        break;
+      case COMMAND_REQUEST_WEB_VIEW_STATUS:
+        ((RNCWebView) root).requestWebViewStatus();
+        break;
+      case COMMAND_REQUEST_WEB_FAVICON:
+        ((RNCWebView) root).getFaviconUrl();
         break;
     }
   }
@@ -1645,10 +1657,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           eventData.putBoolean("canGoBack", webView.canGoBack());
           eventData.putBoolean("canGoForward", webView.canGoForward());
           dispatchEvent(webView, new TopCreateNewWindowEvent(webView.getId(), eventData));
-          // release temp webview
-          webView.removeView(view);
-          view.removeAllViews();
-          view.destroy();
         }
 
         @Override
@@ -1723,6 +1731,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected boolean hasScrollEvent = false;
     protected boolean nestedScrollEnabled = false;
 
+    private static RNCWebView newWindow;
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -1731,11 +1741,34 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
      */
 
     public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
-      return new RNCWebView(reactContext);
+      RNCWebView webView = null;
+      /**
+       * Hello Maintainer! 
+       * If you are here, you might be wondering why we are using a static variable to store the new window. 
+       * Because we should keep the new window instance alive until the new window is added to the parent view. 
+       * Some URL's only can use one time, if we create a new window and add it to the parent view, we can't use the URL again.
+       * For example: If we open a new window with the URL "https://accounts.google.com/..." to authenticate account, we can't use that URL again (It will be shown an blank page).
+       */
+      if (newWindow != null) {
+        webView = newWindow;
+        try {
+          ViewGroup parent = (ViewGroup)newWindow.getParent();
+          if (parent != null) {
+            parent.removeView(newWindow);
+          }
+        } catch (Exception e) {
+          Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
+        }
+        newWindow = null;
+      } else {
+        webView = new RNCWebView(reactContext);
+      }
+      return webView;
     }
 
     public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
-      return new RNCWebView(reactContext);
+      newWindow = new RNCWebView(reactContext);
+      return newWindow;
     }
 
     private RNCWebView(ThemedReactContext reactContext) {
@@ -1923,6 +1956,17 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
 
       printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+    }
+
+    public void requestWebViewStatus() {
+      if (mRNCWebViewClient != null) {
+        WritableMap eventData = mRNCWebViewClient.createWebViewEvent(this, this.getUrl());
+        dispatchEvent(
+          this,
+          new TopRequestWebViewStatusEvent(
+            this.getId(),
+            eventData));
+      }
     }
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
