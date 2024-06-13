@@ -226,6 +226,7 @@ static NSDictionary *_downloadConfig = nil;
                 
                 if (status) {
                     new[@"status"] = status;
+                    [[DownloadModule sharedInstance]  downloadingFileStatusDidUpdate:@([sessionId intValue]) status:status];
                 }
                 [newSessionInfos replaceObjectAtIndex:i withObject:new];
                 break;
