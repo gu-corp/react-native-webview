@@ -8,4 +8,5 @@
 + (instancetype)sharedInstance;
 - (void) downloadingFileDidUpdate;
 - (void)downloadingFileItemDidSuccess;
+- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSNumber *)status;
 @end

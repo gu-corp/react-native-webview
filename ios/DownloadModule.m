@@ -7,7 +7,7 @@
 RCT_EXPORT_MODULE(DownloadModule);
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"DownloadCanceled", @"PassBookError", @"DownloadingFileDidUpdate", @"DownloadingFileItemDidSuccess"];
+    return @[@"DownloadCanceled", @"PassBookError", @"DownloadingFileDidUpdate", @"DownloadingFileItemDidSuccess", @"DownloadingFileItemDidChangeStatus"];
 }
 
 static DownloadModule *sharedInstance = nil;
@@ -62,6 +62,10 @@ static DownloadModule *sharedInstance = nil;
 - (void) downloadingFileDidUpdate {
     NSMutableArray *resultArray = [NSMutableArray arrayWithArray:[DownloadQueue downloadingList]];
     [self sendEventWithName:@"DownloadingFileDidUpdate" body:@{@"downloadingList": resultArray}];
+}
+
+- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSNumber *)status {
+    [self sendEventWithName:@"DownloadingFileItemDidChangeStatus" body:@{@"sessionId": sessionId, @"status": status}];
 }
 
 - (void)downloadingFileItemDidSuccess {
