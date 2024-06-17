@@ -430,15 +430,16 @@ RCT_REMAP_METHOD(addContentRuleList,
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
 {
-  WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-  [contentRuleListStore compileContentRuleListForIdentifier:name encodedContentRuleList:encodedContentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-      if (error) {
-          reject(RCTErrorUnspecified, nil, error);
-      } else {
-          resolve(nil);
-      }
-  }];
+  dispatch_async(dispatch_get_main_queue(), ^{
+      WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+      [contentRuleListStore compileContentRuleListForIdentifier:name encodedContentRuleList:encodedContentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+          if (error) {
+              reject(RCTErrorUnspecified, nil, error);
+          } else {
+              resolve(nil);
+          }
+      }];
+  });
 }
 
 RCT_REMAP_METHOD(getContentRuleListNames,
