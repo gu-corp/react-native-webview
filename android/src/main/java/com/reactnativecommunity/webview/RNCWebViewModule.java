@@ -49,6 +49,8 @@ import java.util.List;
 import static android.app.Activity.RESULT_OK;
 
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.downloaddatabase.DownloadRequest;
+import com.reactnativecommunity.webview.downloaddatabase.DownloadRequestDBHelper;
 import com.reactnativecommunity.webview.utils.Utils;
 
 @ReactModule(name = RNCWebViewModule.MODULE_NAME)
@@ -73,6 +75,7 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
   private Uri outputFileUri;
   private String intentTypeAfterPermissionGranted;
   private DownloadManager.Request downloadRequest;
+  private DownloadRequest tempDownloadRequest;
   private ArrayList<String> downloadBase64Data;
   private PermissionListener webviewFileDownloaderPermissionListener = new PermissionListener() {
     @Override
@@ -260,15 +263,30 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule implements Acti
     this.DOWNLOAD_FOLDER = folder;
   }
 
-  public void setDownloadRequest(DownloadManager.Request request) {
+  public void setDownloadRequest(DownloadManager.Request request, DownloadRequest downloadRequest) {
     this.downloadRequest = request;
+    this.tempDownloadRequest = downloadRequest;
   }
 
   public void downloadFile() {
     DownloadManager dm = (DownloadManager) getCurrentActivity().getBaseContext().getSystemService(Context.DOWNLOAD_SERVICE);
     String downloadMessage = "Downloading";
 
-    dm.enqueue(this.downloadRequest);
+    long downloadRequestId = dm.enqueue(this.downloadRequest);
+    if (tempDownloadRequest != null) {
+      // save download request
+      DownloadRequestDBHelper helper = new DownloadRequestDBHelper(getReactApplicationContext());
+      helper.insetDownloadRequest(
+        downloadRequestId,
+        tempDownloadRequest.getUrl(),
+        tempDownloadRequest.getUserAgent(),
+        tempDownloadRequest.getContentDisposition(),
+        tempDownloadRequest.getMimetype(),
+        tempDownloadRequest.getCookie()
+      );
+      helper.close();
+      tempDownloadRequest = null;
+    }
 
     Toast.makeText(getCurrentActivity().getApplicationContext(), downloadMessage, Toast.LENGTH_LONG).show();
   }

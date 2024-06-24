@@ -75,6 +75,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.downloaddatabase.DownloadRequest;
 import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
@@ -330,17 +331,19 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 
         String fileName = Utils.getFileNameDownload(url, contentDisposition, mimetype);
+        String subPath = fileName;
         if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
-          fileName = DOWNLOAD_FOLDER + "/" + fileName;
+          subPath = DOWNLOAD_FOLDER + "/" + fileName;
         }
         String downloadMessage = "Downloading " + fileName;
 
         //Attempt to add cookie, if it exists
         URL urlObj = null;
+        String cookie = "";
         try {
           urlObj = new URL(url);
           String baseUrl = urlObj.getProtocol() + "://" + urlObj.getHost();
-          String cookie = CookieManager.getInstance().getCookie(baseUrl);
+          cookie = CookieManager.getInstance().getCookie(baseUrl);
           request.addRequestHeader("Cookie", cookie);
           System.out.println("Got cookie for DownloadManager: " + cookie);
         } catch (MalformedURLException e) {
@@ -354,9 +357,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         request.setDescription(downloadMessage);
         request.allowScanningByMediaScanner();
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subPath);
 
-        module.setDownloadRequest(request);
+        module.setDownloadRequest(
+          request,
+          new DownloadRequest(-1, -1, url, userAgent, contentDisposition, mimetype, cookie, 0)
+        );
 
         if (module.grantFileDownloaderPermissions()) {
           module.downloadFile();
