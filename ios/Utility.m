@@ -113,7 +113,7 @@ static NSDictionary *_downloadConfig = nil;
 }
 
 + (NSURL *)getDownloadFolder {
-    NSString *downloadFolder = [_downloadConfig[@"downloadFolder"] stringValue] ?: @"downloads";
+    NSString *downloadFolder = [_downloadConfig[kDownloadFolderKey] stringValue] ?: kDownloadKey;
     return [Utility getOrCreateFolderWithName:downloadFolder excludeFromBackups:YES location:NSDocumentDirectory];
 }
 
@@ -141,35 +141,35 @@ static NSDictionary *_downloadConfig = nil;
 
 + (NSNumber *)getLastSessionIndex {
     NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
-    NSNumber *index = [userDefault objectForKey:@"kLastSessionIndex"];
+    NSNumber *index = [userDefault objectForKey:kLastSessionIndexKey];
     return index ?: @(0);
 }
 
 + (void)setLastSessionIndex: (NSNumber *)value {
     NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
-    [userDefault setObject:value forKey:@"kLastSessionIndex"];
+    [userDefault setObject:value forKey:kLastSessionIndexKey];
     [userDefault synchronize];
 }
 
 + (NSArray *)getDownloadSessionInfo {
     NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
-    NSArray *sessionInfos = [userDefault arrayForKey:@"kDownloadSessionInfo"];
+    NSArray *sessionInfos = [userDefault arrayForKey:kDownloadSessionInfoKey];
     return sessionInfos;
 }
 
 + (void)setDownloadSessionInfo: (NSArray *)sessionInfos {
     NSUserDefaults *userDefault = [NSUserDefaults standardUserDefaults];
-    [userDefault setObject:sessionInfos forKey:@"kDownloadSessionInfo"];
+    [userDefault setObject:sessionInfos forKey:kDownloadSessionInfoKey];
     [userDefault synchronize];
 }
 
-+ (void) updateDownloadingList {
++ (void) initDownloadingList {
     NSArray *sessionInfos = [Utility getDownloadSessionInfo];
     NSMutableArray *newSessionInfos = [NSMutableArray array];
     for (NSDictionary *sessionInfo in sessionInfos) {
-        if ([sessionInfo[@"status"] isEqual: @0]) {
+        if ([sessionInfo[kStatusKey] isEqual: DownloadStatusDownloading]) {
             NSMutableDictionary *new = [NSMutableDictionary dictionaryWithDictionary:sessionInfo];
-            new[@"status"] = @1;
+            new[kStatusKey] = DownloadStatusPause;
             [newSessionInfos addObject:new];
         } else {
             [newSessionInfos addObject:sessionInfo];
@@ -185,7 +185,7 @@ static NSDictionary *_downloadConfig = nil;
     dispatch_async([DownloadQueue downloadSerialQueue], ^{
         NSMutableArray *sessionInfos =  [NSMutableArray arrayWithArray: [DownloadQueue downloadingList]];
         for (NSMutableDictionary *sessionInfo in sessionInfos) {
-            if ([sessionInfo[@"sessionId"] isEqual:sessionId]) {
+            if ([sessionInfo[kSessionIdKey] isEqual:sessionId]) {
                 [sessionInfos removeObject:sessionInfo];
                 [[DownloadModule sharedInstance] downloadingFileItemDidSuccess];
                 break;
@@ -205,27 +205,27 @@ static NSDictionary *_downloadConfig = nil;
 
 + (NSNumber *)getNextIndexSessionInfo: (NSURLRequest *)url fileName: (NSString *)fileName mimeType: (NSString *)mimeType expectedFileSize: (NSNumber *)length {
     NSNumber *newNumber = [Utility getLastSessionIndex];
-    NSString *newSessionId = [NSString stringWithFormat:@"sessionId%d", newNumber.intValue + 1];
-    NSDictionary *new = @{@"sessionId": @(newNumber.intValue + 1), @"status": @0, @"url": url.URL.absoluteString, @"fileName": fileName ?: @"unknown", @"mimeType": mimeType ?: @"", @"expectedFileSize": length ?: @0, @"downloadedSize": @0};
+    NSString *newSessionId = [NSString stringWithFormat:@"%@%d", kSessionIdKey, newNumber.intValue + 1];
+    NSDictionary *new = @{kSessionIdKey: @(newNumber.intValue + 1), kStatusKey: DownloadStatusDownloading, kUrlKey: url.URL.absoluteString, kFileNameKey: fileName ?: kUnknownKey, kMimeTypeKey: mimeType ?: @"", kTotalBytesKey: length ?: @0, kBytesDownloadedKey: @0};
     [DownloadQueue setTempSessionInfo:new];
     return @(newNumber.intValue + 1);
 }
 
-+ (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSNumber *) status {
++ (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSString *) status {
     dispatch_async([DownloadQueue downloadSerialQueue], ^{
         NSArray *sessionInfos = [DownloadQueue downloadingList];
         NSMutableArray *newSessionInfos = [NSMutableArray arrayWithArray:sessionInfos];
         for (int i = 0; i < newSessionInfos.count; i++) {
             NSDictionary *sessionInfo = newSessionInfos[i];
-            NSString *sessionIdStr = [sessionInfo[@"sessionId"] stringValue];
+            NSString *sessionIdStr = [sessionInfo[kSessionIdKey] stringValue];
             if ([sessionIdStr isEqual:sessionId]) {
                 NSMutableDictionary *new = [NSMutableDictionary dictionaryWithDictionary:sessionInfo];
                 if (size) {
-                    new[@"downloadedSize"] = size;
+                    new[kBytesDownloadedKey] = size;
                 }
                 
-                if (status) {
-                    new[@"status"] = status;
+                if (status != DownloadStatusNone) {
+                    new[kStatusKey] = status;
                     [[DownloadModule sharedInstance]  downloadingFileStatusDidUpdate:@([sessionId intValue]) status:status];
                 }
                 [newSessionInfos replaceObjectAtIndex:i withObject:new];
@@ -238,7 +238,7 @@ static NSDictionary *_downloadConfig = nil;
 
 + (NSString *)getSessionId: (NSURLSession *)session {
     NSString *sessionId = session.configuration.identifier;
-    NSString *indexStr = [sessionId substringFromIndex: [@"sessionId" length]];
+    NSString *indexStr = [sessionId substringFromIndex: [kSessionIdKey length]];
     return indexStr;
 }
 

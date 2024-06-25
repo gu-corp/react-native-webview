@@ -49,16 +49,6 @@
 
 @end
 
-@protocol DownloadQueueDelegate <NSObject>
-
-- (void)downloadQueue:(id)downloadQueue didStartDownload:(Download *)download;
-- (void)downloadQueue:(id)downloadQueue didRemoveDownload:(Download *)download;
-- (void)downloadQueue:(id)downloadQueue didDownloadCombinedBytes:(int64_t)combinedBytesDownloaded combinedTotalBytesExpected:(nullable NSNumber *)combinedTotalBytesExpected;
-- (void)downloadQueue:(id)downloadQueue download:(Download *)download didFinishDownloadingTo:(NSURL *)location;
-- (void)downloadQueue:(id)downloadQueue didCompleteWithError:(NSError *_Nullable)error;
-
-@end
-
 @interface DownloadQueue : NSObject <DownloadDelegate>
 
 @property (class, nonatomic, strong) DownloadQueue *downloadQueue;
@@ -67,7 +57,6 @@
 @property (class, nonatomic, strong) NSDictionary *tempSessionInfo;
 
 @property (nonatomic, strong) NSMutableArray<Download *> *downloads;
-@property (nonatomic, weak) id<DownloadQueueDelegate> delegate;
 @property (nonatomic, readonly) BOOL isEmpty;
 
 - (void)enqueue:(Download *)download;

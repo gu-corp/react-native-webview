@@ -3,10 +3,11 @@
 #import <React/RCTEventEmitter.h>
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
-@interface DownloadModule : RCTEventEmitter <RCTBridgeModule, DownloadQueueDelegate, PassBookHelperDelegate>
+#import "DownloadHelper.h"
+@interface DownloadModule : RCTEventEmitter <RCTBridgeModule, PassBookHelperDelegate>
 
 + (instancetype)sharedInstance;
 - (void) downloadingFileDidUpdate;
 - (void)downloadingFileItemDidSuccess;
-- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSNumber *)status;
+- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSString*)status;
 @end

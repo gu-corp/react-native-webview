@@ -4,6 +4,12 @@
 #import "DownloadHelper.h"
 #import "Utility.h"
 
+NSString * const DownloadStatusDownloading = @"downloading";
+NSString * const DownloadStatusPause = @"pause";
+NSString * const DownloadStatusFail = @"fail";
+NSString * const DownloadStatusNone = @"none";
+
+// -MARK: MIMMEType
 @implementation MIMEType
 
 NSString *const MIMETypeBitmap = @"image/bmp";

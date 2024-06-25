@@ -28,31 +28,9 @@ static DownloadModule *sharedInstance = nil;
     self = [super init];
     if (self) {
         sharedInstance = self;
-        [Utility updateDownloadingList];
+        [Utility initDownloadingList];
     }
     return self;
-}
-
-
-- (void)downloadQueue:(id)downloadQueue didCompleteWithError:(NSError * _Nullable)error {
-    
-}
-
-- (void)downloadQueue:(id)downloadQueue didDownloadCombinedBytes:(int64_t)combinedBytesDownloaded combinedTotalBytesExpected:(nullable NSNumber *)combinedTotalBytesExpected {
-    
-
-}
-
-- (void)downloadQueue:(id)downloadQueue didStartDownload:(Download *)download {
-    
-}
-
-- (void)downloadQueue:(id)downloadQueue didRemoveDownload:(Download *)download {
-
-}
-
-- (void)downloadQueue:(id)downloadQueue download:(Download *)download didFinishDownloadingTo:(NSURL *)location {
-    
 }
 
 - (void) passBookdidCompleteWithError {
@@ -64,7 +42,7 @@ static DownloadModule *sharedInstance = nil;
     [self sendEventWithName:@"DownloadingFileDidUpdate" body:@{@"downloadingList": resultArray}];
 }
 
-- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSNumber *)status {
+- (void)downloadingFileStatusDidUpdate:(NSNumber *)sessionId status:(NSString *)status {
     [self sendEventWithName:@"DownloadingFileItemDidChangeStatus" body:@{@"sessionId": sessionId, @"status": status}];
 }
 
@@ -108,7 +86,7 @@ RCT_EXPORT_METHOD(deleteDownload: (NSString *)sessionId)
 
 RCT_EXPORT_METHOD(getListDowloading:(RCTResponseSenderBlock)callback) {
     NSMutableArray *resultArray = [NSMutableArray arrayWithArray:[DownloadQueue downloadingList]];
-    callback(@[[NSNull null], resultArray]);
+    callback(@[resultArray]);
 }
 
 @end

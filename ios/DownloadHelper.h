@@ -6,6 +6,25 @@
 #import <MobileCoreServices/MobileCoreServices.h>
 #import "DownloadQueue.h"
 
+// -MARK key helper
+static NSString * const kSessionIdKey = @"sessionId";
+static NSString * const kStatusKey = @"status";
+static NSString * const kUrlKey = @"url";
+static NSString * const kFileNameKey = @"filename";
+static NSString * const kMimeTypeKey = @"mimeType";
+static NSString * const kTotalBytesKey = @"totalBytes";
+static NSString * const kBytesDownloadedKey = @"bytesDownloaded";
+static NSString * const kLastSessionIndexKey = @"kLastSessionIndex";
+static NSString * const kDownloadSessionInfoKey = @"kDownloadSessionInfo";
+static NSString * const kDownloadFolderKey = @"downloadFolder";
+static NSString * const kDownloadKey = @"downloads";
+static NSString * const kUnknownKey = @"unknown";
+
+extern NSString * const DownloadStatusDownloading;
+extern NSString * const DownloadStatusPause;
+extern NSString * const DownloadStatusFail;
+extern NSString * const DownloadStatusNone;
+
 @interface MIMEType : NSObject
 
 @property (class, nonatomic, copy, readonly) NSString *bitmap;
