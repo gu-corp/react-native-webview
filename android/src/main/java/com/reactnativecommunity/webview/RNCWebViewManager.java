@@ -1685,6 +1685,15 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
+          /*
+          * In some case like Figma page, when click hyperlink have target="_blank"
+          * url="about:blank" will be load first, need process it to get real url in next time onPageStarted called
+          * */
+          if (url.equals(BLANK_URL)) {
+            super.onPageStarted(view, url, favicon);
+            return;
+          }
+
           WritableMap eventData = Arguments.createMap();
           eventData.putDouble("target", webView.getId());
           eventData.putString("url", url);
