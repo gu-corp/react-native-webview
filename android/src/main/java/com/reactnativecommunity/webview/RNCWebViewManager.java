@@ -853,9 +853,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         ((RNCWebView) root).getFaviconUrl();
         break;
       case COMMAND_SET_ENABLE_NIGHT_MODE:
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-          ((RNCWebView) root).setEnableNightMode(args.getString(0));
-        }
+        ((RNCWebView) root).setEnableNightMode(args.getString(0));
         break;
     }
   }
@@ -956,6 +954,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     protected Uri mainUrl;
     protected boolean isMainDocumentException;
+    protected boolean mEnableNightMode = false;
 
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
@@ -1087,6 +1086,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         reactWebView.getFaviconUrl();
 
+        String jsNightMode = "window.NightMode.setEnabled(" + mEnableNightMode + ");";
+        reactWebView.loadUrl("javascript:" + jsNightMode);
       }
 
 
@@ -1681,8 +1682,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
       // Create a new view
       RNCWebView newView = this.createNewWindow((ThemedReactContext) mReactContext);
-
-      newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
+      RNCWebViewClient newWebViewClient = new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
           WritableMap eventData = Arguments.createMap();
@@ -1707,7 +1707,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           final String url = request.getUrl().toString();
           return this.shouldOverrideUrlLoading(view, url);
         }
-      });
+      };
+      RNCWebView currentWebView = (RNCWebView) webView;
+      if (currentWebView.mRNCWebViewClient != null) {
+        newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
+      }
+
+      newView.setWebViewClient(newWebViewClient);
 
       // Clone settings from parent view
       newView.cloneSettings((RNCWebView)webView);
@@ -2249,6 +2255,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     public void setEnableNightMode(String enable) {
+      if (mRNCWebViewClient != null) {
+        mRNCWebViewClient.mEnableNightMode = Boolean.parseBoolean(enable);
+      }
       String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
       this.loadUrl("javascript:" + jsNightMode);
     }
