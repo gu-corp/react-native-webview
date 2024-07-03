@@ -10,6 +10,7 @@ const NIGHT_MODE_INVERT_FILTER_CSS = 'brightness(80%) invert(100%) hue-rotate(18
 const NIGHT_MODE_STYLESHEET =
 `html {
   -webkit-filter: hue-rotate(180deg) invert(100%) !important;
+  background-color: white;
 }
 iframe,img,video {
   -webkit-filter: ${NIGHT_MODE_INVERT_FILTER_CSS} !important;
