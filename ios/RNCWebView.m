@@ -52,7 +52,7 @@ static NSDictionary* customCertificatesForHost;
 }
 @end
 
-@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
+@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingStart;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingFinish;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
@@ -100,6 +100,9 @@ static NSDictionary* customCertificatesForHost;
   BOOL dragging;
   BOOL scrollingToTop;
   BOOL initiated;
+    
+  BOOL shouldDownloadNavigationResponse;
+  NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -1091,6 +1094,12 @@ static NSDictionary* customCertificatesForHost;
     if ( request &&  requestURL) {
         NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
         if ([downloadSchemes containsObject:requestURL.scheme]) {
+            // Logic pkpass: set shouldDownloadNavigationResponse = true
+            // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L438
+            if (navigationAction.shouldPerformDownload) {
+                shouldDownloadNavigationResponse = true;
+            }
+            
             [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
         }
         
@@ -1278,7 +1287,18 @@ static NSDictionary* customCertificatesForHost;
   BOOL canShowInWebView = navigationResponse.canShowMIMEType;
   WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
   WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
-  
+    
+  // Logic pkpass: Check if this response should be handed off to Passbook.
+  // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L549
+  if (shouldDownloadNavigationResponse) {
+    shouldDownloadNavigationResponse = false;
+    NSString *urlString = response.URL.absoluteString;
+    if ([response.MIMEType isEqualToString:@"application/vnd.apple.pkpass"]) {
+      decisionHandler(WKNavigationResponsePolicyDownload);
+      return;
+    }
+  }
+    
   if ([PassBookHelper canOpenPassBookWithResponse:response]) {
     PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
                                                                   cookieStore:cookieStore
@@ -1400,6 +1420,74 @@ static NSDictionary* customCertificatesForHost;
   };
   if (_onGetFavicon!= nil) {
      _onGetFavicon(event);
+  }
+}
+
+/**
+ * Called when the navigation is return WKNavigationResponsePolicyDownload.
+ */
+- (void)webView:(WKWebView *)webView navigationResponse:(nonnull WKNavigationResponse *)navigationResponse didBecomeDownload:(nonnull WKDownload *)download
+{
+  download.delegate = self;
+}
+
+/**
+ * WKDownloadDelegate
+ */
+- (void)download:(WKDownload *)download decideDestinationUsingResponse:(nonnull NSURLResponse *)response suggestedFilename:(nonnull NSString *)suggestedFilename completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler
+{
+  NSString *temporaryDir = NSTemporaryDirectory();
+  NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
+  NSURL *url = [NSURL fileURLWithPath:fileName];
+  PendingDownload *pendingDownload = [[PendingDownload alloc] initWithFileUrl:url response:response];
+  if (pendingDownloads == nil) {
+    pendingDownloads = [NSMutableDictionary dictionary];
+  }
+  pendingDownloads[download.originalRequest] = pendingDownload;
+  completionHandler(url);
+}
+
+- (void)download:(WKDownload *) download willPerformHTTPRedirection:(nonnull NSHTTPURLResponse *)response newRequest:(nonnull NSURLRequest *)request decisionHandler:(nonnull void (^)(WKDownloadRedirectPolicy))decisionHandler
+{
+  decisionHandler(WKDownloadRedirectPolicyAllow);
+}
+
+- (void)download:(WKDownload *)download didReceiveAuthenticationChallenge:(nonnull NSURLAuthenticationChallenge *)challenge completionHandler:(nonnull void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+{
+  completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+}
+
+- (void)downloadDidFinish:(WKDownload *)download
+{
+  if (pendingDownloads == nil) {
+    return;
+  }
+  PendingDownload *downloadInfo = pendingDownloads[download.originalRequest];
+  if (!downloadInfo) {
+    return;
+  }
+  [pendingDownloads removeObjectForKey:download.originalRequest];
+  NSURLResponse *response = [[NSURLResponse alloc] initWithURL:downloadInfo.fileUrl
+                                                      MIMEType:downloadInfo.response.MIMEType
+                                         expectedContentLength:(NSInteger)downloadInfo.response.expectedContentLength
+                                              textEncodingName:downloadInfo.response.textEncodingName];
+  WKWebsiteDataStore *dataStore = _webView.configuration.websiteDataStore;
+  WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+  if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+    PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                  cookieStore:cookieStore
+                                                               viewController:[self topViewController]];
+    // Open our helper and nullify the helper when done with it
+    [passBookHelper open];
+    passBookHelper.delegate = [DownloadModule sharedInstance];
+  }
+}
+
+- (void)download:(WKDownload *)download didFailWithError:(nonnull NSError *)error resumeData:(nullable NSData *)resumeData
+{
+  // maybe show error and remove pendingDownload
+  if (pendingDownloads) {
+    [pendingDownloads removeObjectForKey:download.originalRequest];
   }
 }
 
