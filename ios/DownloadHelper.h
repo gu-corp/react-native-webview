@@ -49,3 +49,11 @@ API_AVAILABLE(ios(11.0))
 
 @end
 
+@interface PendingDownload : NSObject
+
+@property (nonatomic, strong) NSURL *fileUrl;
+@property (nonatomic, strong) NSURLResponse * response;
+
+- (instancetype)initWithFileUrl: (NSURL *)fileUrl response:(NSURLResponse *)response;
+
+@end

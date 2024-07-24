@@ -147,4 +147,15 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
 
 @end
 
+@implementation PendingDownload
 
+- (instancetype) initWithFileUrl:(NSURL *)fileUrl response:(NSURLResponse *)response {
+    self = [super init];
+    if (self) {
+        _fileUrl = fileUrl;
+        _response = response;
+    }
+    return self;
+}
+
+@end
