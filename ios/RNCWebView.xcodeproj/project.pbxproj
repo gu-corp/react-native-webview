@@ -29,6 +29,34 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libRNCWebView.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNCWebView.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2CACC55A2C50DDC5004BCC2D /* Rule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rule.swift; sourceTree = "<group>"; };
+		2CACC55B2C50DDC5004BCC2D /* RuleLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleLabel.swift; sourceTree = "<group>"; };
+		2CACC55E2C50DDC5004BCC2D /* BasicDomainParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDomainParser.swift; sourceTree = "<group>"; };
+		2CACC55F2C50DDC5004BCC2D /* Constant.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constant.swift; sourceTree = "<group>"; };
+		2CACC5602C50DDC5004BCC2D /* DomainParser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DomainParser.h; sourceTree = "<group>"; };
+		2CACC5612C50DDC5004BCC2D /* DomainParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainParser.swift; sourceTree = "<group>"; };
+		2CACC5622C50DDC5004BCC2D /* DomainParserProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainParserProtocol.swift; sourceTree = "<group>"; };
+		2CACC5632C50DDC5004BCC2D /* ParsedHost.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsedHost.swift; sourceTree = "<group>"; };
+		2CACC5642C50DDC5004BCC2D /* RulesParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RulesParser.swift; sourceTree = "<group>"; };
+		2CACC5662C50DDC5004BCC2D /* AdblockRustEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdblockRustEngine.swift; sourceTree = "<group>"; };
+		2CACC5672C50DDC5004BCC2D /* AdBlockStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdBlockStats.swift; sourceTree = "<group>"; };
+		2CACC5682C50DDC5004BCC2D /* block-ads.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "block-ads.json"; sourceTree = "<group>"; };
+		2CACC5692C50DDC5004BCC2D /* block-cookies.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "block-cookies.json"; sourceTree = "<group>"; };
+		2CACC56A2C50DDC5004BCC2D /* block-trackers.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "block-trackers.json"; sourceTree = "<group>"; };
+		2CACC56B2C50DDC5004BCC2D /* CachedAdBlockEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAdBlockEngine.swift; sourceTree = "<group>"; };
+		2CACC56C2C50DDC5004BCC2D /* ContentBlockerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentBlockerManager.swift; sourceTree = "<group>"; };
+		2CACC56D2C50DDC5004BCC2D /* Engine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Engine.swift; sourceTree = "<group>"; };
+		2CACC56E2C50DDC5004BCC2D /* FifoDict.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FifoDict.swift; sourceTree = "<group>"; };
+		2CACC56F2C50DDC5004BCC2D /* lib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lib.h; sourceTree = "<group>"; };
+		2CACC5702C50DDC5004BCC2D /* libadblock.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libadblock.a; sourceTree = "<group>"; };
+		2CACC5712C50DDC5004BCC2D /* list.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = list.txt; sourceTree = "<group>"; };
+		2CACC5722C50DDC5004BCC2D /* list1416.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = list1416.txt; sourceTree = "<group>"; };
+		2CACC5732C50DDC5004BCC2D /* list7326.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = list7326.txt; sourceTree = "<group>"; };
+		2CACC5742C50DDC5004BCC2D /* list7844.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = list7844.txt; sourceTree = "<group>"; };
+		2CACC5752C50DDC5004BCC2D /* mixed-content-upgrade.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "mixed-content-upgrade.json"; sourceTree = "<group>"; };
+		2CACC5762C50DDC5004BCC2D /* public_suffix_list.dat */ = {isa = PBXFileReference; lastKnownFileType = text; path = public_suffix_list.dat; sourceTree = "<group>"; };
+		2CACC5772C50DDC5004BCC2D /* RequestBlockingScript.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = RequestBlockingScript.js; sourceTree = "<group>"; };
+		2CACC57A2C50DEB0004BCC2D /* react-native-webview-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "react-native-webview-Bridging-Header.h"; sourceTree = "<group>"; };
 		3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RNCWKProcessPoolManager.m; sourceTree = "<group>"; };
 		3515965F21A3C87E00623BFA /* RNCWKProcessPoolManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNCWKProcessPoolManager.h; sourceTree = "<group>"; };
 		E91B351921446E6C00F9801F /* RNCWebViewManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNCWebViewManager.h; sourceTree = "<group>"; };
@@ -63,9 +91,69 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2CACC55C2C50DDC5004BCC2D /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				2CACC55A2C50DDC5004BCC2D /* Rule.swift */,
+				2CACC55B2C50DDC5004BCC2D /* RuleLabel.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		2CACC55D2C50DDC5004BCC2D /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		2CACC5652C50DDC5004BCC2D /* DomainParser */ = {
+			isa = PBXGroup;
+			children = (
+				2CACC55C2C50DDC5004BCC2D /* Model */,
+				2CACC55D2C50DDC5004BCC2D /* Resources */,
+				2CACC55E2C50DDC5004BCC2D /* BasicDomainParser.swift */,
+				2CACC55F2C50DDC5004BCC2D /* Constant.swift */,
+				2CACC5602C50DDC5004BCC2D /* DomainParser.h */,
+				2CACC5612C50DDC5004BCC2D /* DomainParser.swift */,
+				2CACC5622C50DDC5004BCC2D /* DomainParserProtocol.swift */,
+				2CACC5632C50DDC5004BCC2D /* ParsedHost.swift */,
+				2CACC5642C50DDC5004BCC2D /* RulesParser.swift */,
+			);
+			path = DomainParser;
+			sourceTree = "<group>";
+		};
+		2CACC5782C50DDC5004BCC2D /* AdBlock */ = {
+			isa = PBXGroup;
+			children = (
+				2CACC5652C50DDC5004BCC2D /* DomainParser */,
+				2CACC5662C50DDC5004BCC2D /* AdblockRustEngine.swift */,
+				2CACC5672C50DDC5004BCC2D /* AdBlockStats.swift */,
+				2CACC5682C50DDC5004BCC2D /* block-ads.json */,
+				2CACC5692C50DDC5004BCC2D /* block-cookies.json */,
+				2CACC56A2C50DDC5004BCC2D /* block-trackers.json */,
+				2CACC56B2C50DDC5004BCC2D /* CachedAdBlockEngine.swift */,
+				2CACC56C2C50DDC5004BCC2D /* ContentBlockerManager.swift */,
+				2CACC56D2C50DDC5004BCC2D /* Engine.swift */,
+				2CACC56E2C50DDC5004BCC2D /* FifoDict.swift */,
+				2CACC56F2C50DDC5004BCC2D /* lib.h */,
+				2CACC5702C50DDC5004BCC2D /* libadblock.a */,
+				2CACC5712C50DDC5004BCC2D /* list.txt */,
+				2CACC5722C50DDC5004BCC2D /* list1416.txt */,
+				2CACC5732C50DDC5004BCC2D /* list7326.txt */,
+				2CACC5742C50DDC5004BCC2D /* list7844.txt */,
+				2CACC5752C50DDC5004BCC2D /* mixed-content-upgrade.json */,
+				2CACC5762C50DDC5004BCC2D /* public_suffix_list.dat */,
+				2CACC5772C50DDC5004BCC2D /* RequestBlockingScript.js */,
+			);
+			path = AdBlock;
+			sourceTree = "<group>";
+		};
 		58B511D21A9E6C8500147676 = {
 			isa = PBXGroup;
 			children = (
+				2CACC57A2C50DEB0004BCC2D /* react-native-webview-Bridging-Header.h */,
+				2CACC5782C50DDC5004BCC2D /* AdBlock */,
 				E91B351A21446E6C00F9801F /* RNCWebView.h */,
 				E91B351C21446E6C00F9801F /* RNCWebView.m */,
 				E91B351921446E6C00F9801F /* RNCWebViewManager.h */,
@@ -171,6 +259,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEFINES_MODULE = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -215,6 +304,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
+				DEFINES_MODULE = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -235,6 +325,7 @@
 		58B511F01A9E6C8500147676 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../node_modules/react-native/**";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -251,6 +342,7 @@
 		58B511F11A9E6C8500147676 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				DEFINES_MODULE = YES;
 				FRAMEWORK_SEARCH_PATHS = "$(SRCROOT)/../node_modules/react-native/**";
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
