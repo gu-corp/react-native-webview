@@ -16,5 +16,15 @@ Pod::Spec.new do |s|
   s.source_files = "ios/**/*.{h,m,swift}"
   s.resource     = "ios/Settings.bundle"
 
+  s.xcconfig = { 'SWIFT_OBJC_BRIDGING_HEADER' => '${POD_ROOT}/AdBlock/react-native-webview-Bridging-Header.h' } 
+
+  # s.pods_project.targets.each do |target|
+  #   target.build_configurations.each do |config|
+  #     config.build_settings['Defines Module'] = 'Yes'
+  #   end
+  # end
+
   s.dependency 'React'
 end
+
+# SWIFT_OBJC_INTERFACE_HEADER_NAME
