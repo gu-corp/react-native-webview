@@ -68,27 +68,26 @@ import WebKit
     private var setRuleLists: Set<WKContentRuleList> = []
     @available(iOS 13.0.0, *)
     @objc func configRules (userContentController: WKUserContentController ) async throws -> Set<WKContentRuleList>{
-        print("bách setRuleLists")
             let ruleLists = await ContentBlockerManager.shared.ruleLists()
-            if(ruleLists != setRuleLists){
-                var addedIds: [String] = []
-                var removedIds: [String] = []
+    //         if(ruleLists != setRuleLists){
+    //             var addedIds: [String] = []
+    //             var removedIds: [String] = []
                 
-                // Remove unwanted rule lists
-                for ruleList in setRuleLists.subtracting(ruleLists) {
-                  // It's added but we don't want it. So we remove it.
-    //              self.webview?.configuration.userContentController.remove(ruleList)
-                    setRuleLists.remove(ruleList)
-                    removedIds.append(ruleList.identifier)
-                }
+    //             // Remove unwanted rule lists
+    //             for ruleList in setRuleLists.subtracting(ruleLists) {
+    //               // It's added but we don't want it. So we remove it.
+    // //              self.webview?.configuration.userContentController.remove(ruleList)
+    //                 setRuleLists.remove(ruleList)
+    //                 removedIds.append(ruleList.identifier)
+    //             }
                 
-                // Add missing rule lists
-                for ruleList in ruleLists.subtracting(setRuleLists) {
-    //              self.webview?.configuration.userContentController.add(ruleList)
-                    setRuleLists.insert(ruleList)
-                    addedIds.append(ruleList.identifier)
-                }
-            }
+    //             // Add missing rule lists
+    //             for ruleList in ruleLists.subtracting(setRuleLists) {
+    // //              self.webview?.configuration.userContentController.add(ruleList)
+    //                 setRuleLists.insert(ruleList)
+    //                 addedIds.append(ruleList.identifier)
+    //             }
+    //         }
         return ruleLists
     }
     

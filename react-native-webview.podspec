@@ -15,6 +15,6 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/react-native-community/react-native-webview.git", :tag => "v#{s.version}" }
   s.source_files = "ios/**/*.{h,m,swift}"
   s.resource     = "ios/Settings.bundle"
-  
+  s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" }
   s.dependency 'React'
 end
