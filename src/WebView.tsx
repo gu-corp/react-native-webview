@@ -1,5 +1,5 @@
 // This files provides compatibility without tree platform.
-import { WebView } from 'react-native';
+import { WebView,  } from 'react-native';
 
-export { WebView };
+export { WebView,  };
 export default WebView;

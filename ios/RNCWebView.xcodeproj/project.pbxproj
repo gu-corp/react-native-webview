@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2C7589F62C57415B002D0C9E /* RCTEngineAdBlock.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C7589F52C57415B002D0C9E /* RCTEngineAdBlock.m */; };
 		3515965E21A3C86000623BFA /* RNCWKProcessPoolManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */; };
 		E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351B21446E6C00F9801F /* RNCWebViewManager.m */; };
 		E91B351E21446E6C00F9801F /* RNCWebView.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351C21446E6C00F9801F /* RNCWebView.m */; };
@@ -29,6 +30,8 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libRNCWebView.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNCWebView.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		2C7589F42C57414C002D0C9E /* RCTEngineAdBlock.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RCTEngineAdBlock.h; sourceTree = "<group>"; };
+		2C7589F52C57415B002D0C9E /* RCTEngineAdBlock.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RCTEngineAdBlock.m; sourceTree = "<group>"; };
 		2CACC55A2C50DDC5004BCC2D /* Rule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rule.swift; sourceTree = "<group>"; };
 		2CACC55B2C50DDC5004BCC2D /* RuleLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleLabel.swift; sourceTree = "<group>"; };
 		2CACC55E2C50DDC5004BCC2D /* BasicDomainParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BasicDomainParser.swift; sourceTree = "<group>"; };
@@ -163,6 +166,8 @@
 				FA9E729D2383D81900FE9C15 /* WKWebView+BrowserHack.h */,
 				FA9E729B2383D81900FE9C15 /* WKWebView+BrowserHack.m */,
 				FA9E729A2383D81800FE9C15 /* WKWebView+Capture.h */,
+				2C7589F42C57414C002D0C9E /* RCTEngineAdBlock.h */,
+				2C7589F52C57415B002D0C9E /* RCTEngineAdBlock.m */,
 				FA9E729C2383D81900FE9C15 /* WKWebView+Capture.m */,
 				FA9E729F2383D81900FE9C15 /* WKWebView+Highlight.h */,
 				FA9E729E2383D81900FE9C15 /* WKWebView+Highlight.m */,
@@ -227,6 +232,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2C7589F62C57415B002D0C9E /* RCTEngineAdBlock.m in Sources */,
 				FA9E72A22383D81900FE9C15 /* WKWebView+Highlight.m in Sources */,
 				E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */,
 				FA9E72A12383D81900FE9C15 /* WKWebView+Capture.m in Sources */,

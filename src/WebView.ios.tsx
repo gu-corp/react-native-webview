@@ -51,10 +51,10 @@ const processDecelerationRate = (
 };
 
 const RNCWebViewManager = NativeModules.RNCWebViewManager as ViewManager;
+const RNCEngineAdBlock = NativeModules.RNCEngineAdBlock;
 
-const RNCWebView: typeof NativeWebViewIOS = requireNativeComponent(
-  'RNCWebView',
-);
+const RNCWebView: typeof NativeWebViewIOS =
+  requireNativeComponent('RNCWebView');
 
 class WebView extends React.Component<IOSWebViewProps, State> {
   static defaultProps = {
@@ -99,6 +99,14 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       this.getCommands().goBack,
       undefined,
     );
+  };
+
+  initialEngineAdBlock = () => {
+    try {
+      RNCEngineAdBlock.initialEngine();
+    } catch (error) {
+      console.log('error', error);
+    }
   };
 
   /**
@@ -151,47 +159,50 @@ class WebView extends React.Component<IOSWebViewProps, State> {
 
   captureScreen = () => {
     return RNCWebViewManager.captureScreen(this.getWebViewHandle());
-  }
+  };
 
   capturePage = () => {
     return RNCWebViewManager.capturePage(this.getWebViewHandle());
-  }
+  };
 
   printContent = () => {
     return RNCWebViewManager.printContent(this.getWebViewHandle());
-  }
+  };
 
   findInPage = (searchString: string) => {
     return RNCWebViewManager.findInPage(this.getWebViewHandle(), searchString);
-  }
+  };
 
   findNext = () => {
     return RNCWebViewManager.findNext(this.getWebViewHandle());
-  }
+  };
 
   findPrevious = () => {
     return RNCWebViewManager.findPrevious(this.getWebViewHandle());
-  }
+  };
 
   removeAllHighlights = () => {
     return RNCWebViewManager.removeAllHighlights(this.getWebViewHandle());
-  }
-  
+  };
+
   setFontSize = (size?: number) => {
     return RNCWebViewManager.setFontSize(this.getWebViewHandle(), size);
-  }
+  };
 
   setEnableNightMode = (enable: string) => {
-    return RNCWebViewManager.setEnableNightMode(this.getWebViewHandle(), enable);
-  }
+    return RNCWebViewManager.setEnableNightMode(
+      this.getWebViewHandle(),
+      enable,
+    );
+  };
 
   requestWebViewStatus = () => {
     // no need to implement this for iOS
-  }
+  };
 
   requestWebFavicon = () => {
     // no need to implement this for iOS
-  }
+  };
 
   /**
    * Posts a message to the web view, which will emit a `message` event.
@@ -203,7 +214,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
    * document.addEventListener('message', e => { document.title = e.data; });
    * ```
    */
-  
+
   postMessage = (data: string) => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
@@ -275,7 +286,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     if (onHttpError) {
       onHttpError(event);
     }
-  }
+  };
 
   onLoadingFinish = (event: WebViewNavigationEvent) => {
     const { onLoad, onLoadEnd } = this.props;
@@ -310,7 +321,7 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     if (onFileDownload) {
       onFileDownload(event);
     }
-  }
+  };
 
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
@@ -324,9 +335,9 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     _url: string,
     lockIdentifier: number,
   ) => {
-    const viewManager
-      = (this.props.nativeConfig && this.props.nativeConfig.viewManager)
-      || RNCWebViewManager;
+    const viewManager =
+      (this.props.nativeConfig && this.props.nativeConfig.viewManager) ||
+      RNCWebViewManager;
 
     viewManager.startLoadWithResult(!!shouldStart, lockIdentifier);
   };
@@ -336,9 +347,9 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     _url: string,
     lockIdentifier: number,
   ) => {
-    const viewManager
-      = (this.props.nativeConfig && this.props.nativeConfig.viewManager)
-      || RNCWebViewManager;
+    const viewManager =
+      (this.props.nativeConfig && this.props.nativeConfig.viewManager) ||
+      RNCWebViewManager;
 
     viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
   };
@@ -416,9 +427,9 @@ class WebView extends React.Component<IOSWebViewProps, State> {
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
-    const NativeWebView
-      = (nativeConfig.component as typeof NativeWebViewIOS | undefined)
-      || RNCWebView;
+    const NativeWebView =
+      (nativeConfig.component as typeof NativeWebViewIOS | undefined) ||
+      RNCWebView;
 
     const webView = (
       <NativeWebView

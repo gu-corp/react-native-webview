@@ -13,6 +13,7 @@ import {
 export interface WebViewCommands {
   goForward: number;
   goBack: number;
+  initialEngineAdBlock: number;
   reload: number;
   stopLoading: number;
   postMessage: number;

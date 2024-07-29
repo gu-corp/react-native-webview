@@ -25,6 +25,7 @@
 #import "WKWebView+Highlight.h"
 #import "react_native_webview-Swift.h"
 #import <WebKit/WebKit.h>
+#import "RCTEngineAdBlock.h"
 #define LocalizeString(key)                                                    \
   (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -195,7 +196,6 @@ static NSDictionary *customCertificatesForHost;
         if(engine == NULL){
             Engine *e = [[Engine alloc] init];
             engine = e;
-            NSLog(engine.initialEngine);
         }
     }
   }
@@ -236,27 +236,6 @@ static NSDictionary *customCertificatesForHost;
     [wkWebViewConfig.userContentController addUserScript:script];
   }
 
-  if (@available(iOS 14.0, *)) {
-
-    WKContentWorld *scriptSandbox = [WKContentWorld pageWorld];
-    [wkWebViewConfig.userContentController
-        addScriptMessageHandlerWithReply:self
-                            contentWorld:scriptSandbox
-                                    name:RequestBlockingScript];
-    NSString *injectSecurityToken = [NSString
-        stringWithFormat:
-            @"window.%@ = function (data) {"
-             "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-             "};",
-            RequestBlockingScript, RequestBlockingScript];
-
-    scriptRequestBlocking = [[WKUserScript alloc]
-          initWithSource:injectSecurityToken
-           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-        forMainFrameOnly:YES];
-
-    [wkWebViewConfig.userContentController addUserScript:scriptRequestBlocking];
-  }
   // override window.print script
   [wkWebViewConfig.userContentController
       addScriptMessageHandler:self
@@ -378,16 +357,43 @@ static NSDictionary *customCertificatesForHost;
   if (sender.adBlockAllowList) {
     _adBlockAllowList = [NSArray arrayWithArray:sender.adBlockAllowList];
   }
-
+    
   if (sender.contentRuleLists) {
-    if (@available(iOS 13.0.0, *)) {
-        [engine configRulesWithUserContentController:wkWebViewConfig.userContentController completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
-            if (!error) {
-                for (WKContentRuleList* rule in contentRuleList){
-                    [wkWebViewConfig.userContentController addContentRuleList:rule];
+    if (@available(iOS 14.0, *)) {
+        if(engine!= NULL){
+            [engine configRulesWithUserContentController:wkWebViewConfig.userContentController completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
+                if (!error) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        for (WKContentRuleList* rule in contentRuleList){
+                            [self->wkWebViewConfig.userContentController addContentRuleList:rule];
+                        }
+                    });
                 }
-            }
-        }];
+            }];
+        }else{
+            NSLog(@"engine null");
+        }
+        if (@available(iOS 14.0, *)) {
+            WKContentWorld *scriptSandbox = [WKContentWorld pageWorld];
+            [wkWebViewConfig.userContentController
+                addScriptMessageHandlerWithReply:self
+                                    contentWorld:scriptSandbox
+                                            name:RequestBlockingScript];
+            NSString *injectSecurityToken = [NSString
+                stringWithFormat:
+                    @"window.%@ = function (data) {"
+                     "    window.webkit.messageHandlers.%@.postMessage(String(data));"
+                     "};",
+                    RequestBlockingScript, RequestBlockingScript];
+
+            scriptRequestBlocking = [[WKUserScript alloc]
+                  initWithSource:injectSecurityToken
+                   injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                forMainFrameOnly:YES];
+
+            [wkWebViewConfig.userContentController addUserScript:scriptRequestBlocking];
+        }
+        
     } else {
       _contentRuleLists = [NSArray arrayWithArray:sender.contentRuleLists];
       WKContentRuleListStore *contentRuleListStore =
@@ -472,7 +478,7 @@ static NSDictionary *customCertificatesForHost;
     }
     if (@available(iOS 14.0, *)) {
         if(engine == NULL){
-            Engine *e = [[Engine alloc] init];
+            Engine *e =  [[Engine alloc] init];
             engine = e;
         }
     }
@@ -1475,23 +1481,21 @@ static NSDictionary *customCertificatesForHost;
 
       bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
       if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
-          //add youtubeAdblock
-//          if(request.mainDocumentURL.host != nil && [self
-//                                                     isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
-//              [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
-//          }
           
-          if (@available(iOS 13.0.0, *)) {
-              dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 3);
-              dispatch_after(delay, dispatch_get_main_queue(), ^(void){
+          if (@available(iOS 14.0.0, *)) {
+              if(engine!= NULL){
                   [engine configRulesWithUserContentController:wkWebViewConfig.userContentController  completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
                       if (!error) {
-                          for (WKContentRuleList* rule in contentRuleList){
-                              [webView.configuration.userContentController addContentRuleList:rule];
-                          }
+                          dispatch_async(dispatch_get_main_queue(), ^{
+                              for (WKContentRuleList* rule in contentRuleList){
+                                  [webView.configuration.userContentController addContentRuleList:rule];
+                              }
+                          });
                       }
                   }];
-              });
+              }else{
+                  NSLog(@"engine null");
+              }
           }else{
               WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
               [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
@@ -1506,11 +1510,11 @@ static NSDictionary *customCertificatesForHost;
                   }
               }];
               
-              //add youtubeAdblock
-//              if(request.mainDocumentURL.host != nil && [self
-//                                                         isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
-//                  [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
-//              }
+//              add youtubeAdblock
+              if(request.mainDocumentURL.host != nil && [self
+                                                         isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false){
+                  [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
+              }
           }
       } else {
         [webView.configuration.userContentController removeAllContentRuleLists];
@@ -1572,37 +1576,6 @@ static NSDictionary *customCertificatesForHost;
         }
       }
     }
-  }
-
-  if (@available(iOS 14.0, *)) {
-    // add RequestBlocking.js
-
-    NSString *pathRequestBlocking =
-        [resourceBundle pathForResource:RequestBlockingScript ofType:@"js"];
-    NSURL *urlRequestBlocking = [NSURL fileURLWithPath:pathRequestBlocking];
-    NSString *javascriptRequestBlockinge =
-        [NSString stringWithContentsOfFile:urlRequestBlocking.path
-                                  encoding:NSUTF8StringEncoding
-                                     error:nil];
-    NSUUID *uuid = [NSUUID UUID];
-    NSString *securityToken = [uuid UUIDString];
-
-    NSString *injectSecurityToken = [NSString
-        stringWithFormat:
-            @""
-            @"window.%@ = function (data) {"
-             "   return "
-             "window.webkit.messageHandlers.%@.postMessage(String(data));"
-             "};"
-             "const SECURITY_TOKEN = '%@';%@",
-            RequestBlockingScript, RequestBlockingScript, securityToken,
-            javascriptRequestBlockinge];
-    scriptRequestBlocking = [[WKUserScript alloc]
-          initWithSource:injectSecurityToken
-           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-        forMainFrameOnly:YES];
-
-    [wkWebViewConfig.userContentController addUserScript:scriptRequestBlocking];
   }
 
   // set the additionalUserAgent

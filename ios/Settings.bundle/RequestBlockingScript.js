@@ -6,7 +6,6 @@
 "use strict";
 
 window.__firefox__.execute(function ($) {
-window.bach = "bách";
   const messageHandler = '$<message_handler>';
 
   const sendMessage = $((resourceURL) => {
@@ -96,6 +95,5 @@ window.bach = "bách";
       }
     })
   }, /*overrideToString=*/false);
-  window.bachend = "end"
 });
 

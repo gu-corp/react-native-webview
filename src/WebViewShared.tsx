@@ -1,13 +1,13 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import React from 'react';
-import { Linking, View, ActivityIndicator, Text } from 'react-native';
+import { Linking, View, ActivityIndicator, Text, NativeModules } from 'react-native';
 import {
   WebViewNavigationEvent,
   OnShouldStartLoadWithRequest,
   OnShouldCreateNewWindow,
 } from './WebViewTypes';
 import styles from './WebView.styles';
-
+const RNCEngineAdBlock = NativeModules.RNCEngineAdBlock;
 const defaultOriginWhitelist = ['http://*', 'https://*'];
 
 const extractOrigin = (url: string): string => {
@@ -18,12 +18,9 @@ const extractOrigin = (url: string): string => {
 const originWhitelistToRegex = (originWhitelist: string): string =>
   `^${escapeStringRegexp(originWhitelist).replace(/\\\*/g, '.*')}`;
 
-const passesWhitelist = (
-  compiledWhitelist: readonly string[],
-  url: string,
-) => {
+const passesWhitelist = (compiledWhitelist: readonly string[], url: string) => {
   const origin = extractOrigin(url);
-  return compiledWhitelist.some(x => new RegExp(x).test(origin));
+  return compiledWhitelist.some((x) => new RegExp(x).test(origin));
 };
 
 const compileWhitelist = (
@@ -95,10 +92,19 @@ const defaultRenderError = (
   </View>
 );
 
+const initialEngineAdBlock = () => {
+  try {
+    RNCEngineAdBlock.initialEngine();
+  } catch (error) {
+    console.log('error', error);
+  }
+};
+
 export {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
   createOnShouldCreateNewWindow,
   defaultRenderLoading,
   defaultRenderError,
+  initialEngineAdBlock,
 };
