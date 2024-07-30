@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "DownloadHelper.h"
 
 @interface Utility : NSObject
 + (NSString *)getBase64Data:(NSString *)base64Data;
@@ -12,11 +13,11 @@
 + (void)openDownloadFolder;
 + (NSArray *)getDownloadSessionInfo;
 + (void)setDownloadSessionInfo: (NSArray *)sessionInfos;
-+ (void) updateDownloadingList;
++ (void)initDownloadingList;
 + (void)removeSessionInfo: (NSNumber *)sessionId;
-+ (void) setDownloadingInfos: (NSArray *)downloadInfos;
++ (void)setDownloadingInfos: (NSArray *)downloadInfos;
 + (NSNumber *)getNextIndexSessionInfo: (NSURLRequest *)url fileName: (NSString *)fileName mimeType: (NSString *)mimeType expectedFileSize: (NSNumber *)length;
-+ (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSNumber *) status;
++ (void) updateSessionInfo: (NSString *)sessionId downloadedSize: (NSNumber *)size status: (NSString *) status;
 + (NSString *)getSessionId: (NSURLSession *)session;
 
 + (NSNumber *)getLastSessionIndex;

@@ -55,7 +55,7 @@
         
         NSNumber *nextSession = [Utility getNextIndexSessionInfo: _request fileName:self.filename mimeType:self.mimeType expectedFileSize:self.totalBytesExpected];
         _sessionId = nextSession;
-        NSString *nextSessionId = [NSString stringWithFormat:@"sessionId%d", [nextSession intValue]];
+        NSString *nextSessionId = [NSString stringWithFormat:@"%@%d", kSessionIdKey, [nextSession intValue]];
         _session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:nextSessionId]
                                                  delegate:self
                                             delegateQueue:nil];
@@ -77,7 +77,7 @@
         
         self.sessionId = sessionId;
         
-        _session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier: [NSString stringWithFormat:@"sessionId%d", [sessionId intValue]]]
+        _session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier: [NSString stringWithFormat:@"%@%d", kSessionIdKey, [sessionId intValue]]]
                                                  delegate:self
                                             delegateQueue:nil];
         _request =  [[NSURLRequest alloc] initWithURL:[NSURL URLWithString:str]];
@@ -125,7 +125,7 @@
         return;
     }
     if (error) {
-        [Utility updateSessionInfo:indexStr downloadedSize:nil status:@(2)];
+        [Utility updateSessionInfo:indexStr downloadedSize:nil status:DownloadStatusFail];
     } else {
         [Utility removeSessionInfo: @([indexStr intValue])];
     }
@@ -138,14 +138,14 @@
     self.bytesDownloaded = totalBytesWritten;
     self.totalBytesExpected = totalBytesExpectedToWrite > 0 ? @(totalBytesExpectedToWrite) : nil;
     NSString *indexStr = [Utility getSessionId:session];
-    [Utility updateSessionInfo:indexStr downloadedSize:@(totalBytesWritten) status:nil];
+    [Utility updateSessionInfo:indexStr downloadedSize:@(totalBytesWritten) status: DownloadStatusNone];
 }
 
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didFinishDownloadingToURL:(NSURL *)location {
     NSURL *destination = [Utility uniqueDownloadPathForFilename:self.filename];
     NSString *indexStr = [Utility getSessionId:session];
     if (!destination) {
-        [Utility updateSessionInfo:indexStr downloadedSize:nil status:@(2)];
+        [Utility updateSessionInfo:indexStr downloadedSize:nil status:DownloadStatusFail];
     } else {
         NSError *moveError;
         [[NSFileManager defaultManager] moveItemAtURL:location toURL:destination error:&moveError];
@@ -168,7 +168,6 @@ static NSArray *_downloadingList;
 + (void)initialize {
     if (self == [DownloadQueue class]) {
         _downloadQueue = [[DownloadQueue alloc] init];
-        _downloadQueue.delegate = [DownloadModule sharedInstance];
         _downloadSerialQueue = dispatch_queue_create("com.example.serialQueue", DISPATCH_QUEUE_SERIAL);
         _downloadingList = [NSArray array];
     }
@@ -244,6 +243,8 @@ static NSArray *_downloadingList;
     download.delegate = self;
     HTTPDownload *_download = (HTTPDownload *)download;
     if (!_download.task) {
+        // Resume download
+        // stop all holding download tasks of the session and create the new one
         [_download.session getAllTasksWithCompletionHandler:^(NSArray<__kindof NSURLSessionTask *> * _Nonnull tasks) {
             for (NSURLSessionTask *task in tasks) {
                 [task suspend];
@@ -273,7 +274,7 @@ static NSArray *_downloadingList;
         [Utility removeSessionInfo: @([sessionId intValue])];
     } else {
         [download cancel];
-        [Utility updateSessionInfo:sessionId downloadedSize:nil status:@1];
+        [Utility updateSessionInfo:sessionId downloadedSize:nil status:DownloadStatusPause];
     }
 }
 
@@ -305,7 +306,7 @@ static NSArray *_downloadingList;
 - (void)pauseDownload: (NSString *) sessionId {
     if (![self isEmpty]) {
         for (HTTPDownload *download in _downloads) {
-            if ([download.session.configuration.identifier isEqual: [NSString stringWithFormat:@"sessionId%@", sessionId]]) {
+            if ([download.session.configuration.identifier isEqual: [NSString stringWithFormat:@"%@%@", kSessionIdKey ,sessionId]]) {
                 [self dequeue:download sessionId:sessionId isDelete:NO];
                 break;
             }
@@ -318,7 +319,7 @@ static NSArray *_downloadingList;
     if (sessionInfos && sessionInfos.count != 0) {
         NSDictionary *sessionInfo;
         for (NSDictionary *temp in sessionInfos) {
-            NSString *tempSessionId = [[temp objectForKey:@"sessionId"] stringValue];
+            NSString *tempSessionId = [[temp objectForKey:kSessionIdKey] stringValue];
             if ([tempSessionId isEqual:sessionId]) {
                 sessionInfo = temp;
                 break;
@@ -327,12 +328,12 @@ static NSArray *_downloadingList;
         if (!sessionInfo) {
             return;
         }
-        NSString *url = [sessionInfo objectForKey:@"url"];
-        NSString *fileName = [sessionInfo objectForKey:@"fileName"];
-        NSString *mimeType = [sessionInfo objectForKey:@"mimeType"];
-        NSNumber *length = [sessionInfo objectForKey:@"expectedFileSize"];
+        NSString *url = [sessionInfo objectForKey:kUrlKey];
+        NSString *fileName = [sessionInfo objectForKey:kFileNameKey];
+        NSString *mimeType = [sessionInfo objectForKey:kMimeTypeKey];
+        NSNumber *length = [sessionInfo objectForKey:kTotalBytesKey];
         HTTPDownload *download = [[HTTPDownload alloc] initWithSessionId:@([sessionId intValue]) urlStr: url fileName:fileName mimeType:mimeType expectedFileSize:length];
-        [Utility updateSessionInfo:sessionId downloadedSize:nil status:@0];
+        [Utility updateSessionInfo:sessionId downloadedSize:nil status:DownloadStatusDownloading];
         [self enqueue: download];
     }
 }
@@ -340,14 +341,14 @@ static NSArray *_downloadingList;
 - (void)deleteDownload: (NSString *) sessionId {
     BOOL found = NO;
     for (HTTPDownload *download in _downloads) {
-        if ([download.session.configuration.identifier isEqual: [NSString stringWithFormat:@"sessionId%@", sessionId]]) {
+        if ([download.session.configuration.identifier isEqual: [NSString stringWithFormat:@"%@%@", kSessionIdKey, sessionId]]) {
             [self dequeue:download sessionId:sessionId isDelete:YES];
             found = YES;
             break;
         }
     }
     if (!found) {
-        NSString *sessionStr = [NSString stringWithFormat:@"sessionId%@", sessionId];
+        NSString *sessionStr = [NSString stringWithFormat:@"%@%@",kSessionIdKey, sessionId];
         NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration backgroundSessionConfigurationWithIdentifier:sessionStr]
                                                               delegate:nil
                                                          delegateQueue:nil];
