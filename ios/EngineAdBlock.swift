@@ -21,6 +21,7 @@ class EngineAd: RCTEventEmitter {
         return ["InitialEngine"]
     }
     
+    @available(iOS 13.0.0, *)
     @objc
     func startMonitoring() {
         if let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle") {

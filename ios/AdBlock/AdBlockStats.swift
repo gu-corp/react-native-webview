@@ -25,6 +25,22 @@ public actor AdBlockStats {
       availableFilterLists = [:]
     }
     
+    func makeEngineScriptTypes(frameURL: URL, isMainFrame: Bool) async -> Set<UserScriptType> {
+      // Add any engine scripts for this frame
+      return await cachedEngines().enumerated().asyncMap({ index, cachedEngine -> Set<UserScriptType> in
+        do {
+          return try await cachedEngine.makeEngineScriptTypes(
+            frameURL: frameURL, isMainFrame: isMainFrame, index: index
+          )
+        } catch {
+          assertionFailure()
+          return []
+        }
+      }).reduce(Set<UserScriptType>(), { partialResult, scriptTypes in
+        return partialResult.union(scriptTypes)
+      })
+    }
+    
     func shouldBlock(requestURL: URL, sourceURL: URL, resourceType: AdblockRustEngine.ResourceType) async -> Bool {
       let sources = await self.enabledSources
       return await cachedEngines(for: sources).asyncConcurrentMap({ cachedEngine in
@@ -70,6 +86,10 @@ public actor AdBlockStats {
 //        }
       
       await currentCompileTask?.value
+    }
+    
+    @MainActor func cachedEngines() async -> [CachedAdBlockEngine] {
+        return await self.cachedEngines(for: self.enabledSources)
     }
     
     private func add(engine: CachedAdBlockEngine) {

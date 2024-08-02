@@ -23,8 +23,58 @@ class AdblockRustEngine {
         try useResources(fromFileURL: resourcesFileURL)
     }
     
-    init(rules: String = "") { engine = engine_create(rules) }
+    init(rules: String = "") {
+        engine = engine_create(rules)
+        setDomainResolver()
+    }
     deinit { engine_destroy(engine) }
+    
+    
+    private func setDomainResolver() {
+        let resolver: C_DomainResolverCallback = { host, start, end in
+            //self.swiftDomainResolver(host: host!, start: start!, end: end!)
+            let hostString = String(cString: host!)
+
+            // Use DomainParser to get the domain
+            if let domainParser = try? DomainParser(),
+               let parsedDomain = domainParser.parse(host: hostString)?.domain {
+                if let range = hostString.range(of: parsedDomain) {
+                    let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
+                    let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
+                    start!.pointee = UInt32(startIndex)
+                    end!.pointee = UInt32(endIndex)
+                } else {
+                    start!.pointee = 0
+                    end!.pointee = UInt32(hostString.count)
+                }
+            } else {
+                start!.pointee = 0
+                end!.pointee = UInt32(hostString.count)
+            }
+        }
+        _ = set_domain_resolver(resolver)
+    }
+    
+    func swiftDomainResolver(host: UnsafePointer<CChar>, start: UnsafeMutablePointer<UInt32>, end: UnsafeMutablePointer<UInt32>) {
+        let hostString = String(cString: host)
+
+        // Use DomainParser to get the domain
+        if let domainParser = try? DomainParser(),
+           let parsedDomain = domainParser.parse(host: hostString)?.domain {
+            if let range = hostString.range(of: parsedDomain) {
+                let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
+                let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
+                start.pointee = UInt32(startIndex)
+                end.pointee = UInt32(endIndex)
+            } else {
+                start.pointee = 0
+                end.pointee = UInt32(hostString.count)
+            }
+        } else {
+            start.pointee = 0
+            end.pointee = UInt32(hostString.count)
+        }
+    }
     
     public func shouldBlock(requestURL: URL, sourceURL: URL, resourceType: ResourceType) -> Bool {
         var didMatchRule = false
@@ -94,6 +144,59 @@ class AdblockRustEngine {
         engine_use_resources(engine, string)
         return true
     }
+    
+    func stylesheetForCosmeticRulesIncluding(classes: [String], ids: [String], exceptions: [String]) throws -> [String] {
+        // Convert Swift arrays to C strings
+        let cClasses = classes.map { strdup($0) }
+        let cIds = ids.map { strdup($0) }
+        let cExceptions = exceptions.map { strdup($0) }
+
+        // Convert arrays to UnsafePointer<UnsafePointer<CChar>?>
+        let cClassesPointer = UnsafePointer(cClasses.map { UnsafePointer($0) })
+        let cIdsPointer = UnsafePointer(cIds.map { UnsafePointer($0) })
+        let cExceptionsPointer = UnsafePointer(cExceptions.map { UnsafePointer($0) })
+        
+        guard let selectorsJSON = engine_hidden_class_id_selectors(engine, cClassesPointer, cClasses.count, cIdsPointer, cIds.count, cExceptionsPointer, cExceptions.count) else {
+            return []
+        }
+        
+        guard let data = String(cString: selectorsJSON).data(using: .utf8) else {
+          return []
+        }
+        
+        let decoder = JSONDecoder()
+        return try decoder.decode([String].self, from: data)
+    }
+    
+    func cosmeticFilterModel(forFrameURL frameURL: URL) throws -> CosmeticFilterModel? {
+        guard let rules = engine_url_cosmetic_resources(engine, frameURL.absoluteString) else {
+            return nil
+        }
+        guard let data = String(cString: rules).data(using: .utf8) else { return nil }
+        return try JSONDecoder().decode(CosmeticFilterModel.self, from: data)
+    }
+    
+//    static func contentBlockerRules(fromFilterSet: String) -> String {
+//        // Convert the Swift String to a C string
+//        let cRules = fromFilterSet.cString(using: .utf8)
+//
+//        // Create a pointer for the truncated boolean
+//        var cTruncated: Bool = false
+//
+//        // Call the C function
+//        if let cContentBlockingJSON = convert_rules_to_content_blocking(cRules, &cTruncated) {
+//            // Convert the C string back to a Swift String
+//            let result = String(cString: cContentBlockingJSON)
+//
+//            // Free the allocated C string
+//            c_char_buffer_destroy(cContentBlockingJSON)
+//
+//            return result
+//        } else {
+//            // Handle the case where the conversion fails (return an empty string or handle error appropriately)
+//            return ""
+//        }
+//    }
 }
 
 extension Data {

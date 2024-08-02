@@ -90,6 +90,7 @@ static NSDictionary *customCertificatesForHost;
   BOOL _isFullScreenVideoOpen;
   UIStatusBarStyle _savedStatusBarStyle;
   BOOL _savedStatusBarHidden;
+    
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) &&                                \
     __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
@@ -107,12 +108,14 @@ static NSDictionary *customCertificatesForHost;
   WKUserScript *scriptNightMode;
   WKUserScript *scriptRequestBlocking;
   Engine *engine;
+  WKNavigationAction *navigationActionGlobal;
 
   CGPoint lastOffset;
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
   BOOL initiated;
+  BOOL isAddScriptByTypes;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -361,6 +364,11 @@ static NSDictionary *customCertificatesForHost;
   if (sender.contentRuleLists) {
     if (@available(iOS 14.0, *)) {
         if(engine!= NULL){
+//            [engine getScripts:sender decidePolicyFor:navigationActionGlobal preferences:wkWebViewConfig.preferences completionHandler:^(NSString *status) {
+//                isAddScriptByTypes = @(YES);
+//                NSLog(@"%@", status);
+//            }];
+            
             [engine configRulesWithUserContentController:wkWebViewConfig.userContentController completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
                 if (!error) {
                     dispatch_async(dispatch_get_main_queue(), ^{
@@ -382,6 +390,7 @@ static NSDictionary *customCertificatesForHost;
             NSString *injectSecurityToken = [NSString
                 stringWithFormat:
                     @"window.%@ = function (data) {"
+                     "  return "
                      "    window.webkit.messageHandlers.%@.postMessage(String(data));"
                      "};",
                     RequestBlockingScript, RequestBlockingScript];
@@ -429,6 +438,7 @@ static NSDictionary *customCertificatesForHost;
                forNavigationAction:(WKNavigationAction *)navigationAction
                     windowFeatures:(WKWindowFeatures *)windowFeatures {
   NSString *scheme = navigationAction.request.URL.scheme;
+  navigationActionGlobal = navigationAction;
   if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) &&
       ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] ||
        [scheme isEqualToString:@"about"])) {
@@ -1484,6 +1494,11 @@ static NSDictionary *customCertificatesForHost;
           
           if (@available(iOS 14.0.0, *)) {
               if(engine!= NULL){
+                  [engine getScripts:webView decidePolicyFor:navigationAction preferences:wkWebViewConfig.preferences completionHandler:^(NSString *status) {
+                      self->isAddScriptByTypes = @(YES);
+                      NSLog(@"bách %@", status);
+                  }];
+                  
                   [engine configRulesWithUserContentController:wkWebViewConfig.userContentController  completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
                       if (!error) {
                           dispatch_async(dispatch_get_main_queue(), ^{
@@ -1517,11 +1532,17 @@ static NSDictionary *customCertificatesForHost;
               }
           }
       } else {
-        [webView.configuration.userContentController removeAllContentRuleLists];
+          [webView.configuration.userContentController removeAllContentRuleLists];
+          if (@available(iOS 14.0.0, *)) {
+//              if(isAddScriptByTypes){
+//                  [self resetupScripts:_webView.configuration];
+//                  isAddScriptByTypes = @(NO);
+//              }
+          }
         // remove youtubeAdblock --> remove all userScripts and then add common scripts
-        if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true){
-          [self resetupScripts:_webView.configuration];
-        }
+          if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true){
+              [self resetupScripts:_webView.configuration];
+          }
       }
           
   }
@@ -1944,7 +1965,7 @@ static NSDictionary *customCertificatesForHost;
     NSString *sourceBlockingScript = [NSString
         stringWithFormat:
             @"window.%@ = function (data) {"
-             "  return return "
+             "  return "
              "window.webkit.messageHandlers.%@.postMessage(String(data));"
              "};",
             RequestBlockingScript, RequestBlockingScript];

@@ -23,6 +23,14 @@ public extension Sequence {
         }
     }
     
+    func asyncMap<T>(_ transform: (Element) async throws -> T) async rethrows -> [T] {
+      var results = [T]()
+      for element in self {
+        try await results.append(transform(element))
+      }
+      return results
+    }
+    
     func asyncConcurrentCompactMap<T>(_ transform: @escaping (Element) async throws -> T?) async rethrows -> [T] {
       try await withThrowingTaskGroup(of: T?.self) { group in
         for element in self {

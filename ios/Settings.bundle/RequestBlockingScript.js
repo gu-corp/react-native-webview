@@ -84,7 +84,7 @@ window.__firefox__.execute(function ($) {
     // Ask iOS if we need to block this request
     sendMessage(resourceURL).then(blocked => {
       console.log(`resourceURL: ${resourceURL} blocked:${blocked} `)
-      if (true) {
+      if (blocked) {
         Object.defineProperties(this, {
           readyState: { value: 4 }
         })
