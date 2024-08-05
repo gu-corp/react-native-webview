@@ -58,7 +58,7 @@ import WebKit
     @MainActor
     @objc func getScripts(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences) async -> String {
             guard var requestURL = navigationAction.request.url else {
-              return "NoAdd"
+              return "Failed"
             }
             
             if let mainDocumentURL = navigationAction.request.mainDocumentURL {
@@ -77,17 +77,18 @@ import WebKit
                 if let targetFrame = navigationAction.targetFrame {
                     self.currentPageData?.addSubframeURL(forRequestURL: requestURL, isForMainFrame: targetFrame.isMainFrame)
                     let scriptTypes = await self.currentPageData?.makeUserScriptTypes() ?? []
-                    print("bách scriptTypes : \(scriptTypes)")
-                    if customUserScripts != scriptTypes {
+                    // if customUserScripts != scriptTypes {
                         customUserScripts = scriptTypes
                         UserScriptManager.shared.loadCustomScripts(into: webView,
                                                                  userScripts: userScripts,
                                                                  customScripts: customUserScripts)
-                    }
+                    // }
                 }
                 
             }
-        return "Added"
+        return "Done"
         }
-    
+    @objc func clearCustomUserScripts () {
+        customUserScripts.removeAll()
+    }
 }

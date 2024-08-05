@@ -313,6 +313,7 @@ SWIFT_CLASS("_TtC20react_native_webview6Engine") SWIFT_AVAILABILITY(ios,introduc
 - (void)checkBlockingWithRequestURL:(NSURL * _Nonnull)requestURL sourceURL:(NSURL * _Nonnull)sourceURL resourceType:(NSString * _Nonnull)resourceType replyHandler:(void (^ _Nonnull)(id _Nullable, NSString * _Nullable))replyHandler;
 - (void)configRulesWithUserContentController:(WKUserContentController * _Nonnull)userContentController completionHandler:(void (^ _Nonnull)(NSSet<WKContentRuleList *> * _Nullable, NSError * _Nullable))completionHandler;
 - (void)getScripts:(WKWebView * _Nonnull)webView decidePolicyFor:(WKNavigationAction * _Nonnull)navigationAction preferences:(WKWebpagePreferences * _Nonnull)preferences completionHandler:(void (^ _Nonnull)(NSString * _Nonnull))completionHandler;
+- (void)clearCustomUserScripts;
 - (nonnull instancetype)init OBJC_DESIGNATED_INITIALIZER;
 @end
 

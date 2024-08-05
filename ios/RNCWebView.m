@@ -387,20 +387,31 @@ static NSDictionary *customCertificatesForHost;
                 addScriptMessageHandlerWithReply:self
                                     contentWorld:scriptSandbox
                                             name:RequestBlockingScript];
-            NSString *injectSecurityToken = [NSString
-                stringWithFormat:
-                    @"window.%@ = function (data) {"
-                     "  return "
-                     "    window.webkit.messageHandlers.%@.postMessage(String(data));"
-                     "};",
-                    RequestBlockingScript, RequestBlockingScript];
+            NSString *jsFilePathRequestBlockingScript =
+                [resourceBundle pathForResource:RequestBlockingScript ofType:@"js"];
+            NSURL *jsURLBlockingScript =
+                [NSURL fileURLWithPath:jsFilePathRequestBlockingScript];
+            NSString *javascriptCodeBlockingScript =
+                [NSString stringWithContentsOfFile:jsURLBlockingScript.path
+                                          encoding:NSUTF8StringEncoding
+                                             error:nil];
+            NSString *sourceBlockingScript = [NSString stringWithFormat:
+                  @"window.%@ = function (data) {"
+                   "  return "
+                   "window.webkit.messageHandlers.%@.postMessage(String(data));"
+                   "};"
+                   "%@",
+                  RequestBlockingScript, RequestBlockingScript, javascriptCodeBlockingScript];
 
             scriptRequestBlocking = [[WKUserScript alloc]
-                  initWithSource:injectSecurityToken
+                  initWithSource:sourceBlockingScript
                    injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                 forMainFrameOnly:YES];
-
-            [wkWebViewConfig.userContentController addUserScript:scriptRequestBlocking];
+            bool isExistedScriptBlocking = [wkWebViewConfig.userContentController.userScripts containsObject:scriptRequestBlocking];
+            if(!isExistedScriptBlocking){
+                [wkWebViewConfig.userContentController addUserScript:scriptRequestBlocking];
+            }
+            
         }
         
     } else {
@@ -1496,7 +1507,7 @@ static NSDictionary *customCertificatesForHost;
               if(engine!= NULL){
                   [engine getScripts:webView decidePolicyFor:navigationAction preferences:wkWebViewConfig.preferences completionHandler:^(NSString *status) {
                       self->isAddScriptByTypes = @(YES);
-                      NSLog(@"bách %@", status);
+                      NSLog(@"status engine getScripts %@", status);
                   }];
                   
                   [engine configRulesWithUserContentController:wkWebViewConfig.userContentController  completionHandler:^(NSSet<WKContentRuleList *> *contentRuleList, NSError *error) {
@@ -1534,10 +1545,10 @@ static NSDictionary *customCertificatesForHost;
       } else {
           [webView.configuration.userContentController removeAllContentRuleLists];
           if (@available(iOS 14.0.0, *)) {
-//              if(isAddScriptByTypes){
-//                  [self resetupScripts:_webView.configuration];
-//                  isAddScriptByTypes = @(NO);
-//              }
+              if(isAddScriptByTypes){
+                  [self resetupScripts:_webView.configuration];
+                  isAddScriptByTypes = @(NO);
+              }
           }
         // remove youtubeAdblock --> remove all userScripts and then add common scripts
           if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true){
@@ -1962,19 +1973,30 @@ static NSDictionary *customCertificatesForHost;
         addScriptMessageHandlerWithReply:self
                             contentWorld:scriptSandbox
                                     name:RequestBlockingScript];
-    NSString *sourceBlockingScript = [NSString
-        stringWithFormat:
+      
+      NSString *jsFilePathRequestBlockingScript =
+          [resourceBundle pathForResource:RequestBlockingScript ofType:@"js"];
+      NSURL *jsURLBlockingScript =
+          [NSURL fileURLWithPath:jsFilePathRequestBlockingScript];
+      NSString *javascriptCodeBlockingScript =
+          [NSString stringWithContentsOfFile:jsURLBlockingScript.path
+                                    encoding:NSUTF8StringEncoding
+                                       error:nil];
+      NSString *sourceBlockingScript = [NSString stringWithFormat:
             @"window.%@ = function (data) {"
              "  return "
              "window.webkit.messageHandlers.%@.postMessage(String(data));"
-             "};",
-            RequestBlockingScript, RequestBlockingScript];
+             "};"
+             "%@",
+            RequestBlockingScript, RequestBlockingScript, javascriptCodeBlockingScript];
 
-    WKUserScript *scriptBlocking = [[WKUserScript alloc]
-          initWithSource:sourceBlockingScript
-           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-        forMainFrameOnly:NO];
-    [wkWebViewConfig.userContentController addUserScript:scriptBlocking];
+    WKUserScript *scriptBlocking = [[WKUserScript alloc] initWithSource:sourceBlockingScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+      
+      bool isExistedScriptBlocking = [wkWebViewConfig.userContentController.userScripts containsObject:scriptBlocking];
+      if(!isExistedScriptBlocking){
+          [wkWebViewConfig.userContentController addUserScript:scriptBlocking];
+      }
+
   }
 
   // override window.print script
