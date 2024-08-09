@@ -589,6 +589,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         return;
       }
       if (source.hasKey("uri")) {
+        boolean preventLoadUrl = false;
+        if (source.hasKey("preventLoadUrl")) {
+          preventLoadUrl = source.getBoolean("preventLoadUrl");
+        }
+        if (preventLoadUrl) return;
+
         String url = source.getString("uri");
         String previousUrl = view.getUrl();
         if (previousUrl != null && previousUrl.equals(url)) {
