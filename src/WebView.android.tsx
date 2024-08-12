@@ -125,6 +125,16 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  setNativeProps = (nativeProps: Partial<AndroidWebViewProps>) => {
+    try {
+      if (this.webViewRef.current) {
+        this.webViewRef.current.setNativeProps(nativeProps);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   postMessage = (data: string) => {
     UIManager.dispatchViewManagerCommand(
       this.getWebViewHandle(),
@@ -367,7 +377,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       originWhitelist,
       renderError,
       renderLoading,
-      source,
+      // source,
       style,
       nativeConfig = {},
       ...otherProps
@@ -393,15 +403,15 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
 
     const webViewStyles = [styles.container, styles.webView, style];
 
-    if (source && 'method' in source) {
-      if (source.method === 'POST' && source.headers) {
-        console.warn(
-          'WebView: `source.headers` is not supported when using POST.',
-        );
-      } else if (source.method === 'GET' && source.body) {
-        console.warn('WebView: `source.body` is not supported when using GET.');
-      }
-    }
+    // if (source && 'method' in source) {
+    //   if (source.method === 'POST' && source.headers) {
+    //     console.warn(
+    //       'WebView: `source.headers` is not supported when using POST.',
+    //     );
+    //   } else if (source.method === 'GET' && source.body) {
+    //     console.warn('WebView: `source.body` is not supported when using GET.');
+    //   }
+    // }
 
     const NativeWebView
       = (nativeConfig.component as typeof NativeWebViewAndroid) || RNCWebView;
@@ -433,7 +443,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onFileDownload={this.onFileDownload}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
-        source={resolveAssetSource(source as ImageSourcePropType)}
+        source={resolveAssetSource(this.props.source as ImageSourcePropType)}
         style={webViewStyles}
         {...nativeConfig.props}
       />
