@@ -70,6 +70,7 @@ RCT_EXPORT_VIEW_PROPERTY(allowsBackForwardNavigationGestures, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(incognito, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(pagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(userAgent, NSString)
+RCT_EXPORT_VIEW_PROPERTY(downloadConfig, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(applicationNameForUserAgent, NSString)
 RCT_EXPORT_VIEW_PROPERTY(cacheEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowsLinkPreview, BOOL)
@@ -91,6 +92,7 @@ RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(messagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(onMessage, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onFileDownload, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onWebViewClosed, RCTDirectEventBlock)
 
@@ -330,6 +332,20 @@ RCT_EXPORT_METHOD(printContent:(nonnull NSNumber *)reactTag) {
   }];
 }
 
+RCT_EXPORT_METHOD(setEnableNightMode:(nonnull NSNumber *)reactTag enable:(NSString *)enable
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCWebView *> *viewRegistry) {
+    RNCWebView *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebView class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view setEnableNightMode:enable];
+    }
+  }];
+}
+
 #pragma mark - Exported synchronous methods
 
 - (BOOL)          webView:(RNCWebView *)webView
@@ -414,15 +430,16 @@ RCT_REMAP_METHOD(addContentRuleList,
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
 {
-  WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-
-  [contentRuleListStore compileContentRuleListForIdentifier:name encodedContentRuleList:encodedContentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-      if (error) {
-          reject(RCTErrorUnspecified, nil, error);
-      } else {
-          resolve(nil);
-      }
-  }];
+  dispatch_async(dispatch_get_main_queue(), ^{
+      WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+      [contentRuleListStore compileContentRuleListForIdentifier:name encodedContentRuleList:encodedContentRuleList completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+          if (error) {
+              reject(RCTErrorUnspecified, nil, error);
+          } else {
+              resolve(nil);
+          }
+      }];
+  });
 }
 
 RCT_REMAP_METHOD(getContentRuleListNames,

@@ -17,6 +17,9 @@
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
+#import "Utility.h"
+#import "DownloadHelper.h"
+#import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
 
@@ -49,7 +52,7 @@ static NSDictionary* customCertificatesForHost;
 }
 @end
 
-@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
+@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingStart;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingFinish;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
@@ -60,6 +63,7 @@ static NSDictionary* customCertificatesForHost;
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
+@property (nonatomic, copy) RCTDirectEventBlock onFileDownload;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
@@ -89,12 +93,16 @@ static NSDictionary* customCertificatesForHost;
   WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
+  WKUserScript *scriptNightMode;
     
   CGPoint lastOffset;
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
   BOOL initiated;
+    
+  BOOL shouldDownloadNavigationResponse;
+  NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -162,7 +170,7 @@ static NSDictionary* customCertificatesForHost;
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = self;
-//    _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
@@ -570,6 +578,11 @@ static NSDictionary* customCertificatesForHost;
   if (_webView != nil) {
     _webView.customUserAgent = userAgent;
   }
+}
+
+- (void)setDownloadConfig:(NSDictionary *)downloadConfig {
+  _downloadConfig = downloadConfig;
+  [Utility setDownloadConfig:downloadConfig];
 }
 
 - (void)setAllowingReadAccessToURL:(NSString *)allowingReadAccessToURL
@@ -1077,6 +1090,25 @@ static NSDictionary* customCertificatesForHost;
 
   WKNavigationType navigationType = navigationAction.navigationType;
   NSURLRequest *request = navigationAction.request;
+    NSURL *requestURL = request.URL;
+    if ( request &&  requestURL) {
+        NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
+        if ([downloadSchemes containsObject:requestURL.scheme]) {
+            // Logic pkpass: set shouldDownloadNavigationResponse = true
+            // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L438
+            if (navigationAction.shouldPerformDownload) {
+                shouldDownloadNavigationResponse = true;
+            }
+            
+            [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
+        }
+        
+        NSArray *allowSchemes = @[@"data", @"blob"];
+        if ([allowSchemes containsObject:requestURL.scheme]) {
+            decisionHandler(WKNavigationActionPolicyAllow);
+            return;
+        }
+    }
 
   if (_onShouldStartLoadWithRequest) {
     NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1119,11 +1151,11 @@ static NSDictionary* customCertificatesForHost;
         NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
         scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
       }
-      
+
       if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
         isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
       }
-        
+
       bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
       if (_contentRuleLists != nil && _contentRuleLists.count > 0 && isAllowWebsite == false) {
         WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
@@ -1150,6 +1182,19 @@ static NSDictionary* customCertificatesForHost;
         }
       }
     }
+
+  if (@available(iOS 13.0, *)) {
+    if(scriptNightMode == nil) {
+      NSString *jsFileNightMode = @"__NightModeScript__";
+      NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
+      NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
+      NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path encoding:NSUTF8StringEncoding error:nil];
+      scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    }
+    if([webView.configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
+      [wkWebViewConfig.userContentController addUserScript:scriptNightMode];
+    }
+  }
     
   // enable picture-in-picture feature on youtube page
   // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
@@ -1170,13 +1215,13 @@ static NSDictionary* customCertificatesForHost;
       }
     }
   }
-    
+
   // set the additionalUserAgent
   int count = (int) [_additionalUserAgent count];
   for (int i = 0; i < count; i++) {
     NSDictionary* item = [_additionalUserAgent objectAtIndex:i];
     NSString* domain = [item objectForKey:@"domain"];
-    
+
     if (domain != nil && [request.mainDocumentURL.host isEqual: domain]) {
       NSString* extendedUserAgent = [item objectForKey:@"extendedUserAgent"];
       if (_userAgent != nil && extendedUserAgent != nil) {
@@ -1237,21 +1282,56 @@ static NSDictionary* customCertificatesForHost;
   }
   
   NSURLResponse *response = navigationResponse.response;
-    WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
-    WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+  NSURL *responseURL = [response URL];
+      
+  BOOL canShowInWebView = navigationResponse.canShowMIMEType;
+  WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
+  WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
     
-    if ([PassBookHelper canOpenPassBookWithResponse:response]) {
-        PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
-                                                                      cookieStore:cookieStore
-                                                                   viewController:[self topViewController]];
-        // Open our helper and nullify the helper when done with it
-        [passBookHelper open];
-        passBookHelper.delegate = [DownloadModule sharedInstance];
-        
-        // Cancel this response from the webview.
-        decisionHandler(WKNavigationActionPolicyCancel);
-        return;
+  // Logic pkpass: Check if this response should be handed off to Passbook.
+  // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L549
+  if (shouldDownloadNavigationResponse) {
+    shouldDownloadNavigationResponse = false;
+    NSString *urlString = response.URL.absoluteString;
+    if ([response.MIMEType isEqualToString:@"application/vnd.apple.pkpass"]) {
+      decisionHandler(WKNavigationResponsePolicyDownload);
+      return;
     }
+  }
+    
+  if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+    PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                  cookieStore:cookieStore
+                                                              viewController:[self topViewController]];
+    // Open our helper and nullify the helper when done with it
+    [passBookHelper open];
+    passBookHelper.delegate = [DownloadModule sharedInstance];
+    
+    // Cancel this response from the webview.
+    decisionHandler(WKNavigationActionPolicyCancel);
+    return;
+  }
+      
+  NSURLRequest *request = nil;
+  if (responseURL) {
+    request = [[DownloadHelper pendingRequests] objectForKey:responseURL.absoluteString];
+    [[DownloadHelper pendingRequests] removeObjectForKey:responseURL.absoluteString];
+  }
+  
+  DownloadHelper *downloadHelper = [[DownloadHelper alloc] initWithRequest:request response:response cookieStore:cookieStore canShowInWebView:canShowInWebView];
+  if (downloadHelper) {
+    id downloadAlertAction = ^(HTTPDownload *download) {
+        [[DownloadQueue downloadQueue] appendSessionInfo];
+        [[DownloadQueue downloadQueue] enqueue: download];
+    };
+    UIViewController *rootVC = [[UIApplication sharedApplication].delegate window].rootViewController;
+    UIAlertController *alertView = [downloadHelper downloadAlertFromView:rootVC.view okAction:downloadAlertAction];
+    if (alertView) {
+        [rootVC presentViewController:alertView animated:YES completion:nil];
+    }
+    policy = WKNavigationResponsePolicyCancel;
+  }
+
   decisionHandler(policy);
 }
 
@@ -1340,6 +1420,74 @@ static NSDictionary* customCertificatesForHost;
   };
   if (_onGetFavicon!= nil) {
      _onGetFavicon(event);
+  }
+}
+
+/**
+ * Called when the navigation is return WKNavigationResponsePolicyDownload.
+ */
+- (void)webView:(WKWebView *)webView navigationResponse:(nonnull WKNavigationResponse *)navigationResponse didBecomeDownload:(nonnull WKDownload *)download
+{
+  download.delegate = self;
+}
+
+/**
+ * WKDownloadDelegate
+ */
+- (void)download:(WKDownload *)download decideDestinationUsingResponse:(nonnull NSURLResponse *)response suggestedFilename:(nonnull NSString *)suggestedFilename completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler
+{
+  NSString *temporaryDir = NSTemporaryDirectory();
+  NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
+  NSURL *url = [NSURL fileURLWithPath:fileName];
+  PendingDownload *pendingDownload = [[PendingDownload alloc] initWithFileUrl:url response:response];
+  if (pendingDownloads == nil) {
+    pendingDownloads = [NSMutableDictionary dictionary];
+  }
+  pendingDownloads[download.originalRequest] = pendingDownload;
+  completionHandler(url);
+}
+
+- (void)download:(WKDownload *) download willPerformHTTPRedirection:(nonnull NSHTTPURLResponse *)response newRequest:(nonnull NSURLRequest *)request decisionHandler:(nonnull void (^)(WKDownloadRedirectPolicy))decisionHandler
+{
+  decisionHandler(WKDownloadRedirectPolicyAllow);
+}
+
+- (void)download:(WKDownload *)download didReceiveAuthenticationChallenge:(nonnull NSURLAuthenticationChallenge *)challenge completionHandler:(nonnull void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+{
+  completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+}
+
+- (void)downloadDidFinish:(WKDownload *)download
+{
+  if (pendingDownloads == nil) {
+    return;
+  }
+  PendingDownload *downloadInfo = pendingDownloads[download.originalRequest];
+  if (!downloadInfo) {
+    return;
+  }
+  [pendingDownloads removeObjectForKey:download.originalRequest];
+  NSURLResponse *response = [[NSURLResponse alloc] initWithURL:downloadInfo.fileUrl
+                                                      MIMEType:downloadInfo.response.MIMEType
+                                         expectedContentLength:(NSInteger)downloadInfo.response.expectedContentLength
+                                              textEncodingName:downloadInfo.response.textEncodingName];
+  WKWebsiteDataStore *dataStore = _webView.configuration.websiteDataStore;
+  WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+  if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+    PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                  cookieStore:cookieStore
+                                                               viewController:[self topViewController]];
+    // Open our helper and nullify the helper when done with it
+    [passBookHelper open];
+    passBookHelper.delegate = [DownloadModule sharedInstance];
+  }
+}
+
+- (void)download:(WKDownload *)download didFailWithError:(nonnull NSError *)error resumeData:(nullable NSData *)resumeData
+{
+  // maybe show error and remove pendingDownload
+  if (pendingDownloads) {
+    [pendingDownloads removeObjectForKey:download.originalRequest];
   }
 }
 
@@ -1628,6 +1776,10 @@ static NSDictionary* customCertificatesForHost;
 // Disable previews for the given element.
 -(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
     return NO;
+}
+
+- (void)setEnableNightMode:(NSString *)enable {
+  [_webView setEnableNightMode:enable];
 }
 
 @end

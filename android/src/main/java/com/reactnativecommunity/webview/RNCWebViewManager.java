@@ -75,6 +75,8 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.uimanager.events.ContentSizeChangeEvent;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.downloaddatabase.DownloadRequest;
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
@@ -130,6 +132,7 @@ import com.brave.adblock.Engine;
 import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 import com.reactnativecommunity.webview.utils.HtmlExtractor;
 import com.reactnativecommunity.webview.utils.UrlUtils;
+import com.reactnativecommunity.webview.utils.Utils;
 
 /**
  * Manages instances of {@link WebView}
@@ -178,6 +181,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_SET_FONT_SIZE = 15;
   public static final int COMMAND_REQUEST_WEB_VIEW_STATUS = 16;
   public static final int COMMAND_REQUEST_WEB_FAVICON = 17;
+  public static final int COMMAND_SET_ENABLE_NIGHT_MODE = 18;
 
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
@@ -204,6 +208,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   protected boolean mAllowsFullscreenVideo = false;
   protected @Nullable String mUserAgent = null;
   protected @Nullable String mUserAgentWithApplicationName = null;
+
+  private String DOWNLOAD_FOLDER;
 
   public RNCWebViewManager() {
     mWebViewConfig = new WebViewConfig() {
@@ -307,6 +313,12 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     webView.setDownloadListener(new DownloadListener() {
       public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimetype, long contentLength) {
+        if (url.startsWith("blob")) {
+          String jsConvert = "getBase64StringFromBlobUrl('" + url + "');";
+          webView.loadUrl("javascript:" + jsConvert);
+          return;
+        }
+
          // block non-http/https download links
         if (!URLUtil.isNetworkUrl(url)) {
           Toast.makeText(reactContext.getCurrentActivity(), R.string.download_protocol_not_supported,
@@ -318,15 +330,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
 
-        String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
+        String fileName = Utils.getFileNameDownload(url, contentDisposition, mimetype);
+        String subPath = fileName;
+        if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+          subPath = DOWNLOAD_FOLDER + "/" + fileName;
+        }
         String downloadMessage = "Downloading " + fileName;
 
         //Attempt to add cookie, if it exists
         URL urlObj = null;
+        String cookie = "";
         try {
           urlObj = new URL(url);
           String baseUrl = urlObj.getProtocol() + "://" + urlObj.getHost();
-          String cookie = CookieManager.getInstance().getCookie(baseUrl);
+          cookie = CookieManager.getInstance().getCookie(baseUrl);
           request.addRequestHeader("Cookie", cookie);
           System.out.println("Got cookie for DownloadManager: " + cookie);
         } catch (MalformedURLException e) {
@@ -340,12 +357,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         request.setDescription(downloadMessage);
         request.allowScanningByMediaScanner();
         request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subPath);
 
-        module.setDownloadRequest(request);
+        module.setDownloadRequest(
+          request,
+          new DownloadRequest(-1, -1, url, userAgent, contentDisposition, mimetype, cookie, 0)
+        );
 
         if (module.grantFileDownloaderPermissions()) {
           module.downloadFile();
+          WritableMap eventData = Arguments.createMap();;
+          eventData.putString("downloadUrl", url);
+          dispatchEvent(webView, new TopFileDownloadEvent(webView.getId(), eventData));
         }
       }
     });
@@ -400,15 +423,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   @ReactProp(name = "cacheEnabled")
   public void setCacheEnabled(WebView view, boolean enabled) {
     if (enabled) {
-      Context ctx = view.getContext();
-      if (ctx != null) {
-        view.getSettings().setAppCachePath(ctx.getCacheDir().getAbsolutePath());
-        view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        view.getSettings().setAppCacheEnabled(true);
-      }
+      view.getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
     } else {
       view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-      view.getSettings().setAppCacheEnabled(false);
     }
   }
 
@@ -553,7 +570,6 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     // Disable caching
     view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
-    view.getSettings().setAppCacheEnabled(!enabled);
     view.clearHistory();
     view.clearCache(enabled);
 
@@ -682,6 +698,20 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
   }
 
+  @ReactProp(name = "downloadConfig")
+  public void setDownloadConfig(WebView view, @Nullable ReadableMap downloadConfig) {
+    if (downloadConfig != null) {
+      if (downloadConfig.hasKey("downloadFolder")) {
+        String downloadFolder = downloadConfig.getString("downloadFolder");
+        RNCWebViewModule module = getModule((ReactContext) view.getContext());
+        RNCWebView rncWebView = (RNCWebView) view;
+        rncWebView.setDownloadFolder(downloadFolder);
+        module.setDownloadFolder(downloadFolder);
+        DOWNLOAD_FOLDER = downloadFolder;
+      }
+    }
+  }
+
   @Override
   protected void addEventEmitters(ThemedReactContext reactContext, WebView view) {
     // Do not register default touch emitter and let WebView implementation handle touches
@@ -714,6 +744,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
     export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
     export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
+    export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
     return export;
   }
 
@@ -739,6 +770,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("setFontSize", COMMAND_SET_FONT_SIZE);
     map.put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS);
     map.put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON);
+    map.put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE);
 
     return map;
   }
@@ -819,6 +851,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_REQUEST_WEB_FAVICON:
         ((RNCWebView) root).getFaviconUrl();
+        break;
+      case COMMAND_SET_ENABLE_NIGHT_MODE:
+        ((RNCWebView) root).setEnableNightMode(args.getString(0));
         break;
     }
   }
@@ -919,6 +954,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     protected Uri mainUrl;
     protected boolean isMainDocumentException;
+    protected boolean mEnableNightMode = false;
 
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
@@ -1050,6 +1086,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
         reactWebView.getFaviconUrl();
 
+        String jsNightMode = "window.NightMode.setEnabled(" + mEnableNightMode + ");";
+        reactWebView.loadUrl("javascript:" + jsNightMode);
       }
 
 
@@ -1644,10 +1682,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
       // Create a new view
       RNCWebView newView = this.createNewWindow((ThemedReactContext) mReactContext);
-
-      newView.setWebViewClient(new RNCWebViewClient((ThemedReactContext) mReactContext) {
+      RNCWebViewClient newWebViewClient = new RNCWebViewClient((ThemedReactContext) mReactContext) {
         @Override
         public void onPageStarted(WebView view, String url, Bitmap favicon) {
+          /*
+          * In some case like Figma page, when click hyperlink have target="_blank"
+          * url="about:blank" will be load first, need process it to get real url in next time onPageStarted called
+          * */
+          if (url.equals(BLANK_URL)) {
+            super.onPageStarted(view, url, favicon);
+            return;
+          }
+
           WritableMap eventData = Arguments.createMap();
           eventData.putDouble("target", webView.getId());
           eventData.putString("url", url);
@@ -1670,7 +1716,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           final String url = request.getUrl().toString();
           return this.shouldOverrideUrlLoading(view, url);
         }
-      });
+      };
+      RNCWebView currentWebView = (RNCWebView) webView;
+      if (currentWebView.mRNCWebViewClient != null) {
+        newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
+      }
+
+      newView.setWebViewClient(newWebViewClient);
 
       // Clone settings from parent view
       newView.cloneSettings((RNCWebView)webView);
@@ -1730,8 +1782,8 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     private OnScrollDispatchHelper mOnScrollDispatchHelper;
     protected boolean hasScrollEvent = false;
     protected boolean nestedScrollEnabled = false;
-
     private static RNCWebView newWindow;
+    private String DOWNLOAD_FOLDER = "";
 
     /**
      * WebView must be created with an context of the current activity
@@ -1813,6 +1865,10 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void setNestedScrollEnabled(boolean nestedScrollEnabled) {
       this.nestedScrollEnabled = nestedScrollEnabled;
+    }
+
+    public void setDownloadFolder(String downloadFolder) {
+      this.DOWNLOAD_FOLDER = downloadFolder;
     }
 
     @Override
@@ -1941,6 +1997,22 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       return jsString;
     }
 
+    public String loadNightModeScriptFile() {
+      String jsString = null;
+      try {
+        InputStream fileInputStream;
+        fileInputStream = this.getContext().getAssets().open("NightModeScript.js");
+        byte[] readBytes = new byte[fileInputStream.available()];
+        fileInputStream.read(readBytes);
+        jsString = new String(readBytes);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return jsString;
+    }
+
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @SuppressWarnings("deprecation")
     public void printContent() {
@@ -1971,6 +2043,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
       if(getSettings().getJavaScriptEnabled()){
+        String jsNightMode = loadNightModeScriptFile();
+        if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
+
         String jsSearch = loadSearchWebviewFile();
         if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
 
@@ -2104,15 +2179,35 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           });
         }
       }
+
+      @JavascriptInterface
+      public void sendPartialBase64Data(String base64Data) {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        module.sendPartialBase64Data(base64Data);
+      }
+
+      @JavascriptInterface
+      public void notifyConvertBlobToBase64Completed() {
+        RNCWebViewModule module = getModule((ReactContext) mContext.getContext());
+        if (module.grantFileDownloaderPermissions()) {
+          module.saveBase64DataToFile();
+        }
+      }
     }
 
     public void captureScreen(String type) {
       final String fileName = System.currentTimeMillis() + ".jpg";
-      String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
+      // Old logic: save internal storage
+      // String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
 
-      File d = new File(directory);
-      d.mkdirs();
-      final String localFilePath = directory + fileName;
+      File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+      if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+        saveDir = new File(saveDir, DOWNLOAD_FOLDER);
+        if (!saveDir.exists()) {
+          saveDir.mkdirs();
+        }
+      }
+      File downloadPath = new File(saveDir, fileName);
       boolean success = false;
       try {
         Picture picture = this.capturePicture();
@@ -2122,7 +2217,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         Canvas c = new Canvas(b);
         picture.draw(c);
 
-        FileOutputStream fos = new FileOutputStream(localFilePath);
+        FileOutputStream fos = new FileOutputStream(downloadPath, false);
         if (fos != null) {
           b.compress(Bitmap.CompressFormat.JPEG, 80, fos);
           fos.close();
@@ -2136,7 +2231,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         event.putBoolean("result", success);
         event.putString("type", type);
         if (success) {
-          event.putString("data", localFilePath);
+          event.putString("data", downloadPath.getAbsolutePath());
         }
         dispatchEvent(this, new TopCaptureScreenEvent(this.getId(), event));
       }
@@ -2162,9 +2257,18 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     public void removeAllHighlights() {
       this.loadUrl("javascript:myAppSearchDoneInThePage()");
     }
+
     public void setFontSize(Number size) {
       WebView webView = this;
       webView.getSettings().setTextZoom((int) size);
+    }
+
+    public void setEnableNightMode(String enable) {
+      if (mRNCWebViewClient != null) {
+        mRNCWebViewClient.mEnableNightMode = Boolean.parseBoolean(enable);
+      }
+      String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
+      this.loadUrl("javascript:" + jsNightMode);
     }
   }
 }

@@ -21,6 +21,7 @@ import {
 import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
+  FileDownloadEvent,
   WebViewMessageEvent,
   WebViewNavigationEvent,
   WebViewProgressEvent,
@@ -237,6 +238,13 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     }
   };
 
+  onFileDownload = (event: FileDownloadEvent) => {
+    const { onFileDownload } = this.props;
+    if (onFileDownload) {
+      onFileDownload(event);
+    }
+  };
+
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
@@ -326,7 +334,15 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().printContent,
       undefined
     )
-  }
+  };
+
+  setEnableNightMode = (enable: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().setEnableNightMode,
+      [String(enable)]
+    );
+  };
 
   requestWebViewStatus = () => {
     UIManager.dispatchViewManagerCommand(
@@ -334,7 +350,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().requestWebViewStatus,
       undefined
     )
-  }
+  };
 
   requestWebFavicon = () => {
     UIManager.dispatchViewManagerCommand(
@@ -342,7 +358,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getCommands().requestWebFavicon,
       undefined
     )
-  }
+  };
 
   render() {
     const {
@@ -414,6 +430,7 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
         onCaptureScreen={this.onCaptureScreen}
         onGetFavicon={this.onGetFavicon}
         onReceiveWebViewStatus={this.onReceiveWebViewStatus}
+        onFileDownload={this.onFileDownload}
         ref={this.webViewRef}
         // TODO: find a better way to type this.
         source={resolveAssetSource(source as ImageSourcePropType)}
