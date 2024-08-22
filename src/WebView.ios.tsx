@@ -185,6 +185,10 @@ class WebView extends React.Component<IOSWebViewProps, State> {
     return RNCWebViewManager.setEnableNightMode(this.getWebViewHandle(), enable);
   }
 
+  proceedUnsafeSite = (url: string) => {
+    return RNCWebViewManager.proceedUnsafeSite(this.getWebViewHandle(), url);
+  }
+
   requestWebViewStatus = () => {
     // no need to implement this for iOS
   }

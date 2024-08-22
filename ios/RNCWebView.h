@@ -91,5 +91,6 @@ typedef enum {
 - (void)printContent;
 - (void)setFontSize:(nonnull NSNumber *)size;
 - (void)setEnableNightMode:(nonnull NSString *)enable;
+- (void)proceedUnsafeSite:(nullable NSString*)url;
 
 @end

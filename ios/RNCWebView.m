@@ -100,6 +100,7 @@ static NSDictionary* customCertificatesForHost;
   BOOL dragging;
   BOOL scrollingToTop;
   BOOL initiated;
+  BOOL allowUnsafeSite;
     
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
@@ -1000,6 +1001,13 @@ static NSDictionary* customCertificatesForHost;
             }
         }
     }
+    if (allowUnsafeSite == YES) {
+        allowUnsafeSite = NO;
+        SecTrustRef trust = [[challenge protectionSpace] serverTrust];
+        NSURLCredential *useCredential = [NSURLCredential credentialForTrust:trust];
+        completionHandler(NSURLSessionAuthChallengeUseCredential, useCredential);
+        return;
+    }
     completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
 }
 
@@ -1780,6 +1788,11 @@ static NSDictionary* customCertificatesForHost;
 
 - (void)setEnableNightMode:(NSString *)enable {
   [_webView setEnableNightMode:enable];
+}
+
+- (void)proceedUnsafeSite:(NSString *)url {
+    allowUnsafeSite = YES;
+    [self reload];
 }
 
 @end
