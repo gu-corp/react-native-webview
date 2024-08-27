@@ -4,6 +4,72 @@
 
 if (!window.__firefox__) {
   /*
+   *  Generate toString
+   */
+  function generateToString(target, usingObjectDescriptor) {
+    const toStringString = function() {
+      return 'function toString() {\n    [native code]\n}';
+    };
+    
+    const toString = function() {
+      let functionDescription = `function ${ typeof target.name !== 'undefined' ? target.name : "" }() {\n    [native code]\n}`;
+      if (usingObjectDescriptor) {
+        return (typeof value === 'function') ? functionDescription : '[object Object]';
+      }
+      return functionDescription;
+    };
+    
+    $Object.defineProperty(toString, 'name', {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: 'toString'
+    });
+    
+    $Object.defineProperty(toStringString, 'name', {
+      enumerable: false,
+      configurable: true,
+      writable: false,
+      value: 'toString'
+    });
+    
+    return [toString, toStringString];
+  }
+  
+  /*
+   *  Secure calls to `toString`
+   */
+  function secureToString(target, toString, toStringString, overrides = {}) {
+    var fnOverrides = {...overrides};
+    if ((target === toString || target === toStringString) && fnOverrides['toString']) {
+      fnOverrides['toString'] = toStringString;
+    }
+    
+    for (const [name, property] of $Object.entries(fnOverrides)) {
+      let descriptor = $Object.getOwnPropertyDescriptor(target, name);
+      if (!descriptor || descriptor.configurable) {
+        $Object.defineProperty(target, name, {
+          enumerable: false,
+          configurable: false,
+          writable: false,
+          value: property
+        });
+      }
+      
+      descriptor = $Object.getOwnPropertyDescriptor(target, name);
+      if (!descriptor || descriptor.writable) {
+        fn[name] = property;
+      }
+      
+      if (name !== 'toString') {
+        $.deepFreeze(target[name]);
+      }
+    }
+
+    //$.deepFreeze(toString);
+  }
+  
+  /*
    *  Copies an object's signature to an object with no prototype to prevent prototype polution attacks
    */
   function secureCopy(value) {
@@ -25,6 +91,29 @@ if (!window.__firefox__) {
       get(target, property, receiver) {
         if (property == 'prototype') {
           return prototypeProperties;
+        }
+        
+        if (property == 'toString') {
+          let descriptor = $Object.getOwnPropertyDescriptor(target, property);
+          if (descriptor && !descriptor.configurable && !descriptor.writable) {
+            return Reflect.get(target, property);
+          }
+          
+          const [toString, toStringString] = generateToString(target, false);
+          
+          const overrides = {
+            'toString': toString,
+            'call': $Function.call,
+            'apply': $Function.apply,
+            'bind': $Function.bind
+          };
+          
+          secureToString(toStringString, toString, toStringString, overrides);
+          $.deepFreeze(toStringString);
+          
+          secureToString(toString, toString, toStringString, overrides);
+          $.deepFreeze(toString);
+          return toString;
         }
 
         return target[property];
@@ -66,19 +155,13 @@ if (!window.__firefox__) {
   /*
    *  Secures an object's attributes
    */
-  let $ = function(value) {
+  let $ = function(value, overrideToString = true) {
     if ($Object.isExtensible(value)) {
-      const description = (typeof value === 'function') ?
-                          `function () {\n\t[native code]\n}` :
-                          '[object Object]';
+      const [toString, toStringString] = generateToString(value, true);
       
-      const toString = function() {
-        return description;
-      };
-      
-      const overrides = {
+      const overrides = overrideToString ? {
         'toString': toString
-      };
+      } : {};
       
       if (typeof value === 'function') {
         const functionOverrides = {
@@ -91,35 +174,14 @@ if (!window.__firefox__) {
           overrides[key] = value;
         }
       }
-      
-      // Secure calls to `toString`
-      const secureToString = function(toString) {
-        for (const [name, property] of $Object.entries(overrides)) {
-          let descriptor = $Object.getOwnPropertyDescriptor(toString, name);
-          if (!descriptor || descriptor.configurable) {
-            $Object.defineProperty(toString, name, {
-              enumerable: false,
-              configurable: false,
-              writable: false,
-              value: property
-            });
-          }
-          
-          descriptor = $Object.getOwnPropertyDescriptor(toString, name);
-          if (!descriptor || descriptor.writable) {
-            toString[name] = property;
-          }
-          
-          if (name !== 'toString') {
-            $.deepFreeze(toString[name]);
-          }
-        }
 
-        $.deepFreeze(toString);
-      };
-      
       // Secure our custom `toString`
-      secureToString(toString);
+      // Freeze our custom `toString`
+      secureToString(toStringString, toString, toStringString, overrides);
+      $.deepFreeze(toStringString);
+      
+      secureToString(toString, toString, toStringString, overrides);
+      $.deepFreeze(toString);
 
       for (const [name, property] of $Object.entries(overrides)) {
         if (name == 'toString') {
@@ -127,17 +189,45 @@ if (!window.__firefox__) {
           // They are two different functions, so we should check for both before overriding them
           if (value[name] && value[name] !== Object.prototype.toString && value[name] !== Object.toString) {
             // Secure the existing custom toString function
-            secureToString(value[name]);
+            // Do NOT deepFreeze existing toString functions
+            // on custom objects we don't own. We secure it,
+            // but not freeze it.
+            // The object may want to change it or override it, etc.
+            // Do not secure our already secured toString override,
+            // if the custom override happens to be the same
+            if (value[name] !== toString) {
+              secureToString(value[name]);
+            }
             continue;
           }
           
           // Object.prototype.toString != Object.toString
           // They are two different functions, so we should check for both before overriding them
           let descriptor = $Object.getOwnPropertyDescriptor(value, name);
-          if (descriptor && descriptor.value !== Object.prototype.toString && descriptor.value !== Object.toString) {
+          if (descriptor && descriptor.value && descriptor.value !== Object.prototype.toString && descriptor.value !== Object.toString) {
             // Secure the existing custom toString function
-            secureToString(value[name]);
+            // Do NOT deepFreeze existing toString functions
+            // on custom objects we don't own. We secure it,
+            // but not freeze it.
+            // The object may want to change it or override it, etc.
+            // Do not secure our already secured toString override,
+            // if the custom override happens to be the same
+            if (descriptor.value !== toString) {
+              secureToString(descriptor.value);
+            }
             continue;
+          }
+          
+          // Object.prototype.toString != Object.toString
+          // They are two different functions, so we should check for both before overriding them
+          if (typeof value.toString !== 'undefined') {
+            if (value.toString !== Object.prototype.toString && value.toString !== Object.toString) {
+              if (value.toString !== toString) {
+                secureToString(value.toString);
+              }
+              
+              continue;
+            }
           }
         }
         
@@ -146,8 +236,8 @@ if (!window.__firefox__) {
         if (!descriptor || descriptor.configurable) {
           $Object.defineProperty(value, name, {
             enumerable: false,
-            configurable: false,
-            writable: false,
+            configurable: name == 'toString',
+            writable: name == 'toString',
             value: property
           });
         }
@@ -242,7 +332,7 @@ if (!window.__firefox__) {
       }
 
       return isIgnoredClass(obj) ? $(obj) : $Object.freeze($(obj));
-    } else if (obj.constructor && (obj.constructor.name == "Function" || obj.constructor.name == "AsyncFunction")) {
+    } else if (obj.constructor && (obj.constructor.name == "Function" || obj.constructor.name == "AsyncFunction" || obj.constructor.name == "GeneratorFunction")) {
       return $Object.freeze($(obj));
     } else {
       let prototype = $Object.getPrototypeOf(obj);
@@ -329,15 +419,31 @@ if (!window.__firefox__) {
     return result;
   };
   
+  $.dispatchEvent = function(event) {
+    delete window.dispatchEvent;
+    let originalDispatchEvent = window.dispatchEvent(event);
+    return originalDispatchEvent;
+  }
+
+  $.addEventListener = function(type, listener, optionsOrUseCapture) {
+    delete window.addEventListener;
+    let originalAddEventListener = window.addEventListener(type, listener, optionsOrUseCapture);
+    return originalAddEventListener;
+  }
+  
   // Start securing functions before any other code can use them
   $($.deepFreeze);
   $($.extensiveFreeze);
   $($.postNativeMessage);
+  $($.dispatchEvent);
+  $($.addEventListener);
   $($);
 
   $.deepFreeze($.deepFreeze);
   $.deepFreeze($.extensiveFreeze);
   $.deepFreeze($.postNativeMessage);
+  $.deepFreeze($.dispatchEvent);
+  $.deepFreeze($.addEventListener);
   $.deepFreeze($);
   
   for (const value of secureObjects) {
@@ -481,124 +587,3 @@ if (!window.__firefox__) {
   $.deepFreeze(webkit.messageHandlers);
 }
 
-// https://github.com/brave/brave-ios  /blob/development/Client/Frontend/UserContent/UserScripts/Scripts_Dynamic/Scripts/Paged/MediaBackgroundingScript.js
-window.__firefox__.includeOnce("MediaBackgrounding", function($) {
-  var descriptor = Object.getOwnPropertyDescriptor(Document.prototype, "visibilityState");
-  var visibilityState_Get = descriptor.get;
-  var visibilityState_Set = descriptor.set;
-  Object.defineProperty(Document.prototype, 'visibilityState', {
-    enumerable: descriptor.enumerable,
-    configurable: descriptor.configurable,
-    get: $(function() {
-        var result = visibilityState_Get.call(this);
-        if (result != "visible") {
-            return "visible";
-        }
-        return result;
-    }),
-    set: $(function(value) {
-      visibilityState_Set.call(this, value);
-    })
-  });
-  
-  Object.defineProperty(HTMLVideoElement.prototype, 'userHitPause', {
-    enumerable: false,
-    configurable: false,
-    writable: true,
-    value: false
-  });
-  
-  Object.defineProperty(HTMLVideoElement.prototype, 'pauseListener', {
-    enumerable: false,
-    configurable: false,
-    writable: true,
-    value: false
-  });
-  
-  Object.defineProperty(HTMLVideoElement.prototype, 'presentationModeListener', {
-    enumerable: false,
-    configurable: false,
-    writable: true,
-    value: false
-  });
-  
-  var pauseControl = HTMLVideoElement.prototype.pause;
-  HTMLVideoElement.prototype.pause = $(function() {
-    this.userHitPause = true;
-    return pauseControl.call(this);
-  });
-
-  var playControl = HTMLVideoElement.prototype.play;
-  HTMLVideoElement.prototype.play = $(function() {
-    this.userHitPause = false;
-    return playControl.call(this);
-  });
-  let addListeners = $(function(element) {
-    if (!element.pauseListener) {
-      element.pauseListener = true;
-      element.visibilityState = visibilityState_Get.call(document);
-      
-      document.addEventListener("visibilitychange", $(function(e) {
-        element.visibilityState = visibilityState_Get.call(document);
-      }), false);
-      
-      element.addEventListener("pause", $(function(e) {
-        if (!element.userHitPause && visibilityState_Get.call(document) == "visible") {
-          var onVisibilityChanged = $((e) => {
-            document.removeEventListener("visibilitychange", onVisibilityChanged);
-
-            if (visibilityState_Get.call(document) != "visible" && !element.ended) {
-              playControl.call(element);
-            }
-          });
-
-          document.addEventListener("visibilitychange", onVisibilityChanged);
-
-          setTimeout($(function() {
-            document.removeEventListener("visibilitychange", onVisibilityChanged);
-          }), 2000);
-        } else {
-          if (!element.userHitPause && element.visibilityState == "visible" && !element.ended) {
-            playControl.call(element);
-          }
-        }
-      }), false);
-    }
-    if (!element.presentationModeListener) {
-        element.presentationModeListener = true;
-        element.addEventListener('webkitpresentationmodechanged', $(function(e) {
-          e.stopPropagation();
-        }), true);
-    }
-  });
-  const queue = [];
-  let onMutation = $(function() {
-    for (const mutations of queue) {
-      mutations.addedNodes.forEach(function (node) {
-        if (node.constructor.name == 'HTMLVideoElement') {
-          addListeners(node);
-        }
-      });
-    }
-    queue.length = 0;
-  });
-  
-  var observer = new MutationObserver($(function(mutations) {
-    if (!queue.length) {
-      // Debounce the mutation for performance
-      // with setTimeout | requestIdleCallback | requestAnimationFrame
-      // requestIdleCallback isn't available on iOS yet.
-      requestAnimationFrame(onMutation);
-    }
-    queue.push(...mutations);
-  }));
-  
-  observer.observe(document, {
-    childList: true,
-    attributes: false,
-    characterData: false,
-    subtree: true,
-    attributeOldValue: false,
-    characterDataOldValue: false
-  });
-});
