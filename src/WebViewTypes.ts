@@ -81,6 +81,9 @@ export interface WebViewNativeEvent {
   canGoBack: boolean;
   canGoForward: boolean;
   lockIdentifier: number;
+
+  progress?: number;
+  error?: object;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
@@ -145,6 +148,10 @@ export type ShouldStartLoadRequestEvent =
   NativeSyntheticEvent<ShouldStartLoadRequest>;
 
 export type FileDownloadEvent = NativeSyntheticEvent<FileDownload>;
+export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {
+  fullscreen: boolean;
+}
+export type WebViewFullScreenEvent = NativeSyntheticEvent<WebViewNativeFullScreenEvent>;
 
 export type WebViewMessageEvent = NativeSyntheticEvent<WebViewMessage>;
 
