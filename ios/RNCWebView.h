@@ -9,7 +9,6 @@
 #import <React/RCTDefines.h>
 #import <WebKit/WebKit.h>
 #import <React/RCTBridge.h>
-
 @class RNCWebView;
 
 @protocol RNCWebViewDelegate <NSObject>
@@ -17,17 +16,8 @@
 - (BOOL)webView:(RNCWebView *_Nonnull)webView
    shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *_Nonnull)request
    withCallback:(RCTDirectEventBlock _Nonnull)callback;
-- (RNCWebView* _Nullable)webView:(RNCWebView* _Nonnull)webView
-shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
 
 @end
-
-typedef enum {
-    NoLock = 0,
-    LockDirectionUp,
-    LockDirectionDown,
-    LockDirectionBoth
-} LockScroll;
 
 @interface RNCWebView : RCTView
 
@@ -35,7 +25,6 @@ typedef enum {
 @property (nonatomic, copy) NSDictionary * _Nullable source;
 @property (nonatomic, assign) BOOL messagingEnabled;
 @property (nonatomic, copy) NSString * _Nullable injectedJavaScript;
-@property (nonatomic, copy) NSString *injectedJavaScriptBeforeDocumentLoad;
 @property (nonatomic, assign) BOOL scrollEnabled;
 @property (nonatomic, assign) BOOL sharedCookiesEnabled;
 @property (nonatomic, assign) BOOL pagingEnabled;
@@ -54,7 +43,6 @@ typedef enum {
 @property (nonatomic, assign) BOOL incognito;
 @property (nonatomic, assign) BOOL useSharedProcessPool;
 @property (nonatomic, copy) NSString * _Nullable userAgent;
-@property (nonatomic, copy) NSDictionary * _Nullable downloadConfig;
 @property (nonatomic, copy) NSString * _Nullable applicationNameForUserAgent;
 @property (nonatomic, assign) BOOL cacheEnabled;
 @property (nonatomic, assign) BOOL javaScriptEnabled;
@@ -63,15 +51,7 @@ typedef enum {
 @property (nonatomic, assign) BOOL showsVerticalScrollIndicator;
 @property (nonatomic, assign) BOOL directionalLockEnabled;
 @property (nonatomic, copy) NSString * _Nullable allowingReadAccessToURL;
-@property (nonatomic, assign) BOOL scrollToTop;
-@property (nonatomic, assign) BOOL openNewWindowInWebView;
-@property (nonatomic, assign) LockScroll lockScroll;
-@property (nonatomic, assign) CGPoint adjustOffset;
-@property (nonatomic, copy) NSArray<NSString *> * _Nullable contentRuleLists;
-@property (nonatomic, copy) NSArray<NSString *> * _Nullable adBlockAllowList;
-@property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
 
-- (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebView*_Nonnull)parentView;
 + (void)setClientAuthenticationCredential:(nullable NSURLCredential*)credential;
 + (void)setCustomCertificatesForHost:(nullable NSDictionary *)certificates;
 - (void)postMessage:(NSString *_Nullable)message;
@@ -80,16 +60,5 @@ typedef enum {
 - (void)goBack;
 - (void)reload;
 - (void)stopLoading;
-
-- (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
-- (void)findInPage:(nonnull NSString *)searchString;
-- (void)findNext;
-- (void)findPrevious;
-- (void)removeAllHighlights;
-- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
-- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
-- (void)printContent;
-- (void)setFontSize:(nonnull NSNumber *)size;
-- (void)setEnableNightMode:(nonnull NSString *)enable;
 
 @end

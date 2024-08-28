@@ -2,10 +2,6 @@
 
 This document lays out the current public properties and methods for the React Native WebView.
 
-## Function
-
-- [iOS] support pkpass file and add them to the Apple wallet 
-
 ## Props Index
 
 - [`source`](Reference.md#source)
@@ -45,7 +41,6 @@ This document lays out the current public properties and methods for the React N
 - [`contentInsetAdjustmentBehavior`](Reference.md#contentInsetAdjustmentBehavior)
 - [`dataDetectorTypes`](Reference.md#datadetectortypes)
 - [`scrollEnabled`](Reference.md#scrollenabled)
-- [`nestedScrollEnabled`](Reference.md#nestedscrollenabled)
 - [`directionalLockEnabled`](Reference.md#directionalLockEnabled)
 - [`geolocationEnabled`](Reference.md#geolocationenabled)
 - [`allowUniversalAccessFromFileURLs`](Reference.md#allowUniversalAccessFromFileURLs)
@@ -815,18 +810,6 @@ Boolean value that determines whether scrolling is enabled in the `WebView`. The
 
 ---
 
-### `nestedScrollEnabled`[⬆](#props-index)
-
-Boolean value that determines whether scrolling is possible in the `WebView` when used inside a `ScrollView` on Android. The default value is `false`. 
-
-Setting this to `true` will prevent the `ScrollView` to scroll when scrolling from inside the `WebView`.
-
-| Type | Required | Platform      |
-| ---- | -------- | ------------- |
-| bool | No       | Android       |
-
----
-
 ### `directionalLockEnabled`
 
 A Boolean value that determines whether scrolling is disabled in a particular direction.
@@ -1054,14 +1037,6 @@ reload();
 
 Reloads the current page.
 
-### `printContent()`
-
-```javascript
-printContent();
-```
-
-Print the current page.
-
 ### `stopLoading()`
 
 ```javascript
@@ -1079,14 +1054,6 @@ injectJavaScript('... javascript string ...');
 Executes the JavaScript string.
 
 To learn more, read the [Communicating between JS and Native](Guide.md#communicating-between-js-and-native) guide.
-
-
-## Window Object
-
-### Methods
-
-- `print()`: Prints the content of the main window
-
 
 ## Other Docs
 
