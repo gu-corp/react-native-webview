@@ -17,6 +17,7 @@ import android.graphics.Color;
 import android.Manifest;
 import android.graphics.Picture;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.Build;
 import android.os.Environment;
 import androidx.annotation.RequiresApi;
@@ -41,6 +42,7 @@ import android.webkit.GeolocationPermissions;
 import android.webkit.HttpAuthHandler;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -182,6 +184,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
   public static final int COMMAND_REQUEST_WEB_VIEW_STATUS = 16;
   public static final int COMMAND_REQUEST_WEB_FAVICON = 17;
   public static final int COMMAND_SET_ENABLE_NIGHT_MODE = 18;
+  public static final int COMMAND_PROCEED_UNSAFE_SITE = 19;
 
   public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
   public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
@@ -745,6 +748,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
     export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
     export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
+    export.put(TopLoadingErrorEvent.EVENT_NAME, MapBuilder.of("registrationName", "onLoadingError"));
     return export;
   }
 
@@ -771,6 +775,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     map.put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS);
     map.put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON);
     map.put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE);
+    map.put("proceedUnsafeSite", COMMAND_PROCEED_UNSAFE_SITE);
 
     return map;
   }
@@ -854,6 +859,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
         break;
       case COMMAND_SET_ENABLE_NIGHT_MODE:
         ((RNCWebView) root).setEnableNightMode(args.getString(0));
+        break;
+      case COMMAND_PROCEED_UNSAFE_SITE:
+        ((RNCWebView) root).proceedUnsafeSite(args.getString(0));
         break;
     }
   }
@@ -955,6 +963,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     protected Uri mainUrl;
     protected boolean isMainDocumentException;
     protected boolean mEnableNightMode = false;
+    protected boolean mAllowUnsafeSite = false;
 
     public RNCWebViewClient(ReactContext reactContext) {
       this.mReactContext = reactContext;
@@ -1276,6 +1285,43 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       } catch (Exception e) {
         e.printStackTrace();
         return null;
+      }
+    }
+
+    @Override
+    public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+      // onReceivedSslError is called for most requests, per Android docs: https://developer.android.com/reference/android/webkit/WebViewClient#onReceivedSslError(android.webkit.WebView,%2520android.webkit.SslErrorHandler,%2520android.net.http.SslError)
+      // WebView.getUrl() will return the top-level window URL.
+      // If a top-level navigation triggers this error handler, the top-level URL will be the failing URL (not the URL of the currently-rendered page).
+      // This is desired behavior. We later use these values to determine whether the request is a top-level navigation or a subresource request.
+      String topWindowUrl = view.getUrl();
+      String failingUrl = error.getUrl();
+
+      // Cancel request after obtaining top-level URL.
+      // If request is cancelled before obtaining top-level URL, undesired behavior may occur.
+      // Undesired behavior: Return value of WebView.getUrl() may be the current URL instead of the failing URL.
+      // handler.cancel();
+
+      if (!topWindowUrl.equalsIgnoreCase(failingUrl)) {
+        // If error is not due to top-level navigation, then do not call onReceivedError()
+        Log.d("Check", "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
+        super.onReceivedSslError(view, handler, error);
+        return;
+      }
+
+      if (mAllowUnsafeSite) {
+        mAllowUnsafeSite = false;
+        handler.proceed();
+      } else {
+        super.onReceivedSslError(view, handler, error);
+
+        int code = -1202;
+        Uri topWindowUri = Uri.parse(topWindowUrl);
+        String description = "The certificate for this server is invalid. You might be connecting to a server that is pretending to be “"
+          + topWindowUri.getHost()
+          +"” which could put your confidential information at risk.";
+
+        onReceivedError(view, code, description, failingUrl);
       }
     }
 
@@ -2269,6 +2315,13 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
       }
       String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
       this.loadUrl("javascript:" + jsNightMode);
+    }
+
+    public void proceedUnsafeSite(String url) {
+      if (mRNCWebViewClient != null) {
+        mRNCWebViewClient.mAllowUnsafeSite = true;
+      }
+      loadUrl(url);
     }
   }
 }
