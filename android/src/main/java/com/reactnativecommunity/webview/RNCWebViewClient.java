@@ -29,6 +29,9 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
+import com.facebook.react.uimanager.UIManagerModule;
+import com.facebook.react.uimanager.events.Event;
+import com.facebook.react.uimanager.events.EventDispatcher;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -108,14 +111,16 @@ public class RNCWebViewClient extends WebViewClient {
     }
 
     @Override
-    public void doUpdateVisitedHistory (WebView webView, String url, boolean isReload) {
-      super.doUpdateVisitedHistory(webView, url, isReload);
-
-      ((RNCWebView) webView).dispatchEvent(
-        webView,
-        new TopLoadingStartEvent(
-          RNCWebViewWrapper.getReactTagFromWebView(webView),
-          createWebViewEvent(webView, url)));
+    public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+        super.doUpdateVisitedHistory(view, url, isReload);
+        if (url != null && !url.equals(currentPageUrl)) {
+            currentPageUrl = url;
+        }
+        dispatchEvent(
+                view,
+                new TopLoadingStartEvent(
+                        RNCWebViewWrapper.getReactTagFromWebView(view),
+                        createWebViewEvent(view, currentPageUrl)));
     }
 
     @Override
@@ -127,8 +132,7 @@ public class RNCWebViewClient extends WebViewClient {
       reactWebView.callInjectedJavaScriptBeforeContentLoaded();
     }
 
-    @Override
-    public boolean shouldOverrideUrlLoading(WebView view, String url) {
+    public boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
         if (view instanceof RNCWebView) {
             RNCWebView rncWebView = (RNCWebView) view;
             rncWebView.activeUrl = url;
@@ -164,6 +168,9 @@ public class RNCWebViewClient extends WebViewClient {
                 RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
                 return false;
             }
+            WritableMap event2 = createWebViewEvent(view, url);
+            event2.putBoolean("mainFrame", isMainFrame);
+            dispatchEvent(view, new TopShouldStartLoadWithRequestEvent(view.getId(), event2));
 
             final boolean shouldOverride = lockObject.get() == RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE;
             RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
@@ -185,7 +192,7 @@ public class RNCWebViewClient extends WebViewClient {
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         final String url = request.getUrl().toString();
-        return this.shouldOverrideUrlLoading(view, url);
+        return this._shouldOverrideUrlLoading(view, url, request.isForMainFrame());
     }
 
     /**
@@ -496,6 +503,9 @@ public class RNCWebViewClient extends WebViewClient {
     private final OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;
     private boolean isMainDocumentException;
+    protected int mLoadingProgress = 0;
+    private String currentPageUrl = null;
+    private String currentPageTitle = null;
 
     protected void cloneSettings(RNCWebViewClient parentClient) {
         cloneAdblockRules(parentClient);
@@ -533,4 +543,27 @@ public class RNCWebViewClient extends WebViewClient {
             adblockEngines = null;
         }
     }
+
+    public void setLoadingProgress(int newProgress) {
+        this.mLoadingProgress = newProgress;
+    }
+
+    protected static void dispatchEvent(WebView webView, Event event) {
+        ReactContext reactContext = (ReactContext) webView.getContext();
+        EventDispatcher eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
+        eventDispatcher.dispatchEvent(event);
+    }
+
+    @Override
+    public void onLoadResource(WebView view, String url) {
+        super.onLoadResource(view, url);
+        String newRequestURL = view.getUrl();
+        String newRequestTitle = view.getTitle();
+        if (newRequestURL != null && (!newRequestURL.equals((currentPageUrl)) || !newRequestTitle.equals((currentPageTitle)))) {
+            currentPageUrl = newRequestURL;
+            currentPageTitle = newRequestTitle;
+            dispatchEvent(view, new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl)));
+        }
+    }
+
 }

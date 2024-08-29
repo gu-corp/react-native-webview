@@ -24,6 +24,7 @@ import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
+import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 
 import android.webkit.WebChromeClient;
 
@@ -536,6 +537,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopRenderProcessGoneEvent.EVENT_NAME, MapBuilder.of("registrationName", "onRenderProcessGone"));
         export.put(TopCustomMenuSelectionEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCustomMenuSelection"));
         export.put(TopOpenWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onOpenWindow"));
+        export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
         return export;
     }
 
@@ -564,4 +566,10 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     public void setAdblockRuleList(RNCWebViewWrapper view, @Nullable ReadableArray rules) {
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
+
+    @Override
+    public void requestWebViewStatus(RNCWebViewWrapper view) {}
+
+    @Override
+    public void requestWebFavicon(RNCWebViewWrapper view) {}
 }

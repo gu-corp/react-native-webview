@@ -169,6 +169,12 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
     public void onProgressChanged(WebView webView, int newProgress) {
         super.onProgressChanged(webView, newProgress);
         final String url = webView.getUrl();
+
+        RNCWebView rncWebView = (RNCWebView) webView;
+        if (rncWebView.getRNCWebViewClient() != null) {
+          rncWebView.getRNCWebViewClient().setLoadingProgress(newProgress);
+        }
+
         if (progressChangedFilter.isWaitingForCommandLoadUrl()) {
             return;
         }
