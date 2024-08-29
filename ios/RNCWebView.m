@@ -89,6 +89,8 @@ static NSDictionary* customCertificatesForHost;
   BOOL longPress;
   NSBundle* resourceBundle;
   WKWebViewConfiguration *wkWebViewConfig;
+  // common script for all webviews
+  WKUserScript *scriptFirefoxObject;
   // Youtube Videos Without Ads
   WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
@@ -1191,6 +1193,20 @@ static NSDictionary* customCertificatesForHost;
       }
     }
 
+  // inject common scripts
+  if (@available(iOS 13.0, *)) {
+    if(scriptFirefoxObject == nil) {
+      NSString *jsFileFirefoxObject = @"__firefox__";
+      NSString *jsFilePathFirefoxObject = [resourceBundle pathForResource:jsFileFirefoxObject ofType:@"js"];
+      NSURL *jsURLFirefoxObject = [NSURL fileURLWithPath:jsFilePathFirefoxObject];
+      NSString *javascriptCodeFirefoxObject = [NSString stringWithContentsOfFile:jsURLFirefoxObject.path encoding:NSUTF8StringEncoding error:nil];
+      scriptFirefoxObject = [[WKUserScript alloc] initWithSource:javascriptCodeFirefoxObject injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+    }
+    if([webView.configuration.userContentController.userScripts containsObject:scriptFirefoxObject] == false) {
+      [wkWebViewConfig.userContentController addUserScript:scriptFirefoxObject];
+    }
+  }
+
   if (@available(iOS 13.0, *)) {
     if(scriptNightMode == nil) {
       NSString *jsFileNightMode = @"__NightModeScript__";
@@ -1211,7 +1227,7 @@ static NSDictionary* customCertificatesForHost;
     if(request.mainDocumentURL.host != nil) {
       if([self isYoutubeWebsite:request.mainDocumentURL.host]) {
         if(scriptYoutubePictureInPicture == nil) {
-          NSString *jsFile = @"__firefox__";
+          NSString *jsFile = @"__MediaBackgroundingScript__";
           NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
           NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
           NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
