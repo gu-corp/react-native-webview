@@ -9,7 +9,7 @@
 #import <React/RCTDefines.h>
 #import <WebKit/WKDataDetectorTypes.h>
 #import <WebKit/WebKit.h>
-
+#import <React/RCTBridge.h>
 #if !TARGET_OS_OSX
 #import <UIKit/UIScrollView.h>
 #endif  // !TARGET_OS_OSX
@@ -33,6 +33,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)webView:(RNCWebViewImpl *)webView
 shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
    withCallback:(RCTDirectEventBlock)callback;
+// TODO: Task @9559bde
+// region to do @9559bde
+//- (RNCWebViewImpl* _Nullable)webView:(RNCWebViewImpl* _Nonnull)webView
+//shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
+// endregion
+
 
 @end
 
@@ -59,6 +65,11 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingProgress;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldStartLoadWithRequest;
+// TODO: Task @9559bde
+// region to do @9559bde
+//@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
+//@property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
+// endregion
 @property (nonatomic, copy) RCTDirectEventBlock onHttpError;
 @property (nonatomic, copy) RCTDirectEventBlock onMessage;
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
@@ -105,6 +116,11 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, assign) BOOL directionalLockEnabled;
 @property (nonatomic, assign) BOOL ignoreSilentHardwareSwitch;
 @property (nonatomic, copy) NSString * _Nullable allowingReadAccessToURL;
+// TODO: Task @9559bde
+// region to do @9559bde
+//@property (nonatomic, assign) BOOL scrollToTop;
+//@property (nonatomic, assign) BOOL openNewWindowInWebView;
+// endregion
 @property (nonatomic, copy) NSDictionary * _Nullable basicAuthCredential;
 @property (nonatomic, assign) BOOL pullToRefreshEnabled;
 @property (nonatomic, assign) BOOL refreshControlLightMode;
@@ -148,6 +164,15 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)stopLoading;
 - (void)requestFocus;
 - (void)clearCache:(BOOL)includeDiskFiles;
+// TODO: Task @9559bde
+// region to do @9559bde
+//- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
+//- (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
+//- (void)findInPage:(nonnull NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback;
+//- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
+//- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
+//- (void)printContent;
+// endregion
 #ifdef RCT_NEW_ARCH_ENABLED
 - (void)destroyWebView;
 #endif
