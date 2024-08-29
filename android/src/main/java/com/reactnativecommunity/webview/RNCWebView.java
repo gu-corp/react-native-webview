@@ -34,6 +34,7 @@ import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
+import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -72,7 +73,8 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     // Lunascape
     protected String activeUrl;
-
+    private static RNCWebView newWindow;
+    
     /**
      * WebView must be created with an context of the current activity
      * <p>
@@ -440,5 +442,16 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         public boolean isWaitingForCommandLoadUrl() {
             return waitingForCommandLoadUrl;
         }
+    }
+
+    public void requestWebViewStatus() {
+      if (mRNCWebViewClient != null) {
+        WritableMap eventData = mRNCWebViewClient.createWebViewEvent(this, this.getUrl());
+        dispatchEvent(RNCWebView.this, new TopRequestWebViewStatusEvent(RNCWebViewWrapper.getReactTagFromWebView(RNCWebView.this), eventData));
+      }
+    }
+
+    public void getFaviconUrl() {
+        this.loadUrl("javascript:getFavicons()");
     }
 }

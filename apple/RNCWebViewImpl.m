@@ -1516,7 +1516,9 @@ WKWebViewConfiguration *wkWebViewConfig;
 
     if (_onLoadingStart) {
         // We have this check to filter out iframe requests and whatnot
-        if (isTopFrame) {
+        BOOL isTopFrame = [request.URL isEqual:request.mainDocumentURL];
+        BOOL isMainFrame = navigationAction.targetFrame.isMainFrame;
+        if (isTopFrame && isMainFrame) {
             NSMutableDictionary<NSString *, id> *event = [self baseEvent];
             [event addEntriesFromDictionary: @{
                 @"url": (request.URL).absoluteString,

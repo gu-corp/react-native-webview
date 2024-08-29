@@ -18,6 +18,7 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/react-native-webview/react-native-webview.git", :tag => "v#{s.version}" }
 
   s.source_files    = "apple/**/*.{h,m,mm,swift}"
+  s.resource     = "apple/Settings.bundle"
 
   if defined?(install_modules_dependencies()) != nil
     install_modules_dependencies(s);

@@ -20,7 +20,9 @@ type WebViewCommands =
   | 'injectJavaScript'
   | 'loadUrl'
   | 'requestFocus'
-  | 'clearCache';
+  | 'clearCache'
+  | 'requestWebViewStatus'
+  | 'requestWebFavicon';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -315,6 +317,8 @@ export interface CommonNativeWebViewProps extends ViewProps {
    */
   applicationNameForUserAgent?: string;
   basicAuthCredential?: BasicAuthCredential;
+
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
 
 export declare type ContentInsetAdjustmentBehavior =
@@ -1329,4 +1333,15 @@ export interface WebViewSharedProps extends ViewProps {
    * Enables WebView remote debugging using Chrome (Android) or Safari (iOS).
    */
   webviewDebuggingEnabled?: boolean;
+
+  /**
+   * @platform android
+   * Function that is invoked when the `requestWebViewStatus` method is called.
+   */
+  onReceiveWebViewStatus?: (event: WebViewProgressEvent) => void;
+
+  /**
+   * Function that is invoked when the page content process is finished or the `requestWebFavicon` method is called.
+   */
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
