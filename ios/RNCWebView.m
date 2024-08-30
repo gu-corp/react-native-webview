@@ -1106,8 +1106,10 @@ static NSDictionary* customCertificatesForHost;
         if ([downloadSchemes containsObject:requestURL.scheme]) {
             // Logic pkpass: set shouldDownloadNavigationResponse = true
             // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L438
-            if (navigationAction.shouldPerformDownload) {
-                shouldDownloadNavigationResponse = true;
+            if (@available(iOS 14.5, *)) {
+                if (navigationAction.shouldPerformDownload) {
+                    shouldDownloadNavigationResponse = true;
+                }
             }
             
             [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
@@ -1318,7 +1320,9 @@ static NSDictionary* customCertificatesForHost;
     shouldDownloadNavigationResponse = false;
     NSString *urlString = response.URL.absoluteString;
     if ([response.MIMEType isEqualToString:@"application/vnd.apple.pkpass"]) {
-      decisionHandler(WKNavigationResponsePolicyDownload);
+        if (@available(iOS 14.5, *)) {
+            decisionHandler(WKNavigationResponsePolicyDownload);
+        }
       return;
     }
   }
@@ -1451,7 +1455,7 @@ static NSDictionary* customCertificatesForHost;
  * Called when the navigation is return WKNavigationResponsePolicyDownload.
  */
 - (void)webView:(WKWebView *)webView navigationResponse:(nonnull WKNavigationResponse *)navigationResponse didBecomeDownload:(nonnull WKDownload *)download
-{
+API_AVAILABLE(ios(14.5)){
   download.delegate = self;
 }
 
@@ -1459,7 +1463,7 @@ static NSDictionary* customCertificatesForHost;
  * WKDownloadDelegate
  */
 - (void)download:(WKDownload *)download decideDestinationUsingResponse:(nonnull NSURLResponse *)response suggestedFilename:(nonnull NSString *)suggestedFilename completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler
-{
+API_AVAILABLE(ios(14.5)){
   NSString *temporaryDir = NSTemporaryDirectory();
   NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
   NSURL *url = [NSURL fileURLWithPath:fileName];
@@ -1472,17 +1476,17 @@ static NSDictionary* customCertificatesForHost;
 }
 
 - (void)download:(WKDownload *) download willPerformHTTPRedirection:(nonnull NSHTTPURLResponse *)response newRequest:(nonnull NSURLRequest *)request decisionHandler:(nonnull void (^)(WKDownloadRedirectPolicy))decisionHandler
-{
+API_AVAILABLE(ios(14.5)){
   decisionHandler(WKDownloadRedirectPolicyAllow);
 }
 
 - (void)download:(WKDownload *)download didReceiveAuthenticationChallenge:(nonnull NSURLAuthenticationChallenge *)challenge completionHandler:(nonnull void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
-{
+API_AVAILABLE(ios(14.5)){
   completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
 }
 
 - (void)downloadDidFinish:(WKDownload *)download
-{
+API_AVAILABLE(ios(14.5)){
   if (pendingDownloads == nil) {
     return;
   }
@@ -1508,7 +1512,7 @@ static NSDictionary* customCertificatesForHost;
 }
 
 - (void)download:(WKDownload *)download didFailWithError:(nonnull NSError *)error resumeData:(nullable NSData *)resumeData
-{
+API_AVAILABLE(ios(14.5)){
   // maybe show error and remove pendingDownload
   if (pendingDownloads) {
     [pendingDownloads removeObjectForKey:download.originalRequest];
