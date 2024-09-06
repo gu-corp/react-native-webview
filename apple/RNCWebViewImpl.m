@@ -23,7 +23,7 @@
 //#import "WKWebView+Highlight.h"
 //#import "WKWebView+Capture.h"
 
-//#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
+#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 // endregion
 
 static NSTimer *keyboardTimer;
@@ -248,8 +248,8 @@ WKWebViewConfiguration *wkWebViewConfig;
   }
     // TODO: Task @9559bde
     // region to do @9559bde
-//    NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
-//    resourceBundle = [NSBundle bundleWithPath:bundlePath];
+    NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
+    resourceBundle = [NSBundle bundleWithPath:bundlePath];
     // endregion
     
 #endif // TARGET_OS_IOS
@@ -1627,6 +1627,14 @@ WKWebViewConfiguration *wkWebViewConfig;
 - (void)webView:(WKWebView *)webView
 didFinishNavigation:(WKNavigation *)navigation
 {
+    if (resourceBundle) {
+        NSString *jsFile = @"_webview";
+        
+        NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+        NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+        NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+        [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];    }
+    
   if (_ignoreSilentHardwareSwitch) {
     [self forceIgnoreSilentHardwareSwitch:true];
   }
@@ -1634,6 +1642,15 @@ didFinishNavigation:(WKNavigation *)navigation
   if (_onLoadingFinish) {
     _onLoadingFinish([self baseEvent]);
   }
+    
+    NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
+    NSDictionary *event = @{
+        @"data": favicon ? favicon : @""
+    };
+    
+    if (_onGetFavicon!= nil) {
+       _onGetFavicon(event);
+    }
 }
 
 - (void)cookiesDidChangeInCookieStore:(WKHTTPCookieStore *)cookieStore
