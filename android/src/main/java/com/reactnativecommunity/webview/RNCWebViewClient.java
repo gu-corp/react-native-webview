@@ -70,51 +70,51 @@ public class RNCWebViewClient extends WebViewClient {
   protected @Nullable String ignoreErrFailedForThisURL = null;
   protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
 
-    // Lunascape
-    private final OkHttpClient httpClient;
-    protected Uri mainUrl;
-    protected int mLoadingProgress = 0;
-    private String currentPageUrl = null;
-    private String currentPageTitle = null;
+  // Lunascape
+  private final OkHttpClient httpClient;
+  protected Uri mainUrl;
+  protected int mLoadingProgress = 0;
+  private String currentPageUrl = null;
+  private String currentPageTitle = null;
 
-    public RNCWebViewClient() {
-      httpClient = new okhttp3.OkHttpClient.Builder()
-        .followRedirects(false)
-        .followSslRedirects(false)
-        .cookieJar(new RNCWebViewCookieJar())
-        .build();
-    }
+  public RNCWebViewClient() {
+    httpClient = new okhttp3.OkHttpClient.Builder()
+            .followRedirects(false)
+            .followSslRedirects(false)
+            .cookieJar(new RNCWebViewCookieJar())
+            .build();
+  }
 
-    public void setIgnoreErrFailedForThisURL(@Nullable String url) {
-        ignoreErrFailedForThisURL = url;
-    }
+  public void setIgnoreErrFailedForThisURL(@Nullable String url) {
+    ignoreErrFailedForThisURL = url;
+  }
 
-    public void setBasicAuthCredential(@Nullable RNCBasicAuthCredential credential) {
-      basicAuthCredential = credential;
-    }
+  public void setBasicAuthCredential(@Nullable RNCBasicAuthCredential credential) {
+    basicAuthCredential = credential;
+  }
 
-    @Override
-    public void onPageFinished(WebView webView, String url) {
-      super.onPageFinished(webView, url);
-      String cookies = CookieManager.getInstance().getCookie(url);
-      if (cookies != null) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-          CookieManager.getInstance().flush();
-        }else {
-          CookieSyncManager.getInstance().sync();
-        }
-      }
-
-      if (!mLastLoadFailed) {
-        RNCWebView reactWebView = (RNCWebView) webView;
-
-        reactWebView.callInjectedJavaScript();
-
-        emitFinishEvent(webView, url);
-
-        // reactWebView.getFaviconUrl();
+  @Override
+  public void onPageFinished(WebView webView, String url) {
+    super.onPageFinished(webView, url);
+    String cookies = CookieManager.getInstance().getCookie(url);
+    if (cookies != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        CookieManager.getInstance().flush();
+      }else {
+        CookieSyncManager.getInstance().sync();
       }
     }
+
+    if (!mLastLoadFailed) {
+      RNCWebView reactWebView = (RNCWebView) webView;
+
+      reactWebView.callInjectedJavaScript();
+
+      emitFinishEvent(webView, url);
+
+       reactWebView.getFaviconUrl();
+    }
+  }
 
   @Override
   public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
@@ -123,10 +123,10 @@ public class RNCWebViewClient extends WebViewClient {
       currentPageUrl = url;
     }
     dispatchEvent(
-      view,
-      new TopLoadingStartEvent(
-        RNCWebViewWrapper.getReactTagFromWebView(view),
-        createWebViewEvent(view, currentPageUrl)));
+            view,
+            new TopLoadingStartEvent(
+                    RNCWebViewWrapper.getReactTagFromWebView(view),
+                    createWebViewEvent(view, currentPageUrl)));
   }
 
   @Override
@@ -172,10 +172,10 @@ public class RNCWebViewClient extends WebViewClient {
       WritableMap event2 = createWebViewEvent(view, url);
       event2.putBoolean("mainFrame", isMainFrame);
       dispatchEvent(
-        view,
-        new TopShouldStartLoadWithRequestEvent(
-          view.getId(),
-          event2));
+              view,
+              new TopShouldStartLoadWithRequestEvent(
+                      view.getId(),
+                      event2));
 
       final boolean shouldOverride = lockObject.get() == RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE;
       RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
@@ -187,8 +187,8 @@ public class RNCWebViewClient extends WebViewClient {
 
       int reactTag = RNCWebViewWrapper.getReactTagFromWebView(view);
       UIManagerHelper.getEventDispatcherForReactTag((ReactContext) view.getContext(), reactTag).dispatchEvent(new TopShouldStartLoadWithRequestEvent(
-        reactTag,
-        createWebViewEvent(view, url)));
+              reactTag,
+              createWebViewEvent(view, url)));
       return true;
     }
   }
@@ -260,32 +260,32 @@ public class RNCWebViewClient extends WebViewClient {
     description = descriptionPrefix + description;
 
     this.onReceivedError(
-      webView,
-      code,
-      description,
-      failingUrl
+            webView,
+            code,
+            description,
+            failingUrl
     );
   }
 
-    /**
-     * fix android injection
-     * https://github.com/MetaMask/metamask-mobile/pull/2070
-     * https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L415
-     * * */
-    @Override
-    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-        try {
-            Uri url = request.getUrl();
-            String urlStr = url.toString();
-            String scheme = url.getScheme();
+  /**
+   * fix android injection
+   * https://github.com/MetaMask/metamask-mobile/pull/2070
+   * https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L415
+   * * */
+  @Override
+  public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+    try {
+      Uri url = request.getUrl();
+      String urlStr = url.toString();
+      String scheme = url.getScheme();
 
-            if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
-                return null;
-            }
+      if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+        return null;
+      }
 
-            if (request.isForMainFrame()) {
-              mainUrl = url;
-            }
+      if (request.isForMainFrame()) {
+        mainUrl = url;
+      }
 
 //            if (adblockEngines != null && !this.isMainDocumentException) {
 //                BlockerResult blockerResult;
@@ -321,79 +321,79 @@ public class RNCWebViewClient extends WebViewClient {
 //                }
 //            }
 
-            RNCWebView reactWebView = (RNCWebView) view;
-            if(reactWebView.injectedJSBeforeContentLoaded == null || reactWebView.injectedJSBeforeContentLoaded.isEmpty()){
-                return null;
-            }
+      RNCWebView reactWebView = (RNCWebView) view;
+      if(reactWebView.injectedJSBeforeContentLoaded == null || reactWebView.injectedJSBeforeContentLoaded.isEmpty()){
+        return null;
+      }
 
-            if (!request.isForMainFrame()) {
-                return null;
-            }
+      if (!request.isForMainFrame()) {
+        return null;
+      }
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if (request.isRedirect()) {
-                  return null;
-                }
-            }
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (request.isRedirect()) {
+          return null;
+        }
+      }
 
-            if (!TextUtils.equals(request.getMethod(), "GET")) {
-                return null;
-            }
+      if (!TextUtils.equals(request.getMethod(), "GET")) {
+        return null;
+      }
 
-            Map<String, String> requestHeaders = request.getRequestHeaders();
-            Request req = new Request.Builder()
+      Map<String, String> requestHeaders = request.getRequestHeaders();
+      Request req = new Request.Builder()
               .headers(Headers.of(requestHeaders))
               .url(urlStr)
               .build();
 
-            Response response = httpClient.newCall(req).execute();
+      Response response = httpClient.newCall(req).execute();
 
-            if (!LunascapeUtils.Companion.responseRequiresJSInjection(response)) {
-                return null;
-            }
+      if (!LunascapeUtils.Companion.responseRequiresJSInjection(response)) {
+        return null;
+      }
 
-            ResponseBody body = response.body();
-            MediaType type = body != null ? body.contentType() : null;
-            // find encoding in response headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
-            Charset httpResponseCharset = type != null ? type.charset() : null;
+      ResponseBody body = response.body();
+      MediaType type = body != null ? body.contentType() : null;
+      // find encoding in response headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+      Charset httpResponseCharset = type != null ? type.charset() : null;
 
-            Charset defaultCharset = type != null ? type.charset(UTF_8) : UTF_8;
-            InputStream is = body != null ? body.byteStream() : null;
+      Charset defaultCharset = type != null ? type.charset(UTF_8) : UTF_8;
+      InputStream is = body != null ? body.byteStream() : null;
 
-            String encoding = defaultCharset.name();
+      String encoding = defaultCharset.name();
 
-            if (httpResponseCharset == null) {
-                // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
-                String charsetHtml = HtmlExtractor.Companion.findHtmlCharsetFromRequest(httpClient, req);
-                if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
-                  encoding = charsetHtml;
-                }
-
-                // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
-            }
-
-            if (response.code() == HttpURLConnection.HTTP_OK && is != null) {
-              is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeContentLoaded, defaultCharset);
-            }
-
-            return new WebResourceResponse("text/html", encoding, is);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+      if (httpResponseCharset == null) {
+        // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
+        String charsetHtml = HtmlExtractor.Companion.findHtmlCharsetFromRequest(httpClient, req);
+        if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
+          encoding = charsetHtml;
         }
+
+        // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
+      }
+
+      if (response.code() == HttpURLConnection.HTTP_OK && is != null) {
+        is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeContentLoaded, defaultCharset);
+      }
+
+      return new WebResourceResponse("text/html", encoding, is);
+    } catch (Exception e) {
+      e.printStackTrace();
+      return null;
     }
+  }
 
   @Override
   public void onReceivedError(
-    WebView webView,
-    int errorCode,
-    String description,
-    String failingUrl) {
+          WebView webView,
+          int errorCode,
+          String description,
+          String failingUrl) {
 
     if (ignoreErrFailedForThisURL != null
-      && failingUrl.equals(ignoreErrFailedForThisURL)
-      && errorCode == -1
-      && description.equals("net::ERR_FAILED")) {
+            && failingUrl.equals(ignoreErrFailedForThisURL)
+            && errorCode == -1
+            && description.equals("net::ERR_FAILED")) {
 
       // This is a workaround for a bug in the WebView.
       // See these chromium issues for more context:
@@ -422,9 +422,9 @@ public class RNCWebViewClient extends WebViewClient {
   @RequiresApi(api = Build.VERSION_CODES.M)
   @Override
   public void onReceivedHttpError(
-    WebView webView,
-    WebResourceRequest request,
-    WebResourceResponse errorResponse) {
+          WebView webView,
+          WebResourceRequest request,
+          WebResourceResponse errorResponse) {
     super.onReceivedHttpError(webView, request, errorResponse);
 
     if (request.isForMainFrame()) {

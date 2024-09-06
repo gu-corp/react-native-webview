@@ -72,6 +72,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onFileDownload,
       onHttpError: onHttpErrorProp,
       onMessage: onMessageProp,
+      onGetFavicon:onGetFaviconProp,
       onOpenWindow: onOpenWindowProp,
       renderLoading,
       renderError,
@@ -118,6 +119,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onLoadingProgress,
       onOpenWindow,
       onContentProcessDidTerminate,
+      onGetFavicon,
     } = useWebViewLogic({
       onNavigationStateChange,
       onLoad,
@@ -133,6 +135,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onShouldStartLoadWithRequestProp,
       onShouldStartLoadWithRequestCallback,
       onContentProcessDidTerminateProp,
+      onGetFaviconProp,
     });
 
     useImperativeHandle(
@@ -278,6 +281,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         ref={webViewRef}
         // @ts-expect-error old arch only
         source={sourceResolved}
+        onGetFavicon={onGetFavicon}
         {...nativeConfig?.props}
       />
     );
