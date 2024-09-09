@@ -36,6 +36,7 @@ import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
+import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
 import com.reactnativecommunity.webview.lunascape.RNCWebViewCookieJar;
 
 import android.webkit.CookieManager;
@@ -181,6 +182,11 @@ public class RNCWebViewClient extends WebViewClient {
         return this.shouldOverrideUrlLoading(view, url);
     }
 
+    /**
+     * fix android injection
+     * https://github.com/MetaMask/metamask-mobile/pull/2070
+     * https://github.com/MetaMask/metamask-mobile/blob/047e3fec96dff293051ffa8170994739f70b154d/patches/react-native-webview%2B11.13.0.patch#L415
+     * * */
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
         try {
@@ -257,9 +263,9 @@ public class RNCWebViewClient extends WebViewClient {
 
             Response response = httpClient.newCall(req).execute();
 
-//            if (!responseRequiresJSInjection(response)) {
-//                return null;
-//            }
+            if (!LunascapeUtils.Companion.responseRequiresJSInjection(response)) {
+                return null;
+            }
 
             ResponseBody body = response.body();
             MediaType type = body != null ? body.contentType() : null;
