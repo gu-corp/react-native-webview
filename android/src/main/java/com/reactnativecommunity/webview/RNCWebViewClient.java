@@ -36,6 +36,7 @@ import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
+import com.reactnativecommunity.webview.lunascape.RNCWebViewCookieJar;
 
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -71,6 +72,7 @@ public class RNCWebViewClient extends WebViewClient {
       httpClient = new okhttp3.OkHttpClient.Builder()
         .followRedirects(false)
         .followSslRedirects(false)
+        .cookieJar(new RNCWebViewCookieJar())
         .build();
     }
 
@@ -279,7 +281,7 @@ public class RNCWebViewClient extends WebViewClient {
 //                // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
 //            }
 
-            if (response.code() == HttpURLConnection.HTTP_OK) {
+            if (response.code() == HttpURLConnection.HTTP_OK && is != null) {
               is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeContentLoaded, defaultCharset);
             }
 
