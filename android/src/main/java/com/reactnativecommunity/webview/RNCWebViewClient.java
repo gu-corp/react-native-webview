@@ -1,10 +1,14 @@
 package com.reactnativecommunity.webview;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
@@ -31,10 +35,25 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
+import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
+
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class RNCWebViewClient extends WebViewClient {
     private static String TAG = "RNCWebViewClient";
@@ -44,6 +63,16 @@ public class RNCWebViewClient extends WebViewClient {
     protected RNCWebView.ProgressChangedFilter progressChangedFilter = null;
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
+
+    // Lunascape
+    private final OkHttpClient httpClient;
+
+    public RNCWebViewClient() {
+      httpClient = new okhttp3.OkHttpClient.Builder()
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build();
+    }
 
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
         ignoreErrFailedForThisURL = url;
@@ -148,6 +177,117 @@ public class RNCWebViewClient extends WebViewClient {
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         final String url = request.getUrl().toString();
         return this.shouldOverrideUrlLoading(view, url);
+    }
+
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        try {
+            Uri url = request.getUrl();
+            String urlStr = url.toString();
+            String scheme = url.getScheme();
+
+            if (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https")) {
+                return null;
+            }
+
+//            if (request.isForMainFrame()) {
+//              mainUrl = url;
+//            }
+
+//            if (adblockEngines != null && !this.isMainDocumentException) {
+//                BlockerResult blockerResult;
+//
+//                boolean matched = false;
+//                boolean exception = false;
+//                for (Engine engine : adblockEngines) {
+//                    synchronized (engine) {
+//                        if (request.isForMainFrame()) {
+//                            blockerResult = engine.match(url.toString(), url.getHost(), "", false, "document");
+//                        } else {
+//                            blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+//                        }
+//
+//                        matched |= blockerResult.matched;
+//                        if (blockerResult.important) {
+//                            break;
+//                        }
+//
+//                        if (blockerResult.exception) {
+//                            exception = true;
+//                            break;
+//                        }
+//                    }
+//                }
+//
+//                if (request.isForMainFrame() && exception) {
+//                    this.isMainDocumentException = true;
+//                } else {
+//                    if (matched && !exception) {
+//                        return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
+//                    }
+//                }
+//            }
+
+            RNCWebView reactWebView = (RNCWebView) view;
+            if(reactWebView.injectedJSBeforeContentLoaded == null || reactWebView.injectedJSBeforeContentLoaded.isEmpty()){
+                return null;
+            }
+
+            if (!request.isForMainFrame()) {
+                return null;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (request.isRedirect()) {
+                  return null;
+                }
+            }
+
+            if (!TextUtils.equals(request.getMethod(), "GET")) {
+                return null;
+            }
+
+            Map<String, String> requestHeaders = request.getRequestHeaders();
+            Request req = new Request.Builder()
+              .headers(Headers.of(requestHeaders))
+              .url(urlStr)
+              .build();
+
+            Response response = httpClient.newCall(req).execute();
+
+//            if (!responseRequiresJSInjection(response)) {
+//                return null;
+//            }
+
+            ResponseBody body = response.body();
+            MediaType type = body != null ? body.contentType() : null;
+            // find encoding in response headers. https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+            Charset httpResponseCharset = type != null ? type.charset() : null;
+
+            Charset defaultCharset = type != null ? type.charset(UTF_8) : UTF_8;
+            InputStream is = body != null ? body.byteStream() : null;
+
+            String encoding = defaultCharset.name();
+
+//            if (httpResponseCharset == null) {
+//                // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
+//                String charsetHtml = HtmlExtractor.findHtmlCharsetFromRequest(httpClient, req);
+//                if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
+//                  encoding = charsetHtml;
+//                }
+//
+//                // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
+//            }
+
+            if (response.code() == HttpURLConnection.HTTP_OK) {
+              is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeContentLoaded, defaultCharset);
+            }
+
+            return new WebResourceResponse("text/html", encoding, is);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     @Override
