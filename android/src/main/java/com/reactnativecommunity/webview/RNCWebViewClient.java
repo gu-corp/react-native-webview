@@ -35,6 +35,7 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
+import com.reactnativecommunity.webview.lunascape.HtmlExtractor;
 import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
 import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
 import com.reactnativecommunity.webview.lunascape.RNCWebViewCookieJar;
@@ -277,15 +278,15 @@ public class RNCWebViewClient extends WebViewClient {
 
             String encoding = defaultCharset.name();
 
-//            if (httpResponseCharset == null) {
-//                // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
-//                String charsetHtml = HtmlExtractor.findHtmlCharsetFromRequest(httpClient, req);
-//                if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
-//                  encoding = charsetHtml;
-//                }
-//
-//                // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
-//            }
+            if (httpResponseCharset == null) {
+                // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
+                String charsetHtml = HtmlExtractor.Companion.findHtmlCharsetFromRequest(httpClient, req);
+                if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
+                  encoding = charsetHtml;
+                }
+
+                // TODO: if httpResponseCharset is null and charsetHtml is null, I can't find a way to detect the encoding value so I will use UTF_8 as a default value
+            }
 
             if (response.code() == HttpURLConnection.HTTP_OK && is != null) {
               is = new InputStreamWithInjectedJS(is, reactWebView.injectedJSBeforeContentLoaded, defaultCharset);

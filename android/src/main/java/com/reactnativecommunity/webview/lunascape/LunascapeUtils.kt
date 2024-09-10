@@ -16,11 +16,11 @@ class LunascapeUtils {
             }
 
             val contentTypeAndCharset = response.header(HEADER_CONTENT_TYPE, MIME_UNKNOWN)
-            val responseCode = response.code()
+            val responseCode = response.code
             val contentTypeIsHtml: Boolean = contentTypeAndCharset?.startsWith(HTML_MIME_TYPE) ?: false
             val responseCodeIsInjectible = responseCode == 200
 
-            if (contentTypeIsHtml && responseCodeIsInjectible && response.body() != null) {
+            if (contentTypeIsHtml && responseCodeIsInjectible && response.body != null) {
                 return try {
                     val responseBody = response.peekBody(BYTES_IN_MEGABYTE).string()
                     responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*".toRegex())
