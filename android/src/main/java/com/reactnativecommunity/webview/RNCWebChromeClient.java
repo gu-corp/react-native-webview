@@ -130,6 +130,12 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         if (progressChangedFilter.isWaitingForCommandLoadUrl()) {
             return;
         }
+
+        if (url != null && mWebView != null && mWebView.activeUrl != null
+          && !url.equals(mWebView.activeUrl)) {
+            return;
+        }
+
         int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
         WritableMap event = Arguments.createMap();
         event.putDouble("target", reactTag);
