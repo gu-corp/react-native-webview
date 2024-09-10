@@ -69,6 +69,7 @@ public class RNCWebViewClient extends WebViewClient {
 
     // Lunascape
     private final OkHttpClient httpClient;
+    protected Uri mainUrl;
 
     public RNCWebViewClient() {
       httpClient = new okhttp3.OkHttpClient.Builder()
@@ -199,9 +200,9 @@ public class RNCWebViewClient extends WebViewClient {
                 return null;
             }
 
-//            if (request.isForMainFrame()) {
-//              mainUrl = url;
-//            }
+            if (request.isForMainFrame()) {
+              mainUrl = url;
+            }
 
 //            if (adblockEngines != null && !this.isMainDocumentException) {
 //                BlockerResult blockerResult;

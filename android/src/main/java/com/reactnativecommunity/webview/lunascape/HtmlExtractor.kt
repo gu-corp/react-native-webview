@@ -8,7 +8,6 @@ import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
 
-
 class HtmlExtractor {
     companion object {
         // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta#charset
