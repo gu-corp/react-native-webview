@@ -130,6 +130,11 @@ public class RNCWebViewClient extends WebViewClient {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        if (view instanceof RNCWebView) {
+            RNCWebView rncWebView = (RNCWebView) view;
+            rncWebView.activeUrl = url;
+        }
+
         final RNCWebView rncWebView = (RNCWebView) view;
         final boolean isJsDebugging = rncWebView.getReactApplicationContext().getJavaScriptContextHolder().get() == 0;
 

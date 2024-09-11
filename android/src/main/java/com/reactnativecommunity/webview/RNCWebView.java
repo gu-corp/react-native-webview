@@ -70,6 +70,9 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected boolean nestedScrollEnabled = false;
     protected ProgressChangedFilter progressChangedFilter;
 
+    // Lunascape
+    protected String activeUrl;
+
     /**
      * WebView must be created with an context of the current activity
      * <p>
