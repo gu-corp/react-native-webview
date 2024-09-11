@@ -319,6 +319,12 @@ export interface NativeCommands {
   ) => void;
   clearHistory: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
   // !Android Only
+  requestWebViewStatus: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>
+  ) => void;
+  requestWebFavicon: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -334,6 +340,8 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'clearFormData',
     'clearCache',
     'clearHistory',
+    'requestWebViewStatus',
+    'requestWebFavicon',
   ],
 });
 
