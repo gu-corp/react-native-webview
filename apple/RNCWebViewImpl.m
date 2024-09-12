@@ -1380,6 +1380,61 @@ RCTAutoInsetsProtocol>
         }
     }
 
+    // Lunascape logic
+    // adblockAllowList function
+    if (@available(iOS 11.0, *)) {
+        BOOL isAllowWebsite = false;
+        // TODO: update logic here
+        //      if(scriptYoutubeAdblock == nil) {
+        //        NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
+        //        NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
+        //        NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
+        //        NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
+        //        scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+        //      }
+        
+        if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
+            isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
+        }
+        
+        // TODO: update logic here
+        // bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
+        
+        if (_adblockRuleList != nil && _adblockRuleList.count > 0 && isAllowWebsite == false) {
+            WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+            [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+                for (NSString *identifier in identifiers) {
+                    if ([self->_adblockRuleList containsObject:identifier]) {
+                        [contentRuleListStore lookUpContentRuleListForIdentifier:identifier
+                                                               completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+                            if (!error) {
+                                [webView.configuration.userContentController addContentRuleList:contentRuleList];
+                            }
+                        }];
+                    }
+                }
+            }];
+            
+            // TODO: update logic here
+            // add youtubeAdblock
+//            if(request.mainDocumentURL.host != nil
+//               && [self isYoutubeWebsite:request.mainDocumentURL.host]
+//               && isExistedScriptAdblock == false) {
+//                [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
+//            }
+        } else {
+            [webView.configuration.userContentController removeAllContentRuleLists];
+            
+            // TODO: update logic here
+            // remove youtubeAdblock --> remove all userScripts and then add common scripts
+//            if(request.mainDocumentURL.host != nil
+//               && [self isYoutubeWebsite:request.mainDocumentURL.host]
+//               && isExistedScriptAdblock == true) {
+//                [self resetupScripts:_webView.configuration];
+//            }
+        }
+    }
+
     // Allow all navigation by default
     decisionHandler(WKNavigationActionPolicyAllow);
 }
@@ -1904,6 +1959,25 @@ didFinishNavigation:(WKNavigation *)navigation
   if (self.injectedObjectJsonScript) {
     [wkWebViewConfig.userContentController addUserScript:self.injectedObjectJsonScript];
   }
+
+  // Lunascape logic
+  if (_adblockRuleList) {
+    if (@available(iOS 11.0, *)) {
+      WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+      [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+        for (NSString *identifier in identifiers) {
+          if ([self.adblockRuleList containsObject:identifier]) {
+            [contentRuleListStore lookUpContentRuleListForIdentifier:identifier 
+                                                   completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+              if (!error) {
+                [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+              }
+            }];
+          }
+        }
+      }];
+    }
+  }
 }
 
 - (NSURLRequest *)requestForSource:(id)json {
@@ -1924,6 +1998,21 @@ didFinishNavigation:(WKNavigation *)navigation
     }
   }
   return request;
+}
+
+// Lunascape logic
+-(void)setAdblockRuleList:(NSArray<NSString *> *)adblockRuleList {
+    _adblockRuleList = adblockRuleList;
+    if(_webView != nil) {
+        [self resetupScripts:_webView.configuration];
+    }
+}
+
+-(void)setAdblockAllowList:(NSArray<NSString *> *)adblockAllowList {
+    _adblockAllowList = adblockAllowList;
+    if(_webView != nil) {
+        [self resetupScripts:_webView.configuration];
+    }
 }
 
 @end

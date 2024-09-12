@@ -212,4 +212,62 @@ QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(postMessage, message:(NSString *)message,
 QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(injectJavaScript, script:(NSString *)script, script)
 QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(clearCache, includeDiskFiles:(BOOL)includeDiskFiles, includeDiskFiles)
 
+// Lunascape
+// Adblock
+RCT_EXPORT_VIEW_PROPERTY(adblockRuleList, NSArray<NSString>)
+RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)
+
+RCT_REMAP_METHOD(addContentRuleList,
+                 addContentRuleList:(nonnull NSString *)name
+                 contentRuleList:(NSString *)encodedContentRuleList
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (@available(iOS 11.0, *)) {
+            WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+            [contentRuleListStore compileContentRuleListForIdentifier:name
+                                               encodedContentRuleList:encodedContentRuleList
+                                                    completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+                if (error) {
+                    reject(RCTErrorUnspecified, nil, error);
+                } else {
+                    resolve(nil);
+                }
+            }];
+        }
+    });
+}
+
+RCT_REMAP_METHOD(getContentRuleListNames,
+                 getContentRuleListNamesWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    if (@available(iOS 11.0, *)) {
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+            resolve(identifiers);
+        }];
+    }
+}
+
+RCT_REMAP_METHOD(removeContentRuleList,
+                 removeContentRuleList:(nonnull NSString *)name
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    if (@available(iOS 11.0, *)) {
+        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+        [contentRuleListStore removeContentRuleListForIdentifier:name
+                                               completionHandler:^(NSError *error) {
+            if (error) {
+                reject(RCTErrorUnspecified, nil, error);
+            } else {
+                resolve(nil);
+            }
+        }];
+    }
+}
+// @end Adblock
+
 @end

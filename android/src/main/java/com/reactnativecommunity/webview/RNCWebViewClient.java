@@ -39,15 +39,17 @@ import com.reactnativecommunity.webview.lunascape.HtmlExtractor;
 import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
 import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
 import com.reactnativecommunity.webview.lunascape.RNCWebViewCookieJar;
+import com.brave.adblock.BlockerResult;
+import com.brave.adblock.Engine;
 
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,16 +69,13 @@ public class RNCWebViewClient extends WebViewClient {
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
 
-    // Lunascape
-    private final OkHttpClient httpClient;
-    protected Uri mainUrl;
-
-    public RNCWebViewClient() {
-      httpClient = new okhttp3.OkHttpClient.Builder()
-        .followRedirects(false)
-        .followSslRedirects(false)
-        .cookieJar(new RNCWebViewCookieJar())
-        .build();
+    public RNCWebViewClient(ReactContext reactContext) {
+        mReactContext = reactContext;
+        httpClient = new okhttp3.OkHttpClient.Builder()
+          .followRedirects(false)
+          .followSslRedirects(false)
+          .cookieJar(new RNCWebViewCookieJar())
+          .build();
     }
 
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
@@ -209,42 +208,49 @@ public class RNCWebViewClient extends WebViewClient {
               mainUrl = url;
             }
 
-//            if (adblockEngines != null && !this.isMainDocumentException) {
-//                BlockerResult blockerResult;
-//
-//                boolean matched = false;
-//                boolean exception = false;
-//                for (Engine engine : adblockEngines) {
-//                    synchronized (engine) {
-//                        if (request.isForMainFrame()) {
-//                            blockerResult = engine.match(url.toString(), url.getHost(), "", false, "document");
-//                        } else {
-//                            blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
-//                        }
-//
-//                        matched |= blockerResult.matched;
-//                        if (blockerResult.important) {
-//                            break;
-//                        }
-//
-//                        if (blockerResult.exception) {
-//                            exception = true;
-//                            break;
-//                        }
-//                    }
-//                }
-//
-//                if (request.isForMainFrame() && exception) {
-//                    this.isMainDocumentException = true;
-//                } else {
-//                    if (matched && !exception) {
-//                        return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream("".getBytes()));
-//                    }
-//                }
-//            }
+            if (adblockEngines != null && !this.isMainDocumentException) {
+                BlockerResult blockerResult;
+
+                boolean matched = false;
+                boolean exception = false;
+                for (Engine engine : adblockEngines) {
+                    synchronized (engine) {
+                        if (request.isForMainFrame()) {
+                            blockerResult = engine.match(url.toString(), url.getHost(),
+                              "", false, "document");
+                        } else {
+                            blockerResult = engine.match(url.toString(), url.getHost(),
+                              mainUrl.getHost(), false, "");
+                        }
+
+                        matched |= blockerResult.matched;
+                        if (blockerResult.important) {
+                            break;
+                        }
+
+                        if (blockerResult.exception) {
+                            exception = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (request.isForMainFrame() && exception) {
+                    this.isMainDocumentException = true;
+                } else {
+                    if (matched && !exception) {
+                        return new WebResourceResponse(
+                          "text/plain",
+                          "utf-8",
+                          new ByteArrayInputStream("".getBytes())
+                        );
+                    }
+                }
+            }
 
             RNCWebView reactWebView = (RNCWebView) view;
-            if(reactWebView.injectedJSBeforeContentLoaded == null || reactWebView.injectedJSBeforeContentLoaded.isEmpty()){
+            if(reactWebView.injectedJSBeforeContentLoaded == null
+              || reactWebView.injectedJSBeforeContentLoaded.isEmpty()) {
                 return null;
             }
 
@@ -479,5 +485,52 @@ public class RNCWebViewClient extends WebViewClient {
 
     public void setProgressChangedFilter(RNCWebView.ProgressChangedFilter filter) {
         progressChangedFilter = filter;
+    }
+
+    /**
+     * Lunascape logic
+     * */
+    protected ReactContext mReactContext;
+    protected Uri mainUrl;
+
+    private final OkHttpClient httpClient;
+    private ArrayList<Engine> adblockEngines;
+    private boolean isMainDocumentException;
+
+    protected void cloneSettings(RNCWebViewClient parentClient) {
+        cloneAdblockRules(parentClient);
+        mLastLoadFailed = parentClient.mLastLoadFailed;
+        mainUrl = parentClient.mainUrl;
+    }
+
+    /**
+     * Adblock
+     * */
+    protected ArrayList<Engine> getAdblockRules() {
+        return adblockEngines;
+    }
+
+    protected void cloneAdblockRules(RNCWebViewClient parentClient) {
+        if (parentClient.getAdblockRules() != null) {
+            try {
+                adblockEngines = (ArrayList<Engine>)parentClient.getAdblockRules().clone();
+            } catch (InternalError error) {
+                error.printStackTrace();
+            }
+        }
+    }
+
+    public void setAdblockRuleList(ReadableArray rules) {
+        RNCWebViewModule rncWebViewModule = RNCWebViewModule.getRNCWebViewModule(mReactContext);
+        if (rules != null) {
+            adblockEngines = new ArrayList<Engine>();
+            for (int i = 0; i < rules.size(); i++) {
+                adblockEngines.add(
+                    rncWebViewModule.getAdblockEngine(rules.getString(i))
+                );
+            }
+        } else {
+            adblockEngines = null;
+        }
     }
 }

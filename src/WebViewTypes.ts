@@ -315,6 +315,11 @@ export interface CommonNativeWebViewProps extends ViewProps {
    */
   applicationNameForUserAgent?: string;
   basicAuthCredential?: BasicAuthCredential;
+
+  /**
+   * Lunascape props
+   */
+  adblockRuleList?: string[];
 }
 
 export declare type ContentInsetAdjustmentBehavior =
@@ -762,6 +767,16 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   fraudulentWebsiteWarningEnabled?: boolean;
+
+  /**
+   * Lunascape props
+   */
+  /**
+   * Webview has to call the "reload" function to apply new adBlockAllowList
+   * Available on iOS 11 and later.
+   * @platform ios
+   */
+  adblockAllowList?: string[];
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
@@ -1329,4 +1344,12 @@ export interface WebViewSharedProps extends ViewProps {
    * Enables WebView remote debugging using Chrome (Android) or Safari (iOS).
    */
   webviewDebuggingEnabled?: boolean;
+
+  /**
+   * Lunascape props
+   */
+  /**
+   * Set this to provide Adblock Rules that will be used in AdblockEngine
+   */
+  adblockRuleList?: string[];
 }

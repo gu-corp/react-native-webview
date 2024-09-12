@@ -8,9 +8,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -34,6 +36,7 @@ import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
+import com.reactnativecommunity.webview.lunascape.RNCNativeWebViewBridge;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -69,9 +72,6 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected boolean hasScrollEvent = false;
     protected boolean nestedScrollEnabled = false;
     protected ProgressChangedFilter progressChangedFilter;
-
-    // Lunascape
-    protected String activeUrl;
 
     /**
      * WebView must be created with an context of the current activity
@@ -440,5 +440,75 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         public boolean isWaitingForCommandLoadUrl() {
             return waitingForCommandLoadUrl;
         }
+    }
+
+    /**
+     * Lunascape logic
+     * */
+    public static final String BLANK_URL = "about:blank";
+    public static final String FAVICON_INTERFACE = "FaviconWebView";
+    public static final String NATIVE_SCRIPT_INTERFACE = "nativeScriptHandler";
+
+    protected String activeUrl;
+    private static RNCWebView newWindow;
+
+    public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
+        RNCWebView webView;
+        /**
+         * Hello Maintainer!
+         * If you are here, you might be wondering why we are using a static variable to store the new window.
+         * Because we should keep the new window instance alive until the new window is added to the parent view.
+         * Some URL's only can use one time, if we create a new window and add it to the parent view, we can't use the URL again.
+         * For example: If we open a new window with the URL "https://accounts.google.com/..." to authenticate account, we can't use that URL again (It will be shown an blank page).
+         */
+        if (newWindow != null) {
+            webView = newWindow;
+            try {
+                ViewGroup parent = (ViewGroup)newWindow.getParent();
+                if (parent != null) {
+                    parent.removeView(newWindow);
+                }
+            } catch (Exception e) {
+                Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
+            }
+            newWindow = null;
+        } else {
+            webView = new RNCWebView(reactContext);
+        }
+        return webView;
+    }
+
+    public static RNCWebView createNewWindow(ThemedReactContext reactContext) {
+        newWindow = new RNCWebView(reactContext);
+        return newWindow;
+    }
+
+    protected RNCNativeWebViewBridge createRNCNativeWebViewBridge(RNCWebView webView) {
+        return new RNCNativeWebViewBridge(webView);
+    }
+
+    public void cloneSettings(RNCWebView parentView) {
+        WebSettings settings = getSettings();
+        WebSettings parentSettings = parentView.getSettings();
+
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        settings.setSupportMultipleWindows(true);
+
+        settings.setJavaScriptEnabled(parentSettings.getJavaScriptEnabled());
+        settings.setDomStorageEnabled(parentSettings.getDomStorageEnabled());
+        settings.setLoadWithOverviewMode(parentSettings.getLoadWithOverviewMode());
+        settings.setUseWideViewPort(parentSettings.getUseWideViewPort());
+        settings.setTextZoom(parentSettings.getTextZoom());
+        settings.setUserAgentString(parentSettings.getUserAgentString());
+        settings.setMediaPlaybackRequiresUserGesture(parentSettings.getMediaPlaybackRequiresUserGesture());
+
+        if (mRNCWebViewClient != null && parentView.mRNCWebViewClient != null) {
+            mRNCWebViewClient.cloneAdblockRules(parentView.mRNCWebViewClient);
+        }
+        injectedJS = parentView.injectedJS;
+        injectedJSBeforeContentLoaded = parentView.injectedJSBeforeContentLoaded;
+        setMessagingEnabled(parentView.messagingEnabled);
+        sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 }
