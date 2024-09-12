@@ -276,7 +276,16 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     @Override
     protected void addEventEmitters(@NonNull ThemedReactContext reactContext, RNCWebViewWrapper viewWrapper) {
         // Do not register default touch emitter and let WebView implementation handle touches
-        viewWrapper.getWebView().setWebViewClient(new RNCWebViewClient());
+        RNCWebView rncWebView = viewWrapper.getWebView();
+        RNCWebViewClient currentClient = rncWebView.mRNCWebViewClient;
+        RNCWebViewClient newClient = new RNCWebViewClient(reactContext);
+        if (currentClient != null) {
+            // Client was setup before in onCreateWindow
+            // However it has some override methods, so we have to replace it by a default client
+            // ==> Transfer settings before replacing
+            newClient.cloneSettings(currentClient);
+        }
+        rncWebView.setWebViewClient(newClient);
     }
 
     @Override
@@ -318,5 +327,13 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     public void onDropViewInstance(@NonNull RNCWebViewWrapper view) {
         mRNCWebViewManagerImpl.onDropViewInstance(view);
         super.onDropViewInstance(view);
+    }
+
+    /**
+     * Lunascape props
+     * */
+    @ReactProp(name = "adblockRuleList")
+    public void setAdblockRuleList(RNCWebViewWrapper view, @Nullable ReadableArray rules) {
+        mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
 }

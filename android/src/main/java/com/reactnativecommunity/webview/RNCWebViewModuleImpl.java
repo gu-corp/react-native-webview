@@ -13,7 +13,6 @@ import android.os.Parcelable;
 import android.provider.MediaStore;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.util.Pair;
@@ -33,13 +32,18 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
+import com.brave.adblock.Engine;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.SecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static android.app.Activity.RESULT_OK;
@@ -550,5 +554,79 @@ public class RNCWebViewModuleImpl implements ActivityEventListener {
             throw new IllegalStateException("Tried to use permissions API but the host Activity doesn't implement PermissionAwareActivity.");
         }
         return (PermissionAwareActivity) activity;
+    }
+
+    /**
+     * Lunascape modules
+     * */
+    /**
+     * Adblock
+     * */
+    private final Map<String, Engine> engines = new HashMap<String, Engine>();
+
+    public void addAdblockRulesFromAsset(String name, String assetPath, final Promise promise) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream is = null;
+                BufferedReader br = null;
+
+                try {
+                    is = mContext.getAssets().open(assetPath);
+                    br = new BufferedReader(new InputStreamReader(is));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+
+                    while ((line = br.readLine()) != null) {
+                        sb.append(line);
+                        sb.append("\n");
+                    }
+
+                    synchronized(engines) {
+                        engines.put(name, new Engine(sb.toString()));
+                    }
+
+                    promise.resolve(null);
+                } catch (Exception e) {
+                    promise.reject(e);
+                } finally {
+                    if (br != null) {
+                        try {
+                            br.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    if (is != null) {
+                        try {
+                            is.close();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
+
+    public void addAdblockRules(String name, String rules, final Promise promise) {
+        synchronized(engines) {
+            engines.put(name, new Engine(rules));
+        }
+
+        promise.resolve(null);
+    }
+
+    public void removeAdblockRules(String name, String rules, final Promise promise) {
+        synchronized(engines) {
+            engines.remove(name);
+        }
+
+        promise.resolve(null);
+    }
+
+    public Engine getAdblockEngine(String name) {
+        return engines.get(name);
     }
 }

@@ -59,7 +59,12 @@ class RNCWebViewManagerImpl {
         "Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files."
 
     fun createRNCWebViewInstance(context: ThemedReactContext): RNCWebView {
-        return RNCWebView(context)
+        val rncWebView = RNCWebView.createNewInstance(context)
+        rncWebView.addJavascriptInterface(rncWebView.createRNCNativeWebViewBridge(rncWebView),
+          RNCWebView.NATIVE_SCRIPT_INTERFACE)
+        rncWebView.addJavascriptInterface(rncWebView.createRNCWebViewBridge(rncWebView),
+          RNCWebView.FAVICON_INTERFACE)
+        return rncWebView
     }
 
     fun createViewInstance(context: ThemedReactContext): RNCWebViewWrapper {
@@ -704,5 +709,14 @@ class RNCWebViewManagerImpl {
 
     fun setWebviewDebuggingEnabled(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
         RNCWebView.setWebContentsDebuggingEnabled(enabled)
+    }
+
+    /**
+     * Lunascape props
+     * */
+    fun setAdblockRuleList(viewWrapper: RNCWebViewWrapper, rules: ReadableArray?) {
+        viewWrapper.webView.mRNCWebViewClient?.apply {
+            setAdblockRuleList(rules)
+        }
     }
 }
