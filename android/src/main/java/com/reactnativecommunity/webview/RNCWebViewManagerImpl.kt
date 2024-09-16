@@ -63,6 +63,9 @@ class RNCWebViewManagerImpl {
     private val DEFAULT_LACK_PERMISSION_TO_DOWNLOAD_MESSAGE =
         "Cannot download files as permission was denied. Please provide permission to write to storage, in order to download files."
 
+    //lunascape
+    val FAVICON_INTERFACE = "FaviconWebView"
+
     fun createRNCWebViewInstance(context: ThemedReactContext): RNCWebView {
         val rncWebView = RNCWebView.createNewInstance(context)
         rncWebView.addJavascriptInterface(rncWebView.createRNCNativeWebViewBridge(rncWebView),
@@ -74,6 +77,7 @@ class RNCWebViewManagerImpl {
 
     fun createViewInstance(context: ThemedReactContext): RNCWebViewWrapper {
       val webView = createRNCWebViewInstance(context)
+      webView.addJavascriptInterface(webView.createRNCWebViewBridge(webView), FAVICON_INTERFACE);
       return createViewInstance(context, webView);
     }
 
