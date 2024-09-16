@@ -351,6 +351,11 @@ class RNCWebViewManagerImpl {
     val COMMAND_CLEAR_CACHE = 1001
     val COMMAND_CLEAR_HISTORY = 1002
 
+    // region extend valiable
+    val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
+    val COMMAND_REQUEST_WEB_FAVICON = 17
+    // endregion
+
     fun getCommandsMap(): Map<String, Int>? {
       return MapBuilder.builder<String, Int>()
         .put("goBack", COMMAND_GO_BACK)
@@ -364,6 +369,8 @@ class RNCWebViewManagerImpl {
         .put("clearFormData", COMMAND_CLEAR_FORM_DATA)
         .put("clearCache", COMMAND_CLEAR_CACHE)
         .put("clearHistory", COMMAND_CLEAR_HISTORY)
+        .put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS)
+        .put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON)
         .build()
     }
 
@@ -408,6 +415,9 @@ class RNCWebViewManagerImpl {
           webView.clearCache(includeDiskFiles)
         }
         "clearHistory" -> webView.clearHistory()
+        "progress" -> webView.getProgress()
+        "requestWebViewStatus" -> webView.requestWebViewStatus()
+        "requestWebFavicon" -> webView.getFaviconUrl()
       }
     }
 

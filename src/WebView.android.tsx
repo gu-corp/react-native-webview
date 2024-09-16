@@ -27,6 +27,7 @@ import {
   WebViewSourceUri,
   type WebViewMessageEvent,
   type ShouldStartLoadRequestEvent,
+  WebViewProgressEvent,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -179,6 +180,13 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           Commands.clearCache(webViewRef.current, includeDiskFiles),
         clearHistory: () =>
           webViewRef.current && Commands.clearHistory(webViewRef.current),
+        requestWebViewStatus: () => {
+          webViewRef.current &&
+            Commands.requestWebViewStatus(webViewRef.current);
+        },
+        requestWebFavicon: () => {
+          webViewRef.current && Commands.requestWebFavicon(webViewRef.current);
+        },
       }),
       [setViewState, webViewRef]
     );
@@ -276,6 +284,18 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           )
         : sourceResolved;
 
+    const onReceiveWebViewStatus = (event: WebViewProgressEvent) => {
+      if (otherProps?.onReceiveWebViewStatus) {
+        otherProps?.onReceiveWebViewStatus(event);
+      }
+    };
+
+    const onGetFavicon = (event: WebViewMessageEvent) => {
+      if (otherProps?.onGetFavicon) {
+        otherProps?.onGetFavicon(event);
+      }
+    };
+
     const webView = (
       <NativeWebView
         key="webViewKey"
@@ -313,6 +333,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         setDisplayZoomControls={setDisplayZoomControls}
         nestedScrollEnabled={nestedScrollEnabled}
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
+        onGetFavicon={onGetFavicon}
+        onReceiveWebViewStatus={onReceiveWebViewStatus}
         {...nativeConfig?.props}
       />
     );

@@ -20,7 +20,9 @@ type WebViewCommands =
   | 'injectJavaScript'
   | 'loadUrl'
   | 'requestFocus'
-  | 'clearCache';
+  | 'clearCache'
+  | 'requestWebViewStatus'
+  | 'requestWebFavicon';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -320,6 +322,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Lunascape props
    */
   adblockRuleList?: string[];
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
 
 export declare type ContentInsetAdjustmentBehavior =
@@ -1352,4 +1355,14 @@ export interface WebViewSharedProps extends ViewProps {
    * Set this to provide Adblock Rules that will be used in AdblockEngine
    */
   adblockRuleList?: string[];
+
+  /* @platform android
+   * Function that is invoked when the `requestWebViewStatus` method is called.
+   */
+  onReceiveWebViewStatus?: (event: WebViewProgressEvent) => void;
+
+  /**
+   * Function that is invoked when the page content process is finished or the `requestWebFavicon` method is called.
+   */
+  onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
