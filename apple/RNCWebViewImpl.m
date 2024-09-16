@@ -17,6 +17,15 @@
 
 #import "objc/runtime.h"
 
+// TODO: Task @9559bde but use in task @9be6385
+// region to do @9559bde
+#import "WKWebView+BrowserHack.h"
+//#import "WKWebView+Highlight.h"
+//#import "WKWebView+Capture.h"
+
+//#define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
+// endregion
+
 static NSTimer *keyboardTimer;
 static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
@@ -154,6 +163,10 @@ RCTAutoInsetsProtocol>
 #endif
 }
 
+BOOL longPress;
+NSBundle* resourceBundle;
+WKWebViewConfiguration *wkWebViewConfig;
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
   if ((self = [super initWithFrame:frame])) {
@@ -233,9 +246,23 @@ RCTAutoInsetsProtocol>
                                                object:nil];
 
   }
+    // TODO: Task @9559bde
+    // region to do @9559bde
+//    NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
+//    resourceBundle = [NSBundle bundleWithPath:bundlePath];
+    // endregion
+    
 #endif // TARGET_OS_IOS
   return self;
 }
+
+// TODO: Task @9559bde
+// region to do @9559bde
+//- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
+//  wkWebViewConfig = configuration;
+//  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+//}
+// endregion
 
 #if !TARGET_OS_OSX
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
@@ -554,6 +581,10 @@ RCTAutoInsetsProtocol>
       _webView.inspectable = _webviewDebuggingEnabled;
 #endif
 
+      UILongPressGestureRecognizer* longGesture = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPressed:)];
+      longGesture.delegate = self;
+      [_webView addGestureRecognizer:longGesture];
+      
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
@@ -1306,6 +1337,11 @@ RCTAutoInsetsProtocol>
             @(WKNavigationTypeOther): @"other",
         };
     });
+    
+    if (longPress) {
+        longPress = NO;
+        return decisionHandler(WKNavigationActionPolicyCancel);
+    }
 
     WKNavigationType navigationType = navigationAction.navigationType;
     NSURLRequest *request = navigationAction.request;
@@ -1660,7 +1696,6 @@ didFinishNavigation:(WKNavigation *)navigation
   [refreshControl endRefreshing];
 }
 
-
 - (void)setPullToRefreshEnabled:(BOOL)pullToRefreshEnabled
 {
   _pullToRefreshEnabled = pullToRefreshEnabled;
@@ -2013,6 +2048,115 @@ didFinishNavigation:(WKNavigation *)navigation
     if(_webView != nil) {
         [self resetupScripts:_webView.configuration];
     }
+}
+
+// TODO: Task @9559bde
+// region to do task @9559bde add Custom Lunascape functions
+#pragma mark - Custom Lunascape functions
+- (WKWebView*)webview {
+  return _webView;
+}
+//
+//- (void)setScrollToTop:(BOOL)scrollToTop {
+//  _webView.scrollView.scrollsToTop = scrollToTop;
+//}
+//
+//- (void)evaluateJavaScript:(NSString *)javaScriptString
+//         completionHandler:(void (^)(id, NSError *error))completionHandler
+//{
+//  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+//}
+//
+//- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
+//  if (searchString && searchString.length > 0) {
+//    [_webView removeAllHighlights];
+//    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
+//    [_webView scrollToHighlightTop];
+//    callback(results);
+//  } else {
+//    callback(0);
+//  }
+//}
+//
+//- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
+//  [_webView contentFrameCapture:^(UIImage *capturedImage) {
+//    NSDate *date = [NSDate new];
+//    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+//    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+//    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+//    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+//    if (isWrited) {
+//      callback(path);
+//    } else { // Error while capturing the screen
+//      callback(nil);
+//    };
+//  }];
+//}
+//
+//- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
+//  [_webView contentScrollCapture:^(UIImage *capturedImage) {
+//    NSDate *date = [NSDate new];
+//    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+//    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+//    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+//    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+//    if (isWrited) {
+//      callback(path);
+//    } else {
+//      callback(nil);
+//    }
+//  }];
+//}
+//
+//- (void)printContent {
+//  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
+//  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
+//  printInfo.outputType = UIPrintInfoOutputGeneral;
+//  printInfo.jobName = _webView.URL.absoluteString;
+//  printInfo.duplex = UIPrintInfoDuplexLongEdge;
+//  controller.printInfo = printInfo;
+//  controller.showsPageRange = YES;
+//
+//  UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
+//  viewFormatter.startPage = 0;
+//  viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
+//  controller.printFormatter = viewFormatter;
+//
+//  [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
+//    if (!completed || error) {
+//      NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
+//    }
+//  }];
+//}
+
+- (void)longPressed:(UILongPressGestureRecognizer*)sender {
+    if (sender.state == UIGestureRecognizerStateBegan) {
+        longPress = YES;
+        NSUInteger touchCount = [sender numberOfTouches];
+        if (touchCount) {
+            CGPoint point = [sender locationOfTouch:0 inView:sender.view];
+            if ([_webView respondsToSelector:@selector(respondToTapAndHoldAtLocation:)]) {
+                NSDictionary* urlResult = [_webView respondToTapAndHoldAtLocation:point];
+                if (urlResult.allKeys.count == 0) {
+                    longPress = NO;
+                }
+                _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"contextMenu", @"data":urlResult}});
+            }
+        }
+    }
+}
+
+// isExist default in new version webview
+//- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+//  return YES;
+//}
+
+// end region to do Task @9559bde add Custom Lunascape functions
+
+
+// Disable previews for the given element.
+-(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
+    return NO;
 }
 
 @end

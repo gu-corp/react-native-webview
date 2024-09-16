@@ -29,6 +29,11 @@ import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
 
+import android.os.Handler
+import android.os.Message
+import com.facebook.react.bridge.Arguments
+import com.reactnativecommunity.webview.events.TopMessageEvent
+
 val invalidCharRegex = "[\\\\/%\"]".toRegex()
 
 class RNCWebViewManagerImpl {
@@ -95,7 +100,59 @@ class RNCWebViewManagerImpl {
         if (ReactBuildConfig.DEBUG) {
             WebView.setWebContentsDebuggingEnabled(true)
         }
-        webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
+
+      // region set onpress  https://github.com/gu-corp/react-native-webview/commit/e866d6ab176f231f3e4b57c5f759c2179b035def
+      webView.setOnLongClickListener { view ->
+        val webView = view as RNCWebView
+        val result = webView.hitTestResult
+        val extra = result.extra
+        val type = result.type
+
+
+        if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE ||
+          type == WebView.HitTestResult.SRC_ANCHOR_TYPE ||
+          type == WebView.HitTestResult.IMAGE_TYPE ||
+          type == WebView.HitTestResult.UNKNOWN_TYPE) {
+
+          val handler = object : Handler(webView.handler.looper) {
+            override fun handleMessage(msg: Message) {
+              var url = msg.data.getString("url")
+              var imageUrl = extra
+
+              if (url == null && imageUrl == null) {
+                super.handleMessage(msg)
+              } else {
+                if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+                  imageUrl = ""
+                }
+                // when any downloaded image file is showing in webView
+                if (type == WebView.HitTestResult.IMAGE_TYPE && url == null) {
+                  url = imageUrl
+                }
+                val data = Arguments.createMap().apply {
+                  putString("type", "contextmenu")
+                  putString("url", url)
+                  putString("image_url", imageUrl)
+                }
+
+                val eventData = Arguments.createMap()
+                eventData.putMap("data", data)
+
+                webView.dispatchEvent(webView,TopMessageEvent(RNCWebViewWrapper.getReactTagFromWebView(webView),eventData))
+              }
+            }
+          }
+
+          val msg = handler.obtainMessage()
+          webView.requestFocusNodeHref(msg)
+        }
+
+        false // return true to disable copy/paste action bar
+      }
+      // endregion
+
+
+      webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
             webView.setIgnoreErrFailedForThisURL(url)
             val module = webView.reactApplicationContext.getNativeModule(RNCWebViewModule::class.java) ?: return@DownloadListener
             val request: DownloadManager.Request = try {
