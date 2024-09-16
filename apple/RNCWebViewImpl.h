@@ -156,6 +156,10 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)pullToRefresh:(UIRefreshControl *)refreshControl;
 #endif
 
+// Lunascape
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockRuleList;
+@property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockAllowList;
+
 @end
 
 NS_ASSUME_NONNULL_END
