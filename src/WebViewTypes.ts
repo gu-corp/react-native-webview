@@ -264,6 +264,9 @@ export interface ViewManager {
   capturePage: Function;
   findInPage: Function;
   printContent: Function;
+  findNext: Function;
+  findPrevious: Function;
+  removeAllHighlights: Function;
 }
 
 export interface WebViewNativeConfig {

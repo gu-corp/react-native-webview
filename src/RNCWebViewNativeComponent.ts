@@ -329,6 +329,15 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     type: string
   ) => void;
+  findInPage: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    data: string
+  ) => void;
+  findNext: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
+  findPrevious: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
+  removeAllHighlights: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -347,6 +356,10 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'requestWebViewStatus',
     'requestWebFavicon',
     'captureScreen',
+    'findInPage',
+    'findNext',
+    'findPrevious',
+    'removeAllHighlights',
   ],
 });
 

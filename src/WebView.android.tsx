@@ -191,6 +191,19 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           webViewRef.current &&
             Commands.captureScreen(webViewRef.current, type);
         },
+        findInPage: (data: string) => {
+          webViewRef.current && Commands.findInPage(webViewRef.current, data);
+        },
+        findNext: () => {
+          webViewRef.current && Commands.findNext(webViewRef.current);
+        },
+        findPrevious: () => {
+          webViewRef.current && Commands.findPrevious(webViewRef.current);
+        },
+        removeAllHighlights: () => {
+          webViewRef.current &&
+            Commands.removeAllHighlights(webViewRef.current);
+        },
       }),
       [setViewState, webViewRef]
     );

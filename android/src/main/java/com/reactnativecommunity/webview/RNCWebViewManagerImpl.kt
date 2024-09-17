@@ -7,6 +7,8 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.Handler
+import android.os.Message
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -17,22 +19,19 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.common.build.ReactBuildConfig
 import com.facebook.react.uimanager.ThemedReactContext
+import com.reactnativecommunity.webview.events.TopMessageEvent
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.Locale
-
-import android.os.Handler
-import android.os.Message
-import com.facebook.react.bridge.Arguments
-import com.reactnativecommunity.webview.events.TopMessageEvent
 
 val invalidCharRegex = "[\\\\/%\"]".toRegex()
 
@@ -357,6 +356,11 @@ class RNCWebViewManagerImpl {
 
     // region extend valiable
     val COMMAND_CAPTURE_SCREEN = 9
+    val COMMAND_SEARCH_IN_PAGE = 10
+    val COMMAND_SEARCH_NEXT = 11
+    val COMMAND_SEARCH_PREVIOUS = 12
+    val COMMAND_REMOVE_ALL_HIGHLIGHTS = 13
+
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
     // endregion
@@ -377,6 +381,10 @@ class RNCWebViewManagerImpl {
         .put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS)
         .put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON)
         .put("captureScreen", COMMAND_CAPTURE_SCREEN)
+        .put("findInPage", COMMAND_SEARCH_IN_PAGE)
+        .put("findNext", COMMAND_SEARCH_NEXT)
+        .put("findPrevious", COMMAND_SEARCH_PREVIOUS)
+        .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
         .build()
     }
 
@@ -425,6 +433,11 @@ class RNCWebViewManagerImpl {
         "requestWebViewStatus" -> webView.requestWebViewStatus()
         "requestWebFavicon" -> webView.getFaviconUrl()
         "captureScreen" -> webView.captureScreen(args.getString(0))
+        "findInPage" -> webView.searchInPage(args.getString(0))
+        "findNext" -> webView.searchNext()
+        "findPrevious" -> webView.searchPrevious()
+        "removeAllHighlights" -> webView.removeAllHighlights()
+
       }
     }
 
