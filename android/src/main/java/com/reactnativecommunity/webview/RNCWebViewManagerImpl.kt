@@ -356,6 +356,7 @@ class RNCWebViewManagerImpl {
     val COMMAND_CLEAR_HISTORY = 1002
 
     // region extend valiable
+    val COMMAND_CAPTURE_SCREEN = 9
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
     // endregion
@@ -375,6 +376,7 @@ class RNCWebViewManagerImpl {
         .put("clearHistory", COMMAND_CLEAR_HISTORY)
         .put("requestWebViewStatus", COMMAND_REQUEST_WEB_VIEW_STATUS)
         .put("requestWebFavicon", COMMAND_REQUEST_WEB_FAVICON)
+        .put("captureScreen", COMMAND_CAPTURE_SCREEN)
         .build()
     }
 
@@ -422,6 +424,7 @@ class RNCWebViewManagerImpl {
         "progress" -> webView.getProgress()
         "requestWebViewStatus" -> webView.requestWebViewStatus()
         "requestWebFavicon" -> webView.getFaviconUrl()
+        "captureScreen" -> webView.captureScreen(args.getString(0))
       }
     }
 

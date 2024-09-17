@@ -4,7 +4,14 @@ import React, {
   useImperativeHandle,
   useRef,
 } from 'react';
-import { Image, View, ImageSourcePropType, HostComponent } from 'react-native';
+import {
+  Image,
+  View,
+  ImageSourcePropType,
+  HostComponent,
+  NativeModules,
+  findNodeHandle,
+} from 'react-native';
 import invariant from 'invariant';
 
 import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
@@ -20,9 +27,12 @@ import {
   IOSWebViewProps,
   DecelerationRateConstant,
   WebViewSourceUri,
+  ViewManager,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
+
+const RNCWebViewManager = NativeModules.RNCWebView as ViewManager;
 
 const { resolveAssetSource } = Image;
 const processDecelerationRate = (
@@ -138,6 +148,15 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onGetFaviconProp,
     });
 
+    /**
+     * Returns the native `WebView` node.
+     */
+    const getWebViewHandle = () => {
+      const nodeHandle = findNodeHandle(webViewRef.current);
+      invariant(nodeHandle != null, 'nodeHandle expected to be non-null');
+      return nodeHandle as number;
+    };
+
     useImperativeHandle(
       ref,
       () => ({
@@ -162,6 +181,12 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         clearCache: (includeDiskFiles: boolean) =>
           webViewRef.current &&
           Commands.clearCache(webViewRef.current, includeDiskFiles),
+        captureScreen: () => {
+          return RNCWebViewManager.captureScreen(getWebViewHandle());
+        },
+        capturePage: () => {
+          RNCWebViewManager.capturePage();
+        },
       }),
       [setViewState, webViewRef]
     );

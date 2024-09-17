@@ -187,6 +187,10 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         requestWebFavicon: () => {
           webViewRef.current && Commands.requestWebFavicon(webViewRef.current);
         },
+        captureScreen: (type: string) => {
+          webViewRef.current &&
+            Commands.captureScreen(webViewRef.current, type);
+        },
       }),
       [setViewState, webViewRef]
     );
@@ -296,6 +300,12 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       }
     };
 
+    const onCaptureScreen = (event: WebViewMessageEvent) => {
+      if (otherProps?.onCaptureScreen) {
+        otherProps?.onCaptureScreen(event.nativeEvent);
+      }
+    };
+
     const webView = (
       <NativeWebView
         key="webViewKey"
@@ -335,6 +345,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
         onGetFavicon={onGetFavicon}
         onReceiveWebViewStatus={onReceiveWebViewStatus}
+        onCaptureScreen={onCaptureScreen}
         {...nativeConfig?.props}
       />
     );
