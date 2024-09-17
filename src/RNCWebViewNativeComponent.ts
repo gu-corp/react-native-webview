@@ -325,6 +325,10 @@ export interface NativeCommands {
   requestWebFavicon: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>
   ) => void;
+  captureScreen: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    type: string
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -342,6 +346,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'clearHistory',
     'requestWebViewStatus',
     'requestWebFavicon',
+    'captureScreen',
   ],
 });
 

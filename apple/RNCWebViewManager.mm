@@ -2,6 +2,7 @@
 
 #import "RNCWebViewManager.h"
 #import "RNCWebViewImpl.h"
+#import <React/RCTDefines.h>
 
 #if TARGET_OS_OSX
 #define RNCView NSView
@@ -10,6 +11,9 @@
 #define RNCView UIView
 @class UIView;
 #endif  // TARGET_OS_OSX
+
+@interface RNCWebViewManager () <RNCWebViewDelegate>
+@end
 
 @implementation RCTConvert (WKWebView)
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
@@ -270,5 +274,38 @@ RCT_REMAP_METHOD(removeContentRuleList,
     }
 }
 // @end Adblock
+
+
+RCT_EXPORT_METHOD(captureScreen:(nonnull NSNumber *)reactTag
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+    RNCWebViewImpl *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+        [view captureScreen:^(NSString * _Nullable path) {
+            resolve(path);
+        }];
+    }
+  }];
+}
+
+RCT_EXPORT_METHOD(capturePage:(nonnull NSNumber *)reactTag
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+      RNCWebViewImpl *view = viewRegistry[reactTag];
+    if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+      RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+    } else {
+      [view capturePage:^(NSString * _Nullable path) {
+          resolve(path);
+      }];
+    }
+  }];
+}
 
 @end

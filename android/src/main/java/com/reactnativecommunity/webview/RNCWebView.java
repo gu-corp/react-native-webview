@@ -1,7 +1,11 @@
 package com.reactnativecommunity.webview;
 
 import android.annotation.SuppressLint;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Picture;
 import android.graphics.Rect;
+import android.os.Environment;
 import android.text.TextUtils;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -34,6 +38,7 @@ import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.views.scroll.OnScrollDispatchHelper;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
+import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
@@ -43,7 +48,9 @@ import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -475,6 +482,8 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
   protected String activeUrl;
   private static RNCWebView newWindow;
+  public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
+  public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
   public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
     RNCWebView webView;
@@ -568,5 +577,55 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
       e.printStackTrace();
     }
     return jsString;
+  }
+
+
+  public void captureScreen(String type) {
+    final String fileName = System.currentTimeMillis() + ".jpg";
+    // Old logic: save internal storage
+    String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
+    File d = new File(directory);
+    if (!d.exists()) {
+      d.mkdirs();
+    }
+    File downloadPath = new File(directory, fileName);
+
+    // New logic waiting done download
+//    File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+//    if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+//      saveDir = new File(saveDir, DOWNLOAD_FOLDER);
+//      if (!saveDir.exists()) {
+//        saveDir.mkdirs();
+//      }
+//    }
+//    File downloadPath = new File(saveDir, fileName);
+
+    boolean success = false;
+    try {
+      Picture picture = this.capturePicture();
+      int width = type.equals("CAPTURE_SCREEN") ? this.getWidth() : picture.getWidth();
+      int height = type.equals("CAPTURE_SCREEN") ? this.getHeight() : picture.getHeight();
+      Bitmap b = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+      Canvas c = new Canvas(b);
+      picture.draw(c);
+
+      FileOutputStream fos = new FileOutputStream(downloadPath, false);
+      if (fos != null) {
+        b.compress(Bitmap.CompressFormat.JPEG, 80, fos);
+        fos.close();
+      }
+      success = true;
+    } catch (Throwable t) {
+      System.out.println(t);
+    } finally {
+      WritableMap event = Arguments.createMap();
+      event.putDouble("target", this.getId());
+      event.putBoolean("result", success);
+      event.putString("type", type);
+      if (success) {
+        event.putString("data", downloadPath.getAbsolutePath());
+      }
+      dispatchEvent(RNCWebView.this, new TopCaptureScreenEvent(RNCWebViewWrapper.getReactTagFromWebView(RNCWebView.this), event));
+    }
   }
 }

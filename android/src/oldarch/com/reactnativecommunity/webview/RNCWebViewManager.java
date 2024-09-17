@@ -10,6 +10,7 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.ViewGroupManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.views.scroll.ScrollEventType;
+import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
@@ -312,6 +313,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         export.put(TopOpenWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onOpenWindow"));
         export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
         export.put(TopGetFaviconEvent.EVENT_NAME, MapBuilder.of("registrationName", "onGetFavicon"));
+        export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
         return export;
     }
 

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2C2FEFC92C942D760097C163 /* WKWebView+Capture.m in Sources */ = {isa = PBXBuildFile; fileRef = 2C2FEFC82C942D760097C163 /* WKWebView+Capture.m */; };
 		3515965E21A3C86000623BFA /* RNCWKProcessPoolManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */; };
 		E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351B21446E6C00F9801F /* RNCWebViewManager.m */; };
 		E91B351E21446E6C00F9801F /* RNCWebView.m in Sources */ = {isa = PBXBuildFile; fileRef = E91B351C21446E6C00F9801F /* RNCWebView.m */; };
@@ -26,8 +27,10 @@
 
 /* Begin PBXFileReference section */
 		134814201AA4EA6300B7C361 /* libRNCWebView.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libRNCWebView.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		2C2E52F12C8868E3003EF0D8 /* WKWebView+BrowserHack.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../apple/lunascape/WKWebView+BrowserHack.h"; sourceTree = "<group>"; };
-		2C2E52F32C8869D4003EF0D8 /* WKWebView+BrowserHack.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "../apple/lunascape/WKWebView+BrowserHack.m"; sourceTree = "<group>"; };
+		2C2E52F12C8868E3003EF0D8 /* ../apple/lunascape/WKWebView+BrowserHack.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "../apple/lunascape/WKWebView+BrowserHack.h"; sourceTree = "<group>"; };
+		2C2E52F32C8869D4003EF0D8 /* ../apple/lunascape/WKWebView+BrowserHack.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "../apple/lunascape/WKWebView+BrowserHack.m"; sourceTree = "<group>"; };
+		2C2FEFC72C942D760097C163 /* ../apple/lunascape/WKWebView+Capture.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "../apple/lunascape/WKWebView+Capture.h"; sourceTree = "<group>"; };
+		2C2FEFC82C942D760097C163 /* ../apple/lunascape/WKWebView+Capture.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "../apple/lunascape/WKWebView+Capture.m"; sourceTree = "<group>"; };
 		3515965D21A3C86000623BFA /* RNCWKProcessPoolManager.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = RNCWKProcessPoolManager.m; path = ../apple/RNCWKProcessPoolManager.m; sourceTree = "<group>"; };
 		3515965F21A3C87E00623BFA /* RNCWKProcessPoolManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = RNCWKProcessPoolManager.h; path = ../apple/RNCWKProcessPoolManager.h; sourceTree = "<group>"; };
 		E91B351921446E6C00F9801F /* RNCWebViewManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RNCWebViewManager.h; path = ../apple/RNCWebViewManager.h; sourceTree = "<group>"; };
@@ -58,8 +61,10 @@
 		2C2E52F22C886969003EF0D8 /* lunascape */ = {
 			isa = PBXGroup;
 			children = (
-				2C2E52F12C8868E3003EF0D8 /* WKWebView+BrowserHack.h */,
-				2C2E52F32C8869D4003EF0D8 /* WKWebView+BrowserHack.m */,
+				2C2FEFC72C942D760097C163 /* ../apple/lunascape/WKWebView+Capture.h */,
+				2C2FEFC82C942D760097C163 /* ../apple/lunascape/WKWebView+Capture.m */,
+				2C2E52F12C8868E3003EF0D8 /* ../apple/lunascape/WKWebView+BrowserHack.h */,
+				2C2E52F32C8869D4003EF0D8 /* ../apple/lunascape/WKWebView+BrowserHack.m */,
 			);
 			path = lunascape;
 			sourceTree = "<group>";
@@ -136,6 +141,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2C2FEFC92C942D760097C163 /* WKWebView+Capture.m in Sources */,
 				E91B351D21446E6C00F9801F /* RNCWebViewManager.m in Sources */,
 				E91B351E21446E6C00F9801F /* RNCWebView.m in Sources */,
 				3515965E21A3C86000623BFA /* RNCWKProcessPoolManager.m in Sources */,

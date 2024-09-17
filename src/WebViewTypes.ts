@@ -22,7 +22,8 @@ type WebViewCommands =
   | 'requestFocus'
   | 'clearCache'
   | 'requestWebViewStatus'
-  | 'requestWebFavicon';
+  | 'requestWebFavicon'
+  | 'captureScreen';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -30,6 +31,11 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   getViewManagerConfig: (name: string) => {
     Commands: { [key in Commands]: number };
   };
+  evaluateJavaScript: (viewTag: number, js: string) => Promise<string>;
+  findInPage: (viewTag: number, js: string) => Promise<number>;
+  captureScreen: (viewTag: number) => Promise<string>;
+  capturePage: (viewTag: number) => Promise<string>;
+  printContent: (viewTag: number) => void;
 }
 
 export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
@@ -252,6 +258,12 @@ export type WebViewSource = WebViewSourceUri | WebViewSourceHtml;
 
 export interface ViewManager {
   shouldStartLoadWithLockIdentifier: Function;
+  createNewWindowWithResult: Function;
+  evaluateJavaScript: Function;
+  captureScreen: Function;
+  capturePage: Function;
+  findInPage: Function;
+  printContent: Function;
 }
 
 export interface WebViewNativeConfig {
@@ -323,6 +335,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
    */
   adblockRuleList?: string[];
   onGetFavicon?: (event: WebViewMessageEvent) => void;
+  onCaptureScreen?: (event: WebViewMessageEvent) => void;
 }
 
 export declare type ContentInsetAdjustmentBehavior =
@@ -950,6 +963,7 @@ export interface MacOSWebViewProps extends WebViewSharedProps {
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
+  onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
    * Function that is invoked when the `WebView` process crashes or is killed by the OS.
