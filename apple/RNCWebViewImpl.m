@@ -20,7 +20,7 @@
 // TODO: Task @9559bde but use in task @9be6385
 // region to do @9559bde
 #import "WKWebView+BrowserHack.h"
-//#import "WKWebView+Highlight.h"
+#import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
@@ -2085,17 +2085,12 @@ didFinishNavigation:(WKNavigation *)navigation
 //{
 //  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
 //}
-//
-//- (void)findInPage:(NSString *)searchString completed:(void (^_Nonnull)(NSInteger count))callback {
-//  if (searchString && searchString.length > 0) {
-//    [_webView removeAllHighlights];
-//    NSInteger results = [_webView highlightAllOccurencesOfString:searchString];
-//    [_webView scrollToHighlightTop];
-//    callback(results);
-//  } else {
-//    callback(0);
-//  }
-//}
+
+- (void)findInPage:(NSString *)searchString {
+  if (searchString && searchString.length > 0) {
+    [_webView highlightAllOccurencesOfString:searchString];
+  }
+}
 
 - (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
   [_webView contentFrameCapture:^(UIImage *capturedImage) {
@@ -2176,6 +2171,18 @@ didFinishNavigation:(WKNavigation *)navigation
 // Disable previews for the given element.
 -(BOOL)webView:(WKWebView *)webView shouldPreviewElement:(WKPreviewElementInfo *)elementInfo API_AVAILABLE(ios(10.0)) {
     return NO;
+}
+
+- (void)findNext {
+  [_webView findNext];
+}
+
+- (void)findPrevious {
+  [_webView findPrevious];
+}
+
+- (void)removeAllHighlights {
+  [_webView removeAllHighlights];
 }
 
 @end

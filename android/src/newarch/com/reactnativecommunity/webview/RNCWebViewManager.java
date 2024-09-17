@@ -579,4 +579,16 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void captureScreen(RNCWebViewWrapper view,String string) {}
+
+    @Override
+    public void findInPage(RNCWebViewWrapper view, String string) {}
+
+    @Override
+    public void findNext(RNCWebViewWrapper view) {}
+
+    @Override
+    public void findPrevious(RNCWebViewWrapper view) {}
+
+    @Override
+    public void removeAllHighlights(RNCWebViewWrapper view) {}
 }

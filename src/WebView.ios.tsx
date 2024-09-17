@@ -187,6 +187,18 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         capturePage: () => {
           RNCWebViewManager.capturePage();
         },
+        findInPage: (searchString: string) => {
+          RNCWebViewManager.findInPage(getWebViewHandle(), searchString);
+        },
+        findNext: () => {
+          RNCWebViewManager.findNext(getWebViewHandle());
+        },
+        findPrevious: () => {
+          RNCWebViewManager.findPrevious(getWebViewHandle());
+        },
+        removeAllHighlights: () => {
+          RNCWebViewManager.removeAllHighlights(getWebViewHandle());
+        },
       }),
       [setViewState, webViewRef]
     );
