@@ -35,6 +35,7 @@ import com.facebook.react.views.scroll.OnScrollDispatchHelper;
 import com.facebook.react.views.scroll.ScrollEvent;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
+import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
 import com.reactnativecommunity.webview.lunascape.RNCNativeWebViewBridge;
 import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
@@ -42,6 +43,9 @@ import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -272,6 +276,20 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     }
 
     public void callInjectedJavaScript() {
+        // TODO task @2ad9976 add findNext, findPrevious, removeAllHighlights functions
+        if(getSettings().getJavaScriptEnabled()){
+  //            String jsNightMode = loadNightModeScriptFile();
+  //            if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
+
+            String jsSearch = loadSearchWebviewFile();
+            if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
+
+  //            if(enableYoutubeAdblocker) {
+  //                String youtubeAdblockJs = loadYouTubeAdblockFile();
+  //                if (youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
+  //            }
+        }
+
         if (getSettings().getJavaScriptEnabled() &&
                 injectedJS != null &&
                 !TextUtils.isEmpty(injectedJS)) {
@@ -428,6 +446,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
         @JavascriptInterface
         public String injectedObjectJson() { return injectedObjectJson; }
+
+        @JavascriptInterface
+        public void postFavicon(String favicon) {
+            mWebView.onGetFavicon(favicon);
+        }
     }
 
 
@@ -524,4 +547,26 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public void getFaviconUrl() {
         this.loadUrl("javascript:getFavicons()");
     }
+
+    public void onGetFavicon(String favicon) {
+        WritableMap eventData = Arguments.createMap();
+        eventData.putString("data", favicon);
+        dispatchEvent(RNCWebView.this, new TopGetFaviconEvent(RNCWebViewWrapper.getReactTagFromWebView(RNCWebView.this), eventData));
+    }
+
+    public String loadSearchWebviewFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("SearchWebView.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+     }
 }

@@ -112,6 +112,7 @@ export const useWebViewLogic = ({
   originWhitelist,
   onShouldStartLoadWithRequestProp,
   onShouldStartLoadWithRequestCallback,
+  onGetFaviconProp,
 }: {
   startInLoadingState?: boolean;
   onNavigationStateChange?: (event: WebViewNavigation) => void;
@@ -132,6 +133,7 @@ export const useWebViewLogic = ({
     url: string,
     lockIdentifier?: number | undefined
   ) => void;
+  onGetFaviconProp?: (event: WebViewMessageEvent) => void;
 }) => {
   const [viewState, setViewState] = useState<'IDLE' | 'LOADING' | 'ERROR'>(
     startInLoadingState ? 'LOADING' : 'IDLE'
@@ -227,6 +229,13 @@ export const useWebViewLogic = ({
     [onMessageProp]
   );
 
+  const onGetFavicon = useCallback(
+    (event: WebViewMessageEvent) => {
+      onGetFaviconProp?.(event);
+    },
+    [onGetFaviconProp]
+  );
+
   const onLoadingProgress = useCallback(
     (event: WebViewProgressEvent) => {
       const {
@@ -279,5 +288,6 @@ export const useWebViewLogic = ({
     viewState,
     setViewState,
     lastErrorEvent,
+    onGetFavicon,
   };
 };
