@@ -4,10 +4,12 @@ import com.facebook.react.bridge.WritableMap
 import com.facebook.react.uimanager.events.Event
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
-class TopRequestWebViewStatusEvent(viewId: Int, private val mEventData: WritableMap) :
-  Event<TopRequestWebViewStatusEvent>(viewId) {
+/**
+ * Event emitted when favicon is loaded.
+ */
+class TopGetFaviconEvent(viewId: Int, private val mEventData: WritableMap) : Event<TopGetFaviconEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "topRequestWebViewStatus"
+    const val EVENT_NAME = "onGetFavicon"
   }
 
   override fun getEventName(): String = EVENT_NAME
@@ -16,7 +18,7 @@ class TopRequestWebViewStatusEvent(viewId: Int, private val mEventData: Writable
 
   override fun getCoalescingKey(): Short = 0
 
-  override fun dispatch(rctEventEmitter: RCTEventEmitter) =
-    rctEventEmitter.receiveEvent(viewTag, eventName, mEventData)
-
+  override fun dispatch(rctEventEmitter: RCTEventEmitter) {
+    rctEventEmitter.receiveEvent(viewTag, EVENT_NAME, mEventData)
+  }
 }

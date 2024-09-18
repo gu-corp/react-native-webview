@@ -107,6 +107,8 @@ public class RNCWebViewClient extends WebViewClient {
             reactWebView.callInjectedJavaScript();
 
             emitFinishEvent(webView, url);
+
+            reactWebView.getFaviconUrl();
         }
     }
 
