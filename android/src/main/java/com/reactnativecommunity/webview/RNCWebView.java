@@ -283,7 +283,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         evaluateJavascript(script, null);
     }
 
-    public void callInjectedJavaScript() {
+    public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
         // TODO task @2ad9976 add findNext, findPrevious, removeAllHighlights functions
         if(getSettings().getJavaScriptEnabled()){
   //            String jsNightMode = loadNightModeScriptFile();
@@ -292,10 +292,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             String jsSearch = loadSearchWebviewFile();
             if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
 
-  //            if(enableYoutubeAdblocker) {
-  //                String youtubeAdblockJs = loadYouTubeAdblockFile();
-  //                if (youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
-  //            }
+            if(enableYoutubeAdblocker) {
+                String youtubeAdblockJs = loadYouTubeAdblockFile();
+                if (youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
+            }
         }
 
         if (getSettings().getJavaScriptEnabled() &&
@@ -578,7 +578,23 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             e.printStackTrace();
         }
         return jsString;
-     }
+    }
+
+    public String loadYouTubeAdblockFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("youtubeAdblock.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+    }
 
     public void captureScreen(String type) {
         final String fileName = System.currentTimeMillis() + ".jpg";

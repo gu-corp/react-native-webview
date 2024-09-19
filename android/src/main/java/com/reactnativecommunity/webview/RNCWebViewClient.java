@@ -51,6 +51,7 @@ import android.webkit.CookieSyncManager;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Map;
@@ -103,8 +104,9 @@ public class RNCWebViewClient extends WebViewClient {
 
         if (!mLastLoadFailed) {
             RNCWebView reactWebView = (RNCWebView) webView;
-
-            reactWebView.callInjectedJavaScript();
+            String webviewUrl = webView.getUrl();
+            boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webviewUrl);
+            reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
 
             emitFinishEvent(webView, url);
 
@@ -118,11 +120,13 @@ public class RNCWebViewClient extends WebViewClient {
         if (url != null && !url.equals(currentPageUrl)) {
             currentPageUrl = url;
         }
-        dispatchEvent(
-                view,
-                new TopLoadingStartEvent(
-                        RNCWebViewWrapper.getReactTagFromWebView(view),
-                        createWebViewEvent(view, currentPageUrl)));
+        ((RNCWebView) view).dispatchEvent(
+          view,
+          new TopLoadingStartEvent(
+            RNCWebViewWrapper.getReactTagFromWebView(view),
+            createWebViewEvent(view, currentPageUrl)
+          )
+        );
     }
 
     @Override
@@ -172,7 +176,10 @@ public class RNCWebViewClient extends WebViewClient {
             }
             WritableMap event2 = createWebViewEvent(view, url);
             event2.putBoolean("mainFrame", isMainFrame);
-            dispatchEvent(view, new TopShouldStartLoadWithRequestEvent(view.getId(), event2));
+            rncWebView.dispatchEvent(
+              view,
+              new TopShouldStartLoadWithRequestEvent(RNCWebViewWrapper.getReactTagFromWebView(view), event2)
+            );
 
             final boolean shouldOverride = lockObject.get() == RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE;
             RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
@@ -546,14 +553,43 @@ public class RNCWebViewClient extends WebViewClient {
         }
     }
 
-    public void setLoadingProgress(int newProgress) {
-        this.mLoadingProgress = newProgress;
+    public boolean getEnableYoutubeVideoAdblocker(String urlString) {
+        boolean enable = false;
+        try {
+            if(adblockEngines != null && checkYoutubeDomain(urlString)) {
+                BlockerResult blockerResult;
+                URL url = new URL(urlString);
+                for (Engine engine : adblockEngines) {
+                    synchronized (engine) {
+                        blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+                        if (blockerResult.exception) {
+                            enable = false;
+                            break;
+                        }
+                    }
+                }
+                enable = true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return enable;
     }
 
-    protected static void dispatchEvent(WebView webView, Event event) {
-        ReactContext reactContext = (ReactContext) webView.getContext();
-        EventDispatcher eventDispatcher = reactContext.getNativeModule(UIManagerModule.class).getEventDispatcher();
-        eventDispatcher.dispatchEvent(event);
+    public boolean checkYoutubeDomain(String urlString) {
+        boolean result = false;
+        try {
+            URL url = new URL(urlString);
+            String host = url.getHost();
+            result = "m.youtube.com".equals(host) || "www.youtube.com".equals(host) || "music.youtube.com".equals(host);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    public void setLoadingProgress(int newProgress) {
+        this.mLoadingProgress = newProgress;
     }
 
     @Override
@@ -564,7 +600,10 @@ public class RNCWebViewClient extends WebViewClient {
         if (newRequestURL != null && (!newRequestURL.equals((currentPageUrl)) || !newRequestTitle.equals((currentPageTitle)))) {
             currentPageUrl = newRequestURL;
             currentPageTitle = newRequestTitle;
-            dispatchEvent(view, new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl)));
+            ((RNCWebView) view).dispatchEvent(
+              view,
+              new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl))
+            );
         }
     }
 
