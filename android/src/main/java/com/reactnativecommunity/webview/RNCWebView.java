@@ -7,6 +7,7 @@ import android.graphics.Picture;
 import android.graphics.Rect;
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -626,5 +627,22 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             }
             dispatchEvent(RNCWebView.this, new TopCaptureScreenEvent(RNCWebViewWrapper.getReactTagFromWebView(RNCWebView.this), event));
         }
+    }
+
+    public void searchInPage(String keyword) {
+        String jsSearch = "MyApp_HighlightAllOccurencesOfString('" + keyword + "');";
+    this.loadUrl("javascript:" + jsSearch);
+    }
+
+    public void searchNext() {
+        this.loadUrl("javascript:myAppSearchNextInThePage()");
+    }
+
+    public void searchPrevious() {
+        this.loadUrl("javascript:myAppSearchPreviousInThePage()");
+    }
+
+    public void removeAllHighlights() {
+        this.loadUrl("javascript:myAppSearchDoneInThePage()");
     }
 }
