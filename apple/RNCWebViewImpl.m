@@ -21,7 +21,7 @@
 // region to do @9559bde
 #import "WKWebView+BrowserHack.h"
 //#import "WKWebView+Highlight.h"
-//#import "WKWebView+Capture.h"
+#import "WKWebView+Capture.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 // endregion
@@ -2096,37 +2096,37 @@ didFinishNavigation:(WKNavigation *)navigation
 //    callback(0);
 //  }
 //}
-//
-//- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
-//  [_webView contentFrameCapture:^(UIImage *capturedImage) {
-//    NSDate *date = [NSDate new];
-//    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
-//    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
-//    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
-//    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
-//    if (isWrited) {
-//      callback(path);
-//    } else { // Error while capturing the screen
-//      callback(nil);
-//    };
-//  }];
-//}
-//
-//- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
-//  [_webView contentScrollCapture:^(UIImage *capturedImage) {
-//    NSDate *date = [NSDate new];
-//    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
-//    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
-//    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
-//    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
-//    if (isWrited) {
-//      callback(path);
-//    } else {
-//      callback(nil);
-//    }
-//  }];
-//}
-//
+
+- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentFrameCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else { // Error while capturing the screen
+      callback(nil);
+    };
+  }];
+}
+
+- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback {
+  [_webView contentScrollCapture:^(UIImage *capturedImage) {
+    NSDate *date = [NSDate new];
+    NSString *fileName = [NSString stringWithFormat:@"%f.png",date.timeIntervalSince1970];
+    NSString * path = [NSTemporaryDirectory() stringByAppendingPathComponent:fileName];
+    NSData * binaryImageData = UIImagePNGRepresentation(capturedImage);
+    BOOL isWrited = [binaryImageData writeToFile:path atomically:YES];
+    if (isWrited) {
+      callback(path);
+    } else {
+      callback(nil);
+    }
+  }];
+}
+
 //- (void)printContent {
 //  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
 //  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
