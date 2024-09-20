@@ -27,6 +27,7 @@ import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
 import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
+import com.reactnativecommunity.webview.events.TopWebViewOnFullScreenEvent;
 
 import android.webkit.WebChromeClient;
 
@@ -542,6 +543,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopRequestWebViewStatusEvent.EVENT_NAME, MapBuilder.of("registrationName", "onReceiveWebViewStatus"));
         export.put(TopGetFaviconEvent.EVENT_NAME, MapBuilder.of("registrationName", "onGetFavicon"));
         export.put(TopCaptureScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onCaptureScreen"));
+        export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
         return export;
     }
 
