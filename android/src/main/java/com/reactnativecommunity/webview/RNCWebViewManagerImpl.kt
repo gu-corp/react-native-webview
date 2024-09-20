@@ -26,6 +26,7 @@ import com.facebook.react.common.MapBuilder
 import com.facebook.react.common.build.ReactBuildConfig
 import com.facebook.react.uimanager.ThemedReactContext
 import com.reactnativecommunity.webview.events.TopMessageEvent
+import com.reactnativecommunity.webview.events.TopWebViewOnFullScreenEvent
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
@@ -216,9 +217,15 @@ class RNCWebViewManagerImpl {
                             callback.onCustomViewHidden()
                             return
                         }
+
+                        val data = Arguments.createMap()
+                        data.putBoolean("fullscreen", true)
+                        webView.dispatchEvent(webView,TopWebViewOnFullScreenEvent(RNCWebViewWrapper.getReactTagFromWebView(webView),data))
+
                         mVideoView = view
                         mCustomViewCallback = callback
-                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        mVideoView.setId(R.id.focus_video_in_webview_fullscreen);
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                         mVideoView.systemUiVisibility = FULLSCREEN_SYSTEM_UI_VISIBILITY
                         activity.window.setFlags(
                             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
@@ -249,6 +256,10 @@ class RNCWebViewManagerImpl {
                         if (mVideoView == null) {
                             return
                         }
+
+                        val data = Arguments.createMap()
+                        data.putBoolean("fullscreen", false)
+                        webView.dispatchEvent(webView,TopWebViewOnFullScreenEvent(RNCWebViewWrapper.getReactTagFromWebView(webView),data))
 
                         // Same logic as above
                         val rootView = rootView

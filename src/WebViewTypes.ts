@@ -1180,6 +1180,12 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   allowsProtectedMedia?: boolean;
+
+  /**
+   * Function that is invoked when the `WebView` entering or exiting video full-screen mode.
+   * @platform android
+   */
+  onVideoFullScreen?: (event: WebViewFullScreenEvent) => void;
 }
 
 export interface WebViewSharedProps extends ViewProps {
@@ -1383,3 +1389,10 @@ export interface WebViewSharedProps extends ViewProps {
    */
   onGetFavicon?: (event: WebViewMessageEvent) => void;
 }
+
+export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {
+  fullscreen: boolean;
+}
+
+export type WebViewFullScreenEvent =
+  NativeSyntheticEvent<WebViewNativeFullScreenEvent>;
