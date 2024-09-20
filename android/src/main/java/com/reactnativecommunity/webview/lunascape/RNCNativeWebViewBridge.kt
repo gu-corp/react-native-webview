@@ -8,10 +8,9 @@ class RNCNativeWebViewBridge(private val mWebView: RNCWebView) {
 
     @JavascriptInterface
     fun print() {
-      // TODO update logic here
-        /*mWebView.post {
+        mWebView.post {
             mWebView.printContent()
-        }*/
+        }
     }
 
     @JavascriptInterface

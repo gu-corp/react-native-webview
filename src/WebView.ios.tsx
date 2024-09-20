@@ -199,6 +199,8 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         removeAllHighlights: () => {
           RNCWebViewManager.removeAllHighlights(getWebViewHandle());
         },
+        printContent: () =>
+          webViewRef.current && Commands.printContent(webViewRef.current),
       }),
       [setViewState, webViewRef]
     );

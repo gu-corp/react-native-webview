@@ -367,6 +367,7 @@ class RNCWebViewManagerImpl {
     val COMMAND_SEARCH_NEXT = 11
     val COMMAND_SEARCH_PREVIOUS = 12
     val COMMAND_REMOVE_ALL_HIGHLIGHTS = 13
+    val COMMAND_PRINT_CONTENT = 14
 
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
@@ -392,6 +393,7 @@ class RNCWebViewManagerImpl {
         .put("findNext", COMMAND_SEARCH_NEXT)
         .put("findPrevious", COMMAND_SEARCH_PREVIOUS)
         .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
+        .put("printContent", COMMAND_PRINT_CONTENT)
         .build()
     }
 
@@ -444,7 +446,7 @@ class RNCWebViewManagerImpl {
         "findNext" -> webView.searchNext()
         "findPrevious" -> webView.searchPrevious()
         "removeAllHighlights" -> webView.removeAllHighlights()
-
+        "printContent" -> webView.printContent()
       }
     }
 

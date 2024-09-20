@@ -23,7 +23,8 @@ type WebViewCommands =
   | 'clearCache'
   | 'requestWebViewStatus'
   | 'requestWebFavicon'
-  | 'captureScreen';
+  | 'captureScreen'
+  | 'printContent';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 

@@ -204,6 +204,8 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           webViewRef.current &&
             Commands.removeAllHighlights(webViewRef.current);
         },
+        printContent: () =>
+          webViewRef.current && Commands.printContent(webViewRef.current),
       }),
       [setViewState, webViewRef]
     );
