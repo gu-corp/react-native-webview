@@ -1,11 +1,15 @@
 package com.reactnativecommunity.webview;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Picture;
 import android.graphics.Rect;
 import android.os.Environment;
+import android.print.PrintAttributes;
+import android.print.PrintDocumentAdapter;
+import android.print.PrintManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.ActionMode;
@@ -660,5 +664,22 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     public void removeAllHighlights() {
         this.loadUrl("javascript:myAppSearchDoneInThePage()");
+    }
+
+    public void printContent() {
+      PrintManager printManager = (PrintManager) this.getContext().getSystemService(Context.PRINT_SERVICE);
+      String jobName = "Print Document";
+      PrintDocumentAdapter printAdapter;
+      printAdapter = this.createPrintDocumentAdapter(jobName);
+      printManager.print(jobName, printAdapter, new PrintAttributes.Builder().build());
+    }
+
+    public void linkWindowObject() {
+        // override window.print method to call native function
+        this.evaluateJavascriptWithFallback("(" +
+          "window.print = function () {" +
+          "window."+ NATIVE_SCRIPT_INTERFACE + ".print();" +
+          "});"
+        );
     }
 }

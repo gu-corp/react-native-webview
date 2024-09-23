@@ -338,6 +338,7 @@ export interface NativeCommands {
   removeAllHighlights: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>
   ) => void;
+  printContent: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -360,6 +361,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'findNext',
     'findPrevious',
     'removeAllHighlights',
+    'printContent',
   ],
 });
 

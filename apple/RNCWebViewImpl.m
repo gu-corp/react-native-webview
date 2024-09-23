@@ -31,6 +31,8 @@ static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
+// Lunascape
+static NSString *const PrintScriptHandler = @"printScriptHandler";
 
 NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 
@@ -533,10 +535,6 @@ WKWebViewConfiguration *wkWebViewConfig;
   }
 
   // Lunascape logic
-  if (self.atStartScript) {
-    [wkWebViewConfig.userContentController addUserScript:self.atStartScript];
-  }
-
   [self applyAdblockRuleList:wkWebViewConfig];
 
   return wkWebViewConfig;
@@ -796,6 +794,7 @@ WKWebViewConfiguration *wkWebViewConfig;
 /**
  * This method is called whenever JavaScript running within the web view calls:
  *   - window.webkit.messageHandlers[MessageHandlerName].postMessage
+ *   - window.webkit.messageHandlers[PrintScriptHandler].postMessage
  */
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message
@@ -812,6 +811,8 @@ WKWebViewConfiguration *wkWebViewConfig;
       [event addEntriesFromDictionary: @{@"data": message.body}];
       _onMessage(event);
     }
+  } else if(message.name == PrintScriptHandler) {
+    [self printContent];
   }
 }
 
@@ -1894,6 +1895,8 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)resetupScripts:(WKWebViewConfiguration *)wkWebViewConfig {
   [wkWebViewConfig.userContentController removeAllUserScripts];
   [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
+  [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:PrintScriptHandler];
+
   if(self.enableApplePay){
     if (self.postMessageScript){
       [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
@@ -1995,6 +1998,19 @@ didFinishNavigation:(WKNavigation *)navigation
       [wkWebViewConfig.userContentController addUserScript:self.atEndScript];
     }
   }
+  
+  // Lunascape
+  // override window.print script
+  [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
+  NSString *sourcePrintScript = [NSString stringWithFormat:
+    @"window.print = function () {"
+      "    window.webkit.messageHandlers.%@.postMessage(String());"
+      "};", PrintScriptHandler
+  ];
+
+  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+  [wkWebViewConfig.userContentController addUserScript:scriptPrint];
+
   // Whether or not messaging is enabled, add the startup script if it exists.
   if (self.atStartScript) {
     [wkWebViewConfig.userContentController addUserScript:self.atStartScript];
@@ -2109,16 +2125,16 @@ didFinishNavigation:(WKNavigation *)navigation
 - (WKWebView*)webview {
   return _webView;
 }
-//
-//- (void)setScrollToTop:(BOOL)scrollToTop {
-//  _webView.scrollView.scrollsToTop = scrollToTop;
-//}
-//
-//- (void)evaluateJavaScript:(NSString *)javaScriptString
-//         completionHandler:(void (^)(id, NSError *error))completionHandler
-//{
-//  [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
-//}
+
+- (void)setScrollToTop:(BOOL)scrollToTop {
+    _webView.scrollView.scrollsToTop = scrollToTop;
+}
+
+- (void)evaluateJavaScript:(NSString *)javaScriptString
+         completionHandler:(void (^)(id, NSError *error))completionHandler
+{
+    [_webView evaluateJavaScript:javaScriptString completionHandler:completionHandler];
+}
 
 - (void)findInPage:(NSString *)searchString {
   if (searchString && searchString.length > 0) {
@@ -2156,26 +2172,26 @@ didFinishNavigation:(WKNavigation *)navigation
   }];
 }
 
-//- (void)printContent {
-//  UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
-//  UIPrintInfo *printInfo = [UIPrintInfo printInfo];
-//  printInfo.outputType = UIPrintInfoOutputGeneral;
-//  printInfo.jobName = _webView.URL.absoluteString;
-//  printInfo.duplex = UIPrintInfoDuplexLongEdge;
-//  controller.printInfo = printInfo;
-//  controller.showsPageRange = YES;
-//
-//  UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
-//  viewFormatter.startPage = 0;
-//  viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
-//  controller.printFormatter = viewFormatter;
-//
-//  [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
-//    if (!completed || error) {
-//      NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
-//    }
-//  }];
-//}
+- (void)printContent {
+    UIPrintInteractionController *controller = [UIPrintInteractionController sharedPrintController];
+    UIPrintInfo *printInfo = [UIPrintInfo printInfo];
+    printInfo.outputType = UIPrintInfoOutputGeneral;
+    printInfo.jobName = _webView.URL.absoluteString;
+    printInfo.duplex = UIPrintInfoDuplexLongEdge;
+    controller.printInfo = printInfo;
+    controller.showsPageRange = YES;
+    
+    UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
+    viewFormatter.startPage = 0;
+    viewFormatter.contentInsets = UIEdgeInsetsMake(25.0, 25.0, 25.0, 25.0);
+    controller.printFormatter = viewFormatter;
+    
+    [controller presentAnimated:YES completionHandler:^(UIPrintInteractionController * _Nonnull printInteractionController, BOOL completed, NSError * _Nullable error) {
+        if (!completed || error) {
+            NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
+        }
+    }];
+}
 
 - (void)longPressed:(UILongPressGestureRecognizer*)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {

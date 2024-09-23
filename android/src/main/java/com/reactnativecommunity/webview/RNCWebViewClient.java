@@ -107,6 +107,7 @@ public class RNCWebViewClient extends WebViewClient {
             String webviewUrl = webView.getUrl();
             boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webviewUrl);
             reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
+            reactWebView.linkWindowObject();
 
             emitFinishEvent(webView, url);
 
