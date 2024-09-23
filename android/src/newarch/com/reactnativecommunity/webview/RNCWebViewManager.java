@@ -593,4 +593,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void removeAllHighlights(RNCWebViewWrapper view) {}
+
+    @Override
+    public void printContent(RNCWebViewWrapper view) {}
 }
