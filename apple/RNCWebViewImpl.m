@@ -165,13 +165,18 @@ RCTAutoInsetsProtocol>
 #endif
 
   // Lunascape
+  // common script for all webviews
+  WKUserScript *scriptFirefoxObject;
   // Youtube Videos Without Ads
   WKUserScript *scriptYoutubeAdblock;
+  // Picture-in-picture feature on Youtube page
+  WKUserScript *scriptYoutubePictureInPicture;
 }
 
 BOOL longPress;
 NSBundle* resourceBundle;
-WKWebViewConfiguration *wkWebViewConfig;
+// TODO: maybe don't need this variable
+// WKWebViewConfiguration *wkWebViewConfig;WKWebViewConfiguration *wkWebViewConfig;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -1423,6 +1428,8 @@ WKWebViewConfiguration *wkWebViewConfig;
                  */
                 // Lunascape logic
                 [self applyAdblockLogic:webView request:request];
+                [self injectCommonFirefoxJS:webView];
+                [self injectYoutubePictureInPictureJS:webView request:request];
 
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
@@ -1462,6 +1469,8 @@ WKWebViewConfiguration *wkWebViewConfig;
 
     // Lunascape logic
     [self applyAdblockLogic:webView request:request];
+    [self injectCommonFirefoxJS:webView];
+    [self injectYoutubePictureInPictureJS:webView request:request];
 
     // Allow all navigation by default
     decisionHandler(WKNavigationActionPolicyAllow);
@@ -2041,6 +2050,7 @@ didFinishNavigation:(WKNavigation *)navigation
 }
 
 // Lunascape logic
+// Adblock logic
 -(void)setAdblockRuleList:(NSArray<NSString *> *)adblockRuleList {
     _adblockRuleList = adblockRuleList;
     if(_webView != nil) {
@@ -2118,6 +2128,7 @@ didFinishNavigation:(WKNavigation *)navigation
 {
   return [domain  isEqual: @"m.youtube.com"] || [domain  isEqual: @"www.youtube.com"] || [domain  isEqual: @"music.youtube.com"];
 }
+// @end Adblock logic
 
 // TODO: Task @9559bde
 // region to do task @9559bde add Custom Lunascape functions
@@ -2205,6 +2216,51 @@ didFinishNavigation:(WKNavigation *)navigation
                     longPress = NO;
                 }
                 _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"contextMenu", @"data":urlResult}});
+            }
+        }
+    }
+}
+
+-(void)injectCommonFirefoxJS:(WKWebView *)webView
+{
+    // inject common scripts
+    if (@available(iOS 13.0, *)) {
+        if(scriptFirefoxObject == nil) {
+            NSString *jsFileFirefoxObject = @"__firefox__";
+            NSString *jsFilePathFirefoxObject = [resourceBundle pathForResource:jsFileFirefoxObject ofType:@"js"];
+            NSURL *jsURLFirefoxObject = [NSURL fileURLWithPath:jsFilePathFirefoxObject];
+            NSString *javascriptCodeFirefoxObject = [NSString stringWithContentsOfFile:jsURLFirefoxObject.path encoding:NSUTF8StringEncoding error:nil];
+            scriptFirefoxObject = [[WKUserScript alloc] initWithSource:javascriptCodeFirefoxObject
+                                                         injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                      forMainFrameOnly:YES];
+        }
+        if([webView.configuration.userContentController.userScripts containsObject:scriptFirefoxObject] == false) {
+            [webView.configuration.userContentController addUserScript:scriptFirefoxObject];
+        }
+    }
+}
+
+-(void)injectYoutubePictureInPictureJS:(WKWebView *)webView
+                               request:(NSURLRequest *)request
+{
+    // enable picture-in-picture feature on youtube page
+    // only use this script for youtube page. if you use this script for other pages, some websites will not run some js scripts
+    // Ref: https://github.com/brave/brave-ios  /blob/development/Client/Frontend/Browser/UserScriptManager.swift#L64
+    if (@available(iOS 14.0, *)) {
+        if(request.mainDocumentURL.host != nil) {
+            if([self isYoutubeWebsite:request.mainDocumentURL.host]) {
+                if(scriptYoutubePictureInPicture == nil) {
+                    NSString *jsFile = @"__MediaBackgroundingScript__";
+                    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+                    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+                    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+                    scriptYoutubePictureInPicture = [[WKUserScript alloc] initWithSource:javascriptCode
+                                                                           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                                        forMainFrameOnly:YES];
+                }
+                if([webView.configuration.userContentController.userScripts containsObject:scriptYoutubePictureInPicture] == false) {
+                    [webView.configuration.userContentController addUserScript:scriptYoutubePictureInPicture];
+                }
             }
         }
     }
