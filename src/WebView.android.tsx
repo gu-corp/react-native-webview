@@ -206,6 +206,9 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         },
         printContent: () =>
           webViewRef.current && Commands.printContent(webViewRef.current),
+        setFontSize: (data: string) => {
+          webViewRef.current && Commands.setFontSize(webViewRef.current, data);
+        },
       }),
       [setViewState, webViewRef]
     );

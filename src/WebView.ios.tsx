@@ -201,6 +201,9 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         },
         printContent: () =>
           webViewRef.current && Commands.printContent(webViewRef.current),
+        setFontSize: (size: string) => {
+          webViewRef.current && Commands.setFontSize(webViewRef.current, size);
+        },
       }),
       [setViewState, webViewRef]
     );

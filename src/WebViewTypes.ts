@@ -24,7 +24,8 @@ type WebViewCommands =
   | 'requestWebViewStatus'
   | 'requestWebFavicon'
   | 'captureScreen'
-  | 'printContent';
+  | 'printContent'
+  | 'setFontSize';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -37,6 +38,7 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   captureScreen: (viewTag: number) => Promise<string>;
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
+  setFontSize: (viewTag: number, size: number) => void;
 }
 
 export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
@@ -268,6 +270,7 @@ export interface ViewManager {
   findNext: Function;
   findPrevious: Function;
   removeAllHighlights: Function;
+  setFontSize: Function;
 }
 
 export interface WebViewNativeConfig {
@@ -1187,6 +1190,12 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   onVideoFullScreen?: (event: WebViewFullScreenEvent) => void;
+
+  /**
+   * Function that is invoked when the `WebView` scale text.
+   * @platform android
+   */
+  setFontSize?: (event: WebViewMessage) => void;
 }
 
 export interface WebViewSharedProps extends ViewProps {

@@ -339,6 +339,10 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>
   ) => void;
   printContent: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
+  setFontSize: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    size: string
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -362,6 +366,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'findPrevious',
     'removeAllHighlights',
     'printContent',
+    'setFontSize',
   ],
 });
 

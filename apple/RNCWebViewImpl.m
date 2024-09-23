@@ -528,6 +528,14 @@ WKWebViewConfiguration *wkWebViewConfig;
   ? WKAudiovisualMediaTypeAll
   : WKAudiovisualMediaTypeNone;
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
+
+  // feature: zooming webpage with any value of viewport = "... user-scalable= no/yes "
+  // Enables Zoom in website by ignoring their javascript based viewport Scale limits.
+  if (@available(iOS 10.0, *)) {
+    wkWebViewConfig.ignoresViewportScaleLimits = true;
+    } else {
+      // Fallback on earlier versions
+      }
 #endif // !TARGET_OS_OSX
 
   if (_applicationNameForUserAgent) {
@@ -2233,6 +2241,11 @@ didFinishNavigation:(WKNavigation *)navigation
 
 - (void)removeAllHighlights {
   [_webView removeAllHighlights];
+}
+
+- (void)setFontSize:(nonnull NSNumber *)size {
+    double fontSize = [size doubleValue];
+    [_webView setValue:[NSNumber numberWithDouble:fontSize] forKey:@"viewScale"];
 }
 
 @end
