@@ -25,7 +25,8 @@ type WebViewCommands =
   | 'requestWebFavicon'
   | 'captureScreen'
   | 'printContent'
-  | 'setFontSize';
+  | 'setFontSize'
+  | 'setEnableNightMode';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -39,6 +40,7 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
   setFontSize: (viewTag: number, size: number) => void;
+  setEnableNightMode: (viewTag: number, enable: string) => void;
 }
 
 export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
@@ -271,6 +273,7 @@ export interface ViewManager {
   findPrevious: Function;
   removeAllHighlights: Function;
   setFontSize: Function;
+  setEnableNightMode: Function;
 }
 
 export interface WebViewNativeConfig {

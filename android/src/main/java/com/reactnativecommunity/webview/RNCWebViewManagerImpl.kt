@@ -372,6 +372,7 @@ class RNCWebViewManagerImpl {
 
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
+    val COMMAND_SET_ENABLE_NIGHT_MODE = 18
     // endregion
 
     fun getCommandsMap(): Map<String, Int>? {
@@ -396,6 +397,7 @@ class RNCWebViewManagerImpl {
         .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
         .put("printContent", COMMAND_PRINT_CONTENT)
         .put("setFontSize", COMMAND_SET_FONT_SIZE)
+        .put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE)
         .build()
     }
 
@@ -450,6 +452,7 @@ class RNCWebViewManagerImpl {
         "removeAllHighlights" -> webView.removeAllHighlights()
         "printContent" -> webView.printContent()
         "setFontSize" -> webView.setFontSize(args.getInt(0))
+        "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0))
       }
     }
 

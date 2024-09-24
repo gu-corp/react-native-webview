@@ -135,8 +135,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
 
             RNCWebView currentWebView = (RNCWebView) view;
             if (currentWebView.mRNCWebViewClient != null) {
-                // TODO update logic here
-                // newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
+                newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
             }
 
             newWebView.setWebViewClient(newWebViewClient);

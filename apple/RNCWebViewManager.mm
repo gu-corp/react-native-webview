@@ -399,4 +399,16 @@ RCT_EXPORT_METHOD(setFontSize:(nonnull NSNumber *)reactTag size:(nonnull NSNumbe
     }];
 }
 
+RCT_EXPORT_METHOD(setEnableNightMode:(nonnull NSNumber *)reactTag enable:(nonnull NSString *)enable)
+{
+    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
+        RNCView *view = viewRegistry[reactTag];
+        if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+            RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+        } else {
+            [(RNCWebViewImpl *)view setEnableNightMode:enable];
+        }
+    }];
+}
+
 @end

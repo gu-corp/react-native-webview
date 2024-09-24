@@ -349,4 +349,11 @@
     }
     return result;
 }
+
+- (void)setEnableNightMode:(NSString *)enable
+{
+    NSString *jsFunction = [NSString stringWithFormat:@"window.__firefox__.NightMode.setEnabled(%@)", enable];
+    [self stringByEvaluatingJavaScriptFromString:jsFunction];
+}
+
 @end

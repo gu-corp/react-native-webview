@@ -204,6 +204,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         setFontSize: (size: string) => {
           webViewRef.current && Commands.setFontSize(webViewRef.current, size);
         },
+        setEnableNightMode: (enable: string) => {
+          webViewRef.current &&
+            Commands.setEnableNightMode(webViewRef.current, enable);
+        },
       }),
       [setViewState, webViewRef]
     );

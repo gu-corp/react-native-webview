@@ -288,10 +288,9 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     }
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
-        // TODO task @2ad9976 add findNext, findPrevious, removeAllHighlights functions
         if(getSettings().getJavaScriptEnabled()){
-  //            String jsNightMode = loadNightModeScriptFile();
-  //            if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
+            String jsNightMode = loadNightModeScriptFile();
+            if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
 
             String jsSearch = loadSearchWebviewFile();
             if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
@@ -600,6 +599,22 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         return jsString;
     }
 
+    public String loadNightModeScriptFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("NightModeScript.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+    }
+
     public void captureScreen(String type) {
         final String fileName = System.currentTimeMillis() + ".jpg";
         // Old logic: save internal storage
@@ -686,5 +701,13 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public void setFontSize(Number size) {
         WebView webView = this;
         webView.getSettings().setTextZoom((int) size);
+    }
+
+    public void setEnableNightMode(String enable) {
+        if (mRNCWebViewClient != null) {
+          mRNCWebViewClient.mEnableNightMode = Boolean.parseBoolean(enable);
+        }
+        String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
+        this.loadUrl("javascript:" + jsNightMode);
     }
 }
