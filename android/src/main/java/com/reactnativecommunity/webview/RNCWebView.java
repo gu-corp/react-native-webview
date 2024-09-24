@@ -682,4 +682,9 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
           "});"
         );
     }
+
+    public void setFontSize(Number size) {
+        WebView webView = this;
+        webView.getSettings().setTextZoom((int) size);
+    }
 }

@@ -388,4 +388,15 @@ RCT_EXPORT_METHOD(printContent:(nonnull NSNumber *)reactTag) {
     }];
 }
 
+RCT_EXPORT_METHOD(setFontSize:(nonnull NSNumber *)reactTag size:(nonnull NSNumber *)size) {
+    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+        if (![viewRegistry[reactTag] isKindOfClass:[RNCWebViewImpl class]]) {
+            RCTLogError(@"Invalid view returned from registry, expecting RNCWebViewImpl");
+        } else {
+            RNCWebViewImpl *view = (RNCWebViewImpl *)viewRegistry[reactTag];
+            [view setFontSize:size];
+        }
+    }];
+}
+
 @end

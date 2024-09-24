@@ -368,6 +368,7 @@ class RNCWebViewManagerImpl {
     val COMMAND_SEARCH_PREVIOUS = 12
     val COMMAND_REMOVE_ALL_HIGHLIGHTS = 13
     val COMMAND_PRINT_CONTENT = 14
+    val COMMAND_SET_FONT_SIZE = 15
 
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
@@ -394,6 +395,7 @@ class RNCWebViewManagerImpl {
         .put("findPrevious", COMMAND_SEARCH_PREVIOUS)
         .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
         .put("printContent", COMMAND_PRINT_CONTENT)
+        .put("setFontSize", COMMAND_SET_FONT_SIZE)
         .build()
     }
 
@@ -447,6 +449,7 @@ class RNCWebViewManagerImpl {
         "findPrevious" -> webView.searchPrevious()
         "removeAllHighlights" -> webView.removeAllHighlights()
         "printContent" -> webView.printContent()
+        "setFontSize" -> webView.setFontSize(args.getInt(0))
       }
     }
 

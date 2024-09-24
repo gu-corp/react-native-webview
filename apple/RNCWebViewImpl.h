@@ -179,6 +179,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)findNext;
 - (void)findPrevious;
 - (void)removeAllHighlights;
+- (void)setFontSize:(nonnull NSNumber *)size;
 // endregion
 
 // TODO: Task @9559bde
