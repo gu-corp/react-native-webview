@@ -108,4 +108,5 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:${safeExtGet('kotlinVersion')}"
     implementation "androidx.webkit:webkit:${safeExtGet('webkitVersion')}"
     implementation 'org.jsoup:jsoup:1.15.4'
+    implementation 'com.google.android.material:material:1.1.0'
 }

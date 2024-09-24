@@ -341,7 +341,7 @@ export interface NativeCommands {
   printContent: (viewRef: React.ElementRef<HostComponent<NativeProps>>) => void;
   setFontSize: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
-    size: string
+    size: Double
   ) => void;
   setEnableNightMode: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
