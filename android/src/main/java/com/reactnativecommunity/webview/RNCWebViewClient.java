@@ -112,6 +112,9 @@ public class RNCWebViewClient extends WebViewClient {
             emitFinishEvent(webView, url);
 
             reactWebView.getFaviconUrl();
+
+            String jsNightMode = "window.NightMode.setEnabled(" + mEnableNightMode + ");";
+            reactWebView.loadUrl("javascript:" + jsNightMode);
         }
     }
 
@@ -509,11 +512,12 @@ public class RNCWebViewClient extends WebViewClient {
      * */
     protected ReactContext mReactContext;
     protected Uri mainUrl;
+    protected int mLoadingProgress = 0;
+    protected boolean mEnableNightMode = false;
 
     private final OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;
     private boolean isMainDocumentException;
-    protected int mLoadingProgress = 0;
     private String currentPageUrl = null;
     private String currentPageTitle = null;
 

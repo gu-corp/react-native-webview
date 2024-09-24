@@ -599,4 +599,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void setFontSize(RNCWebViewWrapper view, String string) {}
+
+    @Override
+    public void setEnableNightMode(RNCWebViewWrapper view, String enable) {}
 }

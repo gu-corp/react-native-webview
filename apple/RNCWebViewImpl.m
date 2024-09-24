@@ -171,6 +171,7 @@ RCTAutoInsetsProtocol>
   WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
+  WKUserScript *scriptNightMode;
 }
 
 BOOL longPress;
@@ -1437,6 +1438,7 @@ NSBundle* resourceBundle;
                 // Lunascape logic
                 [self applyAdblockLogic:webView request:request];
                 [self injectCommonFirefoxJS:webView];
+                [self injectNightModeJS:webView];
                 [self injectYoutubePictureInPictureJS:webView request:request];
 
                 // Allow all navigation by default
@@ -1478,6 +1480,7 @@ NSBundle* resourceBundle;
     // Lunascape logic
     [self applyAdblockLogic:webView request:request];
     [self injectCommonFirefoxJS:webView];
+    [self injectNightModeJS:webView];
     [self injectYoutubePictureInPictureJS:webView request:request];
 
     // Allow all navigation by default
@@ -2274,6 +2277,25 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
+-(void)injectNightModeJS:(WKWebView *)webView
+{
+    if (@available(iOS 13.0, *)) {
+        if(scriptNightMode == nil) {
+            NSString *jsFileNightMode = @"__NightModeScript__";
+            NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
+            NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
+            NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path
+                                                                          encoding:NSUTF8StringEncoding error:nil];
+            scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode
+                                                     injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                                                  forMainFrameOnly:YES];
+        }
+        if([webView.configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
+            [webView.configuration.userContentController addUserScript:scriptNightMode];
+        }
+    }
+}
+
 // isExist default in new version webview
 //- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
 //  return YES;
@@ -2302,6 +2324,10 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)setFontSize:(nonnull NSNumber *)size {
     double fontSize = [size doubleValue];
     [_webView setValue:[NSNumber numberWithDouble:fontSize] forKey:@"viewScale"];
+}
+
+- (void)setEnableNightMode:(nonnull NSString *)enable {
+    [_webView setEnableNightMode:enable];
 }
 
 @end

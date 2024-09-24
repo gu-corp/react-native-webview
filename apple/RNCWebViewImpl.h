@@ -180,6 +180,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)findPrevious;
 - (void)removeAllHighlights;
 - (void)setFontSize:(nonnull NSNumber *)size;
+- (void)setEnableNightMode:(nonnull NSString *)enable;
 // endregion
 
 // TODO: Task @9559bde

@@ -343,6 +343,10 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     size: string
   ) => void;
+  setEnableNightMode: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    enable: string
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -367,6 +371,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'removeAllHighlights',
     'printContent',
     'setFontSize',
+    'setEnableNightMode',
   ],
 });
 
