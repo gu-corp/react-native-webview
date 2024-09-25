@@ -3,6 +3,7 @@ package com.reactnativecommunity.webview;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import android.annotation.TargetApi;
+import android.app.AlertDialog;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -10,6 +11,8 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.webkit.HttpAuthHandler;
 import android.webkit.RenderProcessGoneDetail;
 import android.webkit.SslErrorHandler;
@@ -47,6 +50,9 @@ import com.brave.adblock.Engine;
 
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -337,7 +343,34 @@ public class RNCWebViewClient extends WebViewClient {
             handler.proceed(basicAuthCredential.username, basicAuthCredential.password);
             return;
         }
-        super.onReceivedHttpAuthRequest(view, handler, host, realm);
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+        LayoutInflater inflater = LayoutInflater.from(view.getContext());
+        builder.setView(inflater.inflate(R.layout.authenticate, null));
+
+        final AlertDialog alertDialog = builder.create();
+        alertDialog.getWindow().setLayout(600, 400);
+        alertDialog.show();
+        TextView titleTv = alertDialog.findViewById(R.id.tv_login);
+        titleTv.setText(view.getResources().getString(R.string.login_title).replace("%s", host));
+        Button btnLogin = alertDialog.findViewById(R.id.btn_login);
+        Button btnCancel = alertDialog.findViewById(R.id.btn_cancel);
+        final EditText userField = alertDialog.findViewById(R.id.edt_username);
+        final EditText passField = alertDialog.findViewById(R.id.edt_password);
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                alertDialog.dismiss();
+                handler.cancel();
+            }
+        });
+        btnLogin.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                alertDialog.dismiss();
+                handler.proceed(userField.getText().toString(), passField.getText().toString());
+            }
+        });
     }
 
     @Override
