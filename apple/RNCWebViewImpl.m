@@ -172,6 +172,11 @@ RCTAutoInsetsProtocol>
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   WKUserScript *scriptNightMode;
+
+  CGPoint lastOffset;
+  BOOL decelerating;
+  BOOL dragging;
+  BOOL scrollingToTop;
 }
 
 BOOL longPress;
@@ -1059,6 +1064,12 @@ NSBundle* resourceBundle;
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView
 {
   scrollView.decelerationRate = _decelerationRate;
+
+  decelerating = NO;
+  dragging = YES;
+    
+  NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollBeginDrag", @"data":event}});
 }
 #endif // !TARGET_OS_OSX
 
@@ -1108,6 +1119,26 @@ NSBundle* resourceBundle;
     };
     _onScroll(event);
   }
+
+  CGPoint offset = scrollView.contentOffset;
+  if (!decelerating && !dragging && !scrollingToTop) {
+    NSLog(@"scrollViewDidScroll dont fire event");
+    lastOffset = offset;
+    return;
+  }
+    
+  CGFloat dy = offset.y - lastOffset.y;
+  lastOffset = offset;
+    
+  CGSize frameSize = scrollView.frame.size;
+  CGFloat offsetMin = 0;
+  CGFloat offsetMax = scrollView.contentSize.height - frameSize.height;
+  if ((lastOffset.y <= offsetMin && dy > 0) || (lastOffset.y >= offsetMax && dy < 0)) {
+    return;
+  }
+    
+  NSDictionary *event = [self onScrollEvent:offset moveDistance:CGPointMake(offset.x - lastOffset.x, dy)];
+  _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScroll", @"data":event}});
 }
 
 - (void)setDirectionalLockEnabled:(BOOL)directionalLockEnabled
@@ -2357,6 +2388,58 @@ didFinishNavigation:(WKNavigation *)navigation
 
 - (void)setEnableNightMode:(nonnull NSString *)enable {
     [_webView setEnableNightMode:enable];
+}
+
+- (NSDictionary*)onScrollEvent:(CGPoint)currentOffset 
+                  moveDistance:(CGPoint)distance
+{
+    UIScrollView* scrollView = _webView.scrollView;
+    CGSize frameSize = scrollView.frame.size;
+    
+    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    [event addEntriesFromDictionary:@{@"contentOffset": @{@"x": @(currentOffset.x),@"y": @(currentOffset.y)}}];
+    [event addEntriesFromDictionary:@{@"scroll": @{@"decelerating":@(decelerating || scrollingToTop), @"width": @(frameSize.width), @"height": @(frameSize.height)}}];
+    [event addEntriesFromDictionary:@{@"contentSize": @{@"width" : @(scrollView.contentSize.width), @"height": @(scrollView.contentSize.height)}}];
+    
+    [event addEntriesFromDictionary:@{@"offset": @{@"dx": @(distance.x),@"dy": @(distance.y)}}];
+    return event;
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView 
+                  willDecelerate:(BOOL)decelerate
+{
+    decelerating = decelerate;
+    dragging = NO;
+
+    NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+    _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDrag", @"data":event}});
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+    decelerating = NO;
+  
+    NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+    _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+}
+
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+    scrollingToTop = _webView.scrollView.scrollsToTop;
+    return _webView.scrollView.scrollsToTop;
+}
+
+- (void)setAdjustOffset:(CGPoint)adjustOffset {
+    CGRect scrollBounds = _webView.scrollView.bounds;
+    scrollBounds.origin = CGPointMake(_webView.scrollView.contentOffset.x + adjustOffset.x, _webView.scrollView.contentOffset.y + adjustOffset.y);
+    _webView.scrollView.bounds = scrollBounds;
+  
+    lastOffset = _webView.scrollView.contentOffset;
+}
+
+- (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView {
+    scrollingToTop = NO;
+  
+    NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
+    _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDecelerating", @"data":event}});
 }
 
 @end
