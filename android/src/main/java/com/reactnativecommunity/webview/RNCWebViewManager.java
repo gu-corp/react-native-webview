@@ -1002,7 +1002,7 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           URL url = new URL(urlString);
           for (Engine engine : adblockEngines) {
             synchronized (engine) {
-              blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+              blockerResult = engine.match(url.toString(), mainUrl.toString(), "");
               if (blockerResult.exception) {
                 enable = false;
                 break;
@@ -1201,9 +1201,9 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
           for (Engine engine : adblockEngines) {
             synchronized (engine) {
               if (request.isForMainFrame()) {
-                blockerResult = engine.match(url.toString(), url.getHost(), "", false, "document");
+                blockerResult = engine.match(url.toString(), mainUrl.toString(), "document");
               } else {
-                blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+                blockerResult = engine.match(url.toString(), mainUrl.toString(), "");
               }
 
               matched |= blockerResult.matched;
