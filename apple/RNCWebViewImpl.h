@@ -39,8 +39,14 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 //shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
 // endregion
 
-
 @end
+
+typedef enum {
+    NoLock = 0,
+    LockDirectionUp,
+    LockDirectionDown,
+    LockDirectionBoth
+} LockScroll;
 
 @interface RNCWeakScriptMessageDelegate : NSObject<WKScriptMessageHandler>
 
@@ -168,6 +174,8 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockAllowList;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
+@property (nonatomic, assign) LockScroll lockScroll;
+@property (nonatomic, assign) CGPoint adjustOffset;
 // TODO: Task @9559bde
 // region to do @9559bde
 //- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
