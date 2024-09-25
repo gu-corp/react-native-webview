@@ -248,9 +248,10 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
   onLoadingProgress = (event: WebViewProgressEvent) => {
     const { onLoadProgress } = this.props;
     const { nativeEvent: { progress } } = event;
+    const { viewState } = this.state;
     if (progress === 1) {
       this.setState({
-        viewState: 'IDLE',
+        viewState: viewState === 'LOADING' ? 'IDLE' : viewState,
       });
     }
     if (onLoadProgress) {
@@ -341,6 +342,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
       this.getWebViewHandle(),
       this.getCommands().setEnableNightMode,
       [String(enable)]
+    );
+  };
+
+  proceedUnsafeSite = (url: string) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      this.getCommands().proceedUnsafeSite,
+      [String(url)]
     );
   };
 
