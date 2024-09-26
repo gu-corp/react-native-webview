@@ -326,6 +326,9 @@ class RNCWebViewManagerImpl {
                 view.settings.userAgentString = WebSettings.getDefaultUserAgent(view.context)
             }
         }
+
+        val client = view.rncWebViewClient
+        client?.setUserAgent(view.settings.userAgentString)
     }
 
     fun setBasicAuthCredential(viewWrapper: RNCWebViewWrapper, credential: ReadableMap?) {
@@ -819,6 +822,13 @@ class RNCWebViewManagerImpl {
     fun setAdblockRuleList(viewWrapper: RNCWebViewWrapper, rules: ReadableArray?) {
         viewWrapper.webView.mRNCWebViewClient?.apply {
             setAdblockRuleList(rules)
+        }
+    }
+
+    fun setAdditionalUserAgent(viewWrapper: RNCWebViewWrapper, additionalUserAgent: ReadableArray?){
+        val client = viewWrapper.webView.mRNCWebViewClient
+        if (client != null && additionalUserAgent != null) {
+            client.setAdditionalUserAgent(additionalUserAgent)
         }
     }
 }

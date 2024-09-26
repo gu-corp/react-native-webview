@@ -168,6 +168,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
+@property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
 // TODO: Task @9559bde
 // region to do @9559bde
 //- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;

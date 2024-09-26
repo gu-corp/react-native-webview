@@ -1404,6 +1404,14 @@ export interface WebViewSharedProps extends ViewProps {
    * Function that is invoked when the page content process is finished or the `requestWebFavicon` method is called.
    */
   onGetFavicon?: (event: WebViewMessageEvent) => void;
+
+  /**
+   * to append to the existing user-agent string in some specific domains
+   * see at
+   * + android: loadAdditionalUserAgent method in RNCWebViewManager.java
+   * + ios: webview:decidePolicyForNavigationAction method in RNCWebViewManager.m
+   */
+  additionalUserAgent?: AdditionalUserAgent[];
 }
 
 export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {
@@ -1412,3 +1420,9 @@ export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {
 
 export type WebViewFullScreenEvent =
   NativeSyntheticEvent<WebViewNativeFullScreenEvent>;
+
+export interface AdditionalUserAgent {
+  // to match URL
+  domain: string;
+  extendedUserAgent: string;
+}
