@@ -29,6 +29,7 @@ import com.facebook.common.logging.FLog;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
@@ -47,6 +48,7 @@ import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
 import com.reactnativecommunity.webview.lunascape.RNCWebViewCookieJar;
 import com.brave.adblock.BlockerResult;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.lunascape.utils.UrlUtils;
 
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -114,6 +116,9 @@ public class RNCWebViewClient extends WebViewClient {
             boolean enableYoutubeAdblock = getEnableYoutubeVideoAdblocker(webviewUrl);
             reactWebView.callInjectedJavaScript(enableYoutubeAdblock);
             reactWebView.linkWindowObject();
+
+            // load additional userAgent
+            loadAdditionalUserAgent(webView, webviewUrl);
 
             emitFinishEvent(webView, url);
 
@@ -554,6 +559,9 @@ public class RNCWebViewClient extends WebViewClient {
     private String currentPageUrl = null;
     private String currentPageTitle = null;
 
+    private @Nullable String mUserAgent = null; // to append with additional user agent
+    protected @Nullable ReadableArray mAdditionalUserAgent = null;
+
     protected void cloneSettings(RNCWebViewClient parentClient) {
         cloneAdblockRules(parentClient);
         mLastLoadFailed = parentClient.mLastLoadFailed;
@@ -643,6 +651,37 @@ public class RNCWebViewClient extends WebViewClient {
               new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl))
             );
         }
+    }
+
+    public void loadAdditionalUserAgent(WebView webview, String urlString) {
+
+        if (mAdditionalUserAgent != null && mAdditionalUserAgent.size() > 0 && mUserAgent != null) {
+        int size = mAdditionalUserAgent.size();
+        for (int i = 0; i< size; i++) {
+            ReadableMap object = mAdditionalUserAgent.getMap(i);
+            String domain = object.getString("domain");
+            if (domain != null && UrlUtils.isMatchDomain(urlString, domain)) {
+                String extendedUserAgent = object.getString("extendedUserAgent");
+                if (extendedUserAgent != null) {
+                    String newUserAgent = mUserAgent + " " + extendedUserAgent;
+                    webview.getSettings().setUserAgentString(newUserAgent);
+                    return;
+                }
+            }
+        }
+      }
+    }
+
+    public void setAdditionalUserAgent(ReadableArray additionalUserAgent) {
+        if (additionalUserAgent != null) {
+            mAdditionalUserAgent = additionalUserAgent;
+        } else {
+            mAdditionalUserAgent = null;
+        }
+    }
+
+    public void setUserAgent(String userAgent) {
+        mUserAgent = userAgent;
     }
 
 }

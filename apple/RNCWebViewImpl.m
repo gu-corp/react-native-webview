@@ -872,6 +872,10 @@ NSBundle* resourceBundle;
                     withScrollView:_webView.scrollView
                       updateOffset:YES];
 }
+
+- (void)setAdditionalUserAgent:(NSArray<NSDictionary *> *)additionalUserAgent {
+  _additionalUserAgent = additionalUserAgent;
+}
 #endif // !TARGET_OS_OSX
 
 - (void)visitSource
@@ -1454,6 +1458,22 @@ NSBundle* resourceBundle;
         if ([allowSchemes containsObject:requestURL.scheme]) {
             decisionHandler(WKNavigationActionPolicyAllow);
             return;
+        }
+    }
+    
+    // set the additionalUserAgent
+    int count = (int) [_additionalUserAgent count];
+    for (int i = 0; i < count; i++) {
+        NSDictionary* item = [_additionalUserAgent objectAtIndex:i];
+        NSString* domain = [item objectForKey:@"domain"];
+      
+        if (domain != nil && [request.mainDocumentURL.host isEqual: domain]) {
+            NSString* extendedUserAgent = [item objectForKey:@"extendedUserAgent"];
+            if (_userAgent != nil && extendedUserAgent != nil) {
+                NSMutableString* newUserAgent = [[NSMutableString alloc] initWithFormat:@"%@ %@", _userAgent, extendedUserAgent];
+                webView.customUserAgent = newUserAgent;
+                break;
+            }
         }
     }
 

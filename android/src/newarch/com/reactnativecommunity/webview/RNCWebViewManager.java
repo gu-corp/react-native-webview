@@ -602,4 +602,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void setEnableNightMode(RNCWebViewWrapper view, String enable) {}
+
+    @ReactProp(name = "additionalUserAgent")
+    public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
+        mRNCWebViewManagerImpl.setAdditionalUserAgent(view, additionalUserAgent);
+    }
 }

@@ -344,4 +344,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     public void setAdblockRuleList(RNCWebViewWrapper view, @Nullable ReadableArray rules) {
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
+
+    @ReactProp(name = "additionalUserAgent")
+    public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
+        mRNCWebViewManagerImpl.setAdditionalUserAgent(view ,additionalUserAgent);
+    }
 }

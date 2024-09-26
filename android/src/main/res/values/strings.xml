@@ -13,4 +13,8 @@
     <string name="dialog_found">Search Results</string>
     <string name="image_select">Image Chooser</string>
     <string name="video_select">Video Chooser</string>
+    <string name="take_photo">Take a photo</string>
+    <string name="record_video">Record a video</string>
+    <string name="choose_file">Choose an existing file</string>
+    <string name="download_protocol_not_supported">Download protocol not supported</string>
 </resources>
