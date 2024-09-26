@@ -803,6 +803,9 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @platform ios
    */
   adblockAllowList?: string[];
+
+  scrollToTop?: boolean;
+  adjustOffset?: object;
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
