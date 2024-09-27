@@ -177,6 +177,7 @@ RCTAutoInsetsProtocol>
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
+  BOOL allowUnsafeSite;
 }
 
 BOOL longPress;
@@ -1275,6 +1276,13 @@ NSBundle* resourceBundle;
       completionHandler(NSURLSessionAuthChallengeUseCredential, credential);
       return;
     }
+  }
+  if (allowUnsafeSite == YES) {
+    allowUnsafeSite = NO;
+    SecTrustRef trust = [[challenge protectionSpace] serverTrust];
+    NSURLCredential *useCredential = [NSURLCredential credentialForTrust:trust];
+    completionHandler(NSURLSessionAuthChallengeUseCredential, useCredential);
+    return;
   }
   completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
 }
@@ -2460,6 +2468,11 @@ didFinishNavigation:(WKNavigation *)navigation
   
     NSDictionary *event = [self onScrollEvent:scrollView.contentOffset moveDistance:CGPointMake(0, 0)];
     _onMessage(@{@"name":@"reactNative", @"data": @{@"type":@"onScrollEndDecelerating", @"data":event}});
+}
+
+- (void)proceedUnsafeSite:(NSString *)url {
+    allowUnsafeSite = YES;
+    [self reload];
 }
 
 @end

@@ -213,6 +213,10 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           webViewRef.current &&
             Commands.setEnableNightMode(webViewRef.current, enable);
         },
+        proceedUnsafeSite: (enable: string) => {
+          webViewRef.current &&
+            Commands.proceedUnsafeSite(webViewRef.current, enable);
+        },
       }),
       [setViewState, webViewRef]
     );

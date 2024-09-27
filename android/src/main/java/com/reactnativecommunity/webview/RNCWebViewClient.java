@@ -390,51 +390,32 @@ public class RNCWebViewClient extends WebViewClient {
         // Cancel request after obtaining top-level URL.
         // If request is cancelled before obtaining top-level URL, undesired behavior may occur.
         // Undesired behavior: Return value of WebView.getUrl() may be the current URL instead of the failing URL.
-        handler.cancel();
+        // handler.cancel();
 
         if (!topWindowUrl.equalsIgnoreCase(failingUrl)) {
             // If error is not due to top-level navigation, then do not call onReceivedError()
             Log.w(TAG, "Resource blocked from loading due to SSL error. Blocked URL: "+failingUrl);
+            super.onReceivedSslError(webView, handler, error);
             return;
         }
 
-        int code = error.getPrimaryError();
-        String description = "";
-        String descriptionPrefix = "SSL error: ";
-
-        // https://developer.android.com/reference/android/net/http/SslError.html
-        switch (code) {
-            case SslError.SSL_DATE_INVALID:
-                description = "The date of the certificate is invalid";
-                break;
-            case SslError.SSL_EXPIRED:
-                description = "The certificate has expired";
-                break;
-            case SslError.SSL_IDMISMATCH:
-                description = "Hostname mismatch";
-                break;
-            case SslError.SSL_INVALID:
-                description = "A generic error occurred";
-                break;
-            case SslError.SSL_NOTYETVALID:
-                description = "The certificate is not yet valid";
-                break;
-            case SslError.SSL_UNTRUSTED:
-                description = "The certificate authority is not trusted";
-                break;
-            default:
-                description = "Unknown SSL Error";
-                break;
-        }
-
-        description = descriptionPrefix + description;
-
-        this.onReceivedError(
+        if (mAllowUnsafeSite) {
+            mAllowUnsafeSite = false;
+            handler.proceed();
+        } else {
+            super.onReceivedSslError(webView, handler, error);
+            int code = -1202;
+            Uri topWindowUri = Uri.parse(topWindowUrl);
+            String description = "The certificate for this server is invalid. You might be connecting to a server that is pretending to be “"
+                + topWindowUri.getHost()
+                +"” which could put your confidential information at risk.";
+            this.onReceivedError(
                 webView,
                 code,
                 description,
                 failingUrl
-        );
+            );
+        }
     }
 
     @Override
@@ -552,6 +533,7 @@ public class RNCWebViewClient extends WebViewClient {
     protected Uri mainUrl;
     protected int mLoadingProgress = 0;
     protected boolean mEnableNightMode = false;
+    protected boolean mAllowUnsafeSite = false;
 
     private final OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;

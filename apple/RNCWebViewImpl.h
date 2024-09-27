@@ -182,6 +182,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)removeAllHighlights;
 - (void)setFontSize:(nonnull NSNumber *)size;
 - (void)setEnableNightMode:(nonnull NSString *)enable;
+- (void)proceedUnsafeSite:(nullable NSString*)url;
 // endregion
 
 // TODO: Task @9559bde

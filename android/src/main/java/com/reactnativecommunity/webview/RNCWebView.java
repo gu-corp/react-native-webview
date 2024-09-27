@@ -710,4 +710,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
         this.loadUrl("javascript:" + jsNightMode);
     }
+
+    public void proceedUnsafeSite(String url) {
+        if (mRNCWebViewClient != null) {
+            mRNCWebViewClient.mAllowUnsafeSite = true;
+        }
+        loadUrl(url);
+    }
 }
