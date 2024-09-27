@@ -208,6 +208,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
           webViewRef.current &&
             Commands.setEnableNightMode(webViewRef.current, enable);
         },
+        proceedUnsafeSite: (url: string) => {
+          webViewRef.current &&
+            Commands.proceedUnsafeSite(webViewRef.current, url);
+        },
       }),
       [setViewState, webViewRef]
     );

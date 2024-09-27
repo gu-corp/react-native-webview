@@ -413,4 +413,16 @@ RCT_EXPORT_METHOD(setEnableNightMode:(nonnull NSNumber *)reactTag enable:(nonnul
     }];
 }
 
+RCT_EXPORT_METHOD(proceedUnsafeSite:(nonnull NSNumber *)reactTag url:(nonnull NSString *)url)
+{
+    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
+        RNCView *view = viewRegistry[reactTag];
+        if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+            RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+        } else {
+            [(RNCWebViewImpl *)view proceedUnsafeSite:url];
+        }
+    }];
+}
+
 @end

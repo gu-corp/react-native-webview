@@ -607,4 +607,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
         mRNCWebViewManagerImpl.setAdditionalUserAgent(view, additionalUserAgent);
     }
+
+    @Override
+    public void proceedUnsafeSite(RNCWebViewWrapper view, String url) {}
 }
