@@ -122,6 +122,7 @@ RCT_EXPORT_VIEW_PROPERTY(enableApplePay, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(menuItems, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(suppressMenuItems, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
 
 // New arch only
 RCT_CUSTOM_VIEW_PROPERTY(hasOnFileDownload, BOOL, RNCWebViewImpl) {}
@@ -300,41 +301,19 @@ RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
     }];
 }
 
-RCT_EXPORT_METHOD(captureScreen:(nonnull NSNumber *)reactTag
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(captureScreen:(nonnull NSNumber *)reactTag)
 {
     [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
         RNCView *view = viewRegistry[reactTag];
         if (![view isKindOfClass:[RNCWebViewImpl class]]) {
             RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
         } else {
-            [(RNCWebViewImpl *)view captureScreen:^(NSString * _Nullable path) {
-                resolve(path);
-            }];
+            [(RNCWebViewImpl *)view captureScreen];
         }
     }];
 }
 
-RCT_EXPORT_METHOD(capturePage:(nonnull NSNumber *)reactTag
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
-{
-    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
-        RNCView *view = viewRegistry[reactTag];
-        if (![view isKindOfClass:[RNCWebViewImpl class]]) {
-            RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
-        } else {
-            [(RNCWebViewImpl *)view capturePage:^(NSString * _Nullable path) {
-                resolve(path);
-            }];
-        }
-    }];
-}
-
-RCT_EXPORT_METHOD(findInPage:(nonnull NSNumber *)reactTag searchString:(NSString *)searchString
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXPORT_METHOD(findInPage:(nonnull NSNumber *)reactTag searchString:(NSString *)searchString)
 {
     [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
         RNCView *view = viewRegistry[reactTag];

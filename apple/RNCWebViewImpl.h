@@ -70,7 +70,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) RCTDirectEventBlock onOpenWindow;
 @property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
-
+@property (nonatomic, copy) RCTDirectEventBlock onCaptureScreen;
 
 @property (nonatomic, weak) id<RNCWebViewDelegate> _Nullable delegate;
 @property (nonatomic, copy) NSDictionary * _Nullable source;
@@ -174,8 +174,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 //- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
 - (void)findInPage:(nonnull NSString *)searchString;
-- (void)captureScreen:(void (^_Nonnull)(NSString* _Nullable path))callback;
-- (void)capturePage:(void (^_Nonnull)(NSString* _Nullable path))callback;
+- (void)captureScreen;
 - (void)printContent;
 - (void)findNext;
 - (void)findPrevious;

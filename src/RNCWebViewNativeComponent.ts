@@ -327,7 +327,7 @@ export interface NativeCommands {
   ) => void;
   captureScreen: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
-    type: string
+    type?: string
   ) => void;
   findInPage: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
