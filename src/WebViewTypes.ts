@@ -979,7 +979,6 @@ export interface MacOSWebViewProps extends WebViewSharedProps {
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
-  onCaptureScreen?: (event: WebViewMessage) => void;
 
   /**
    * Function that is invoked when the `WebView` process crashes or is killed by the OS.
@@ -1415,6 +1414,11 @@ export interface WebViewSharedProps extends ViewProps {
    * + ios: webview:decidePolicyForNavigationAction method in RNCWebViewManager.m
    */
   additionalUserAgent?: AdditionalUserAgent[];
+
+  /**
+   * Webview will be reloaded when capture screen on IOS and Android
+   */
+  onCaptureScreen?: (event: WebViewMessage | WebViewMessageEvent) => void;
 }
 
 export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {

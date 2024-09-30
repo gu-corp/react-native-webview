@@ -4,14 +4,7 @@ import React, {
   useImperativeHandle,
   useRef,
 } from 'react';
-import {
-  Image,
-  View,
-  ImageSourcePropType,
-  HostComponent,
-  NativeModules,
-  findNodeHandle,
-} from 'react-native';
+import { Image, View, ImageSourcePropType, HostComponent } from 'react-native';
 import invariant from 'invariant';
 
 import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
@@ -27,12 +20,9 @@ import {
   IOSWebViewProps,
   DecelerationRateConstant,
   WebViewSourceUri,
-  ViewManager,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
-
-const RNCWebViewManager = NativeModules.RNCWebView as ViewManager;
 
 const { resolveAssetSource } = Image;
 const processDecelerationRate = (
@@ -98,6 +88,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       incognito,
       decelerationRate: decelerationRateProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      onCaptureScreen,
       ...otherProps
     },
     ref
@@ -148,15 +139,6 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onGetFaviconProp,
     });
 
-    /**
-     * Returns the native `WebView` node.
-     */
-    const getWebViewHandle = () => {
-      const nodeHandle = findNodeHandle(webViewRef.current);
-      invariant(nodeHandle != null, 'nodeHandle expected to be non-null');
-      return nodeHandle as number;
-    };
-
     useImperativeHandle(
       ref,
       () => ({
@@ -182,22 +164,21 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
           webViewRef.current &&
           Commands.clearCache(webViewRef.current, includeDiskFiles),
         captureScreen: () => {
-          return RNCWebViewManager.captureScreen(getWebViewHandle());
-        },
-        capturePage: () => {
-          RNCWebViewManager.capturePage();
+          webViewRef.current && Commands.captureScreen(webViewRef.current);
         },
         findInPage: (searchString: string) => {
-          RNCWebViewManager.findInPage(getWebViewHandle(), searchString);
+          webViewRef.current &&
+            Commands.findInPage(webViewRef.current, searchString);
         },
         findNext: () => {
-          RNCWebViewManager.findNext(getWebViewHandle());
+          webViewRef.current && Commands.findNext(webViewRef.current);
         },
         findPrevious: () => {
-          RNCWebViewManager.findPrevious(getWebViewHandle());
+          webViewRef.current && Commands.findPrevious(webViewRef.current);
         },
         removeAllHighlights: () => {
-          RNCWebViewManager.removeAllHighlights(getWebViewHandle());
+          webViewRef.current &&
+            Commands.removeAllHighlights(webViewRef.current);
         },
         printContent: () =>
           webViewRef.current && Commands.printContent(webViewRef.current),
@@ -211,6 +192,15 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         proceedUnsafeSite: (url: string) => {
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, url);
+        },
+        setNativeProps: (nativeProps: Partial<IOSWebViewProps>) => {
+          try {
+            if (webViewRef.current) {
+              webViewRef.current.setNativeProps(nativeProps);
+            }
+          } catch (err) {
+            console.log(err);
+          }
         },
       }),
       [setViewState, webViewRef]
@@ -332,6 +322,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         // @ts-expect-error old arch only
         source={sourceResolved}
         onGetFavicon={onGetFavicon}
+        onCaptureScreen={onCaptureScreen}
         {...nativeConfig?.props}
       />
     );
