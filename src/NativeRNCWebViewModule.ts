@@ -8,6 +8,7 @@ export interface Spec extends TurboModule {
     shouldStart: boolean,
     lockIdentifier: Double
   ): void;
+  captureScreen(viewRef: number): Promise<string>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RNCWebViewModule');

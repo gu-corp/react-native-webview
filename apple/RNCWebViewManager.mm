@@ -425,4 +425,12 @@ RCT_EXPORT_METHOD(proceedUnsafeSite:(nonnull NSNumber *)reactTag url:(nonnull NS
     }];
 }
 
+RCT_EXPORT_METHOD(performAsyncOperation:(nonnull NSNumber *)reactTag
+                  resolver:(RCTPromiseResolveBlock)resolve
+                  rejecter:(RCTPromiseRejectBlock)reject)
+{
+  NSLog(@"bách performAsyncOperation");
+  resolve(@"Operation completed successfully!");  // Returns a string as expected
+}
+
 @end
