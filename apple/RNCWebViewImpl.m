@@ -184,6 +184,9 @@ RCTAutoInsetsProtocol>
   BOOL allowUnsafeSite;
   BOOL longPress;
   NSBundle* resourceBundle;
+  NSURL *url_history;
+  NSString *title_history_back;
+  NSString *title_history_forward;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -856,15 +859,32 @@ RCTAutoInsetsProtocol>
  *   - window.webkit.messageHandlers[MessageHandlerName].postMessage
  *   - window.webkit.messageHandlers[PrintScriptHandler].postMessage
  */
+
 - (void)userContentController:(WKUserContentController *)userContentController
       didReceiveScriptMessage:(WKScriptMessage *)message
 {
+    
   if ([message.name isEqualToString:HistoryShimName]) {
     if (_onLoadingFinish) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       [event addEntriesFromDictionary: @{@"navigationType": message.body}];
       _onLoadingFinish(event);
     }
+      if(_onUpdateHistory){
+        if(![_webView.URL isEqual:url_history]){
+          url_history = _webView.URL;
+          NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+          if(title_history_back != nil){
+            [event addEntriesFromDictionary: @{@"title": title_history_back}];
+            title_history_back = nil;
+          }
+          if(title_history_forward != nil){
+            [event addEntriesFromDictionary: @{@"title": title_history_forward}];
+            title_history_forward = nil;
+          }
+          _onUpdateHistory(event);
+        }
+      }
   } else if ([message.name isEqualToString:MessageHandlerName]) {
     if (_onMessage) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1790,7 +1810,26 @@ didFinishNavigation:(WKNavigation *)navigation
   }
 
   if (_onLoadingFinish) {
-    _onLoadingFinish([self baseEvent]);
+      _onLoadingFinish([self baseEvent]);
+  }
+    
+  if (_onUpdateHistory) {
+    if(![_webView.URL isEqual:url_history]){
+      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+      [event addEntriesFromDictionary:@{
+        @"loading": @(false)
+      }];
+      if(title_history_back != nil){
+        [event addEntriesFromDictionary: @{@"title": title_history_back}];
+        title_history_back = nil;
+      }
+      if(title_history_forward != nil){
+        [event addEntriesFromDictionary: @{@"title": title_history_forward}];
+        title_history_forward = nil;
+      }
+      url_history = _webView.URL;
+      _onUpdateHistory(event);
+    }
   }
     
     NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
@@ -1824,11 +1863,19 @@ didFinishNavigation:(WKNavigation *)navigation
 
 - (void)goForward
 {
+  WKBackForwardList *backForwardList = [_webView backForwardList];
+  if (backForwardList.forwardList.count > 0) {
+    WKBackForwardListItem *firstForwardItem = backForwardList.forwardList.firstObject;
+    title_history_forward = firstForwardItem.title;
+  }
   [_webView goForward];
 }
 
 - (void)goBack
 {
+  WKBackForwardList *backForwardList = [_webView backForwardList];
+  WKBackForwardListItem *lastBackItem = [backForwardList.backList lastObject];
+  title_history_back = lastBackItem.title;
   [_webView goBack];
 }
 
