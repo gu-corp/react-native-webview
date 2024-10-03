@@ -485,7 +485,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public static final String NATIVE_SCRIPT_INTERFACE = "nativeScriptHandler";
 
     protected String activeUrl;
-    private static RNCWebView newWindow;
+    
+    // this is a static variable to store the new window instance then we can keep it alive until the new window is added to the parent view
+    private static RNCWebView newWindow; 
+
     public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
     public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
 
@@ -509,10 +512,15 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
                 e.printStackTrace();
                 // Log.e("RNCWebView", "createNewInstance error: " + e.getLocalizedMessage());
             }
+            // the webview visibility is gone in onCreateWindow method (RNCWebChromeClient.java), so we need to make it visible again
+            if(webView.getVisibility() != View.VISIBLE) {
+                webView.setVisibility(View.VISIBLE);
+            }
             newWindow = null;
         } else {
             webView = new RNCWebView(reactContext);
         }
+
         return webView;
     }
 

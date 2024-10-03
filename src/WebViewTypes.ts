@@ -312,6 +312,8 @@ export interface BasicAuthCredential {
   password: string;
 }
 
+export type OnShouldCreateNewWindow = (event: WebViewNavigation) => boolean;
+
 export interface CommonNativeWebViewProps extends ViewProps {
   cacheEnabled?: boolean;
   incognito?: boolean;
@@ -343,12 +345,18 @@ export interface CommonNativeWebViewProps extends ViewProps {
   applicationNameForUserAgent?: string;
   basicAuthCredential?: BasicAuthCredential;
 
+  // #region Lunascape props
   /**
    * Lunascape props
    */
   adblockRuleList?: string[];
+  openNewWindowInWebView?: boolean;
+  onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow;
+  onWebViewClosed?: (event: WebViewNavigationEvent) => void;
   onGetFavicon?: (event: WebViewMessageEvent) => void;
   onCaptureScreen?: (event: WebViewMessageEvent) => void;
+  // #endregion Lunascape props
 }
 
 export declare type ContentInsetAdjustmentBehavior =
@@ -667,6 +675,8 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * or when the user clicks on a `<a href="http://someurl" target="_blank">` link.
    *
    * @platform ios
+   *
+   * @deprecated Use `onShouldCreateNewWindow` instead
    */
   onOpenWindow?: (event: WebViewOpenWindowEvent) => void;
 
@@ -993,6 +1003,8 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * or when the user clicks on a `<a href="http://someurl" target="_blank">` link.
    *
    * @platform android
+   *
+   * @deprecated Use `onShouldCreateNewWindow` instead
    */
   onOpenWindow?: (event: WebViewOpenWindowEvent) => void;
 
@@ -1389,6 +1401,7 @@ export interface WebViewSharedProps extends ViewProps {
    */
   webviewDebuggingEnabled?: boolean;
 
+  // #region Lunascape props
   /**
    * Lunascape props
    */
@@ -1396,6 +1409,12 @@ export interface WebViewSharedProps extends ViewProps {
    * Set this to provide Adblock Rules that will be used in AdblockEngine
    */
   adblockRuleList?: string[];
+  openNewWindowInWebView?: boolean;
+
+  /**
+   * Allows custom handling of window.open() by a JS handler
+   */
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow;
 
   /* @platform android
    * Function that is invoked when the `requestWebViewStatus` method is called.
@@ -1406,6 +1425,8 @@ export interface WebViewSharedProps extends ViewProps {
    * Function that is invoked when the page content process is finished or the `requestWebFavicon` method is called.
    */
   onGetFavicon?: (event: WebViewMessageEvent) => void;
+
+  onWebViewClosed?: (event: WebViewNavigationEvent) => void;
 
   /**
    * to append to the existing user-agent string in some specific domains
@@ -1419,6 +1440,7 @@ export interface WebViewSharedProps extends ViewProps {
    * Webview will be reloaded when capture screen on IOS and Android
    */
   onCaptureScreen?: (event: WebViewMessage | WebViewMessageEvent) => void;
+  // #endregion
 }
 
 export interface WebViewNativeFullScreenEvent extends WebViewNativeEvent {

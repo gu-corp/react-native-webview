@@ -36,12 +36,22 @@ RCT_ENUM_CONVERTER(RNCWebViewPermissionGrantType, (@{
 @end
 
 @implementation RNCWebViewManager
+{
+    // Lunascape
+    NSConditionLock* createNewWindowCondition;
+    BOOL createNewWindowResult;
+    RNCWebViewImpl* newWindow;
+}
 
 RCT_EXPORT_MODULE(RNCWebView)
 
+// Custom for Lunascape
 - (RNCView *)view
 {
-  return [[RNCWebViewImpl alloc] init];
+  RNCWebViewImpl *webView = newWindow ? newWindow : [RNCWebViewImpl new];
+  webView.delegate = self;
+  newWindow = nil;
+  return webView;
 }
 
 RCT_EXPORT_VIEW_PROPERTY(source, NSDictionary)
@@ -83,7 +93,7 @@ RCT_EXPORT_VIEW_PROPERTY(cacheEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowsLinkPreview, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowingReadAccessToURL, NSString)
 RCT_EXPORT_VIEW_PROPERTY(basicAuthCredential, NSDictionary)
-RCT_EXPORT_VIEW_PROPERTY(additionalUserAgent, NSArray<NSDictionary>)
+
 
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
 RCT_EXPORT_VIEW_PROPERTY(contentInsetAdjustmentBehavior, UIScrollViewContentInsetAdjustmentBehavior)
@@ -121,8 +131,6 @@ RCT_EXPORT_VIEW_PROPERTY(onScroll, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(enableApplePay, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(menuItems, NSArray);
 RCT_EXPORT_VIEW_PROPERTY(suppressMenuItems, NSArray);
-RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
-RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
 
 // New arch only
 RCT_CUSTOM_VIEW_PROPERTY(hasOnFileDownload, BOOL, RNCWebViewImpl) {}
@@ -220,6 +228,52 @@ QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(injectJavaScript, script:(NSString *)scri
 QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(clearCache, includeDiskFiles:(BOOL)includeDiskFiles, includeDiskFiles)
 
 // Lunascape
+
+RCT_EXPORT_VIEW_PROPERTY(onWebViewClosed, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(additionalUserAgent, NSArray<NSDictionary>)
+RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
+
+- (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView
+ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id> *)request
+     withConfiguration:(WKWebViewConfiguration*)configuration
+          withCallback:(RCTDirectEventBlock)callback
+{
+  createNewWindowCondition = [[NSConditionLock alloc] initWithCondition:arc4random()];
+  createNewWindowResult = YES;
+  request[@"lockIdentifier"] = @(createNewWindowCondition.condition);
+  callback(request);
+
+  // Block the main thread for a maximum of 250ms until the JS thread returns
+  if ([createNewWindowCondition lockWhenCondition:0 beforeDate:[NSDate dateWithTimeIntervalSinceNow:.25]]) {
+    [createNewWindowCondition unlock];
+    createNewWindowCondition = nil;
+    if (createNewWindowResult) {
+      newWindow = [[RNCWebViewImpl alloc] initWithConfiguration:configuration from:webView];
+      return newWindow;
+    } else {
+      return nil;
+    }
+  } else {
+    RCTLogWarn(@"Did not receive response to shouldCreateNewWindow in time, defaulting to YES");
+    newWindow = [[RNCWebViewImpl alloc] initWithConfiguration:configuration from:webView];
+    return newWindow;
+  }
+}
+
+RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteger)lockIdentifier)
+{
+  if (createNewWindowCondition && [createNewWindowCondition tryLockWhenCondition:lockIdentifier]) {
+    createNewWindowResult = result;
+    [createNewWindowCondition unlockWithCondition:0];
+  } else {
+    RCTLogWarn(@"createNewWindowWithResult invoked with invalid lockIdentifier: "
+              "got %zd, expected %zd", lockIdentifier, createNewWindowCondition.condition);
+  }
+}
+
 // Adblock
 RCT_EXPORT_VIEW_PROPERTY(adblockRuleList, NSArray<NSString>)
 RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)

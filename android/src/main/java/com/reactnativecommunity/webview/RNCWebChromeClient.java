@@ -32,6 +32,7 @@ import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
+import com.reactnativecommunity.webview.events.TopCreateNewWindowEvent;
 import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
 import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
 
@@ -88,65 +89,66 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         this.mWebView = webView;
     }
 
+
+    // Custom for Lunascape
     @Override
-    public boolean onCreateWindow(WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+    public boolean onCreateWindow(final WebView webView, boolean isDialog, boolean isUserGesture, Message resultMsg) {
         // Create a new view
         RNCWebView newWebView = createNewWindow(mWebView.getThemedReactContext());
 
-        if(mHasOnOpenWindowEvent) {
-            RNCWebViewClient newWebViewClient = new RNCWebViewClient(mWebView.getThemedReactContext()) {
-                @Override
-                public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                    /*
-                     * In some case like Figma page, when click hyperlink have target="_blank"
-                     * url="about:blank" will be load first, need process it to get real url in next time onPageStarted called
-                     * */
-                    if (url.equals(RNCWebView.BLANK_URL)) {
-                        super.onPageStarted(view, url, favicon);
-                        return;
-                    }
-
-                    WritableMap eventData = Arguments.createMap();
-                    eventData.putDouble("target", view.getId());
-                    eventData.putString("url", url);
-                    eventData.putBoolean("loading", false);
-                    eventData.putDouble("progress", view.getProgress());
-                    eventData.putString("title", view.getTitle());
-                    eventData.putBoolean("canGoBack", view.canGoBack());
-                    eventData.putBoolean("canGoForward", view.canGoForward());
-
-                    ((RNCWebView) view).dispatchEvent(
-                      view,
-                      new TopOpenWindowEvent(RNCWebViewWrapper.getReactTagFromWebView(view), eventData)
-                    );
+        // ignore mHasOnOpenWindowEvent in here because it's only used for onOpenWindow event
+        RNCWebViewClient newWebViewClient = new RNCWebViewClient(mWebView.getThemedReactContext()) {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                /*
+                    * In some case like Figma page, when click hyperlink have target="_blank"
+                    * url="about:blank" will be load first, need process it to get real url in next time onPageStarted called
+                    * */
+                if (url.equals(RNCWebView.BLANK_URL)) {
+                    super.onPageStarted(view, url, favicon);
+                    return;
                 }
 
-                @Override
-                public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                    return false;
-                }
+                WritableMap eventData = Arguments.createMap();
+                eventData.putDouble("target", webView.getId());
+                eventData.putString("url", url);
+                eventData.putBoolean("loading", false);
+                eventData.putDouble("progress", webView.getProgress());
+                eventData.putString("title", webView.getTitle());
+                eventData.putBoolean("canGoBack", webView.canGoBack());
+                eventData.putBoolean("canGoForward", webView.canGoForward());
 
-                @Override
-                public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                    final String url = request.getUrl().toString();
-                    return this.shouldOverrideUrlLoading(view, url);
-                }
-            };
-
-            RNCWebView currentWebView = (RNCWebView) view;
-            if (currentWebView.mRNCWebViewClient != null) {
-                newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
+                ((RNCWebView) view).dispatchEvent(
+                webView,
+                new TopCreateNewWindowEvent(RNCWebViewWrapper.getReactTagFromWebView(webView), eventData)
+                );
             }
 
-            newWebView.setWebViewClient(newWebViewClient);
-            // Clone settings from parent view
-            newWebView.cloneSettings(currentWebView);
-            newWebView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-              ViewGroup.LayoutParams.MATCH_PARENT));
-            newWebView.setVisibility(View.GONE);
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return false;
+            }
 
-            view.addView(newWebView);
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                final String url = request.getUrl().toString();
+                return this.shouldOverrideUrlLoading(view, url);
+            }
+        };
+
+        RNCWebView currentWebView = (RNCWebView) webView;
+        if (currentWebView.mRNCWebViewClient != null) {
+            newWebViewClient.mEnableNightMode = currentWebView.mRNCWebViewClient.mEnableNightMode;
         }
+
+        newWebView.setWebViewClient(newWebViewClient);
+        // Clone settings from parent view
+        newWebView.cloneSettings(currentWebView);
+        newWebView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT));
+        newWebView.setVisibility(View.GONE);
+
+        webView.addView(newWebView);
 
         final WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
         transport.setWebView(newWebView);
@@ -423,6 +425,22 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
       mHasOnOpenWindowEvent = hasEvent;
     }
 
+    // <editor-fold desc="Lunascape logic">
+    @Override
+    public void onCloseWindow(WebView webView) {
+        WritableMap event = Arguments.createMap();
+        event.putDouble("target", webView.getId());
+        event.putString("title", webView.getTitle());
+        event.putString("url", webView.getUrl());
+        event.putBoolean("canGoBack", webView.canGoBack());
+        event.putBoolean("canGoForward", webView.canGoForward());
+        event.putDouble("progress", (float) webView.getProgress() / 100);
+        ((RNCWebView) webView).dispatchEvent(
+          webView,
+          new TopCreateNewWindowEvent(RNCWebViewWrapper.getReactTagFromWebView(webView), event)
+        );
+    }
+
     /**
      * Lunascape logic
      * */
@@ -432,4 +450,6 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         newView.addJavascriptInterface(newView.createRNCWebViewBridge(newView), RNCWebView.FAVICON_INTERFACE);
         return newView;
     }
+
+    // </editor-fold>
 }

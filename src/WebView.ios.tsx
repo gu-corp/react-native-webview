@@ -15,6 +15,7 @@ import {
   defaultRenderError,
   defaultRenderLoading,
   useWebViewLogic,
+  createOnShouldCreateNewWindow,
 } from './WebViewShared';
 import {
   IOSWebViewProps,
@@ -72,7 +73,6 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onFileDownload,
       onHttpError: onHttpErrorProp,
       onMessage: onMessageProp,
-      onGetFavicon: onGetFaviconProp,
       onOpenWindow: onOpenWindowProp,
       renderLoading,
       renderError,
@@ -88,7 +88,11 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       incognito,
       decelerationRate: decelerationRateProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
+      // #region Lunascape
       onCaptureScreen,
+      onGetFavicon: onGetFaviconProp,
+      onShouldCreateNewWindow: onShouldCreateNewWindowProp,
+      // #endregion Lunascape
       ...otherProps
     },
     ref
@@ -121,6 +125,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onOpenWindow,
       onContentProcessDidTerminate,
       onGetFavicon,
+      updateNavigationState,
     } = useWebViewLogic({
       onNavigationStateChange,
       onLoad,
@@ -244,6 +249,24 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
 
     const decelerationRate = processDecelerationRate(decelerationRateProp);
 
+    // #region Lunascape
+
+    const onShouldCreateNewWindowCallback = (
+      shouldCreate: boolean,
+      _url: string,
+      lockIdentifier: number
+    ) => {
+      const viewManager = nativeConfig?.viewManager || RNCWebViewManager;
+
+      viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
+    };
+
+    const onShouldCreateNewWindow = createOnShouldCreateNewWindow(
+      onShouldCreateNewWindowCallback,
+      onShouldCreateNewWindowProp
+    );
+    // #endregion Lunascape
+
     const NativeWebView =
       (nativeConfig?.component as typeof RNCWebView | undefined) || RNCWebView;
 
@@ -321,8 +344,12 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         ref={webViewRef}
         // @ts-expect-error old arch only
         source={sourceResolved}
+        // #region Lunascape
         onGetFavicon={onGetFavicon}
         onCaptureScreen={onCaptureScreen}
+        onShouldCreateNewWindow={onShouldCreateNewWindow}
+        onNavigationStateChange={updateNavigationState}
+        // #endregion Lunascape
         {...nativeConfig?.props}
       />
     );

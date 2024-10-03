@@ -165,6 +165,9 @@ RCTAutoInsetsProtocol>
 #endif
 
   // Lunascape
+    
+  WKWebViewConfiguration *wkWebViewConfig;
+    
   // common script for all webviews
   WKUserScript *scriptFirefoxObject;
   // Youtube Videos Without Ads
@@ -177,13 +180,17 @@ RCTAutoInsetsProtocol>
   BOOL decelerating;
   BOOL dragging;
   BOOL scrollingToTop;
+  BOOL initiated;
   BOOL allowUnsafeSite;
+  BOOL longPress;
+  NSBundle* resourceBundle;
 }
 
-BOOL longPress;
-NSBundle* resourceBundle;
-// TODO: maybe don't need this variable
-// WKWebViewConfiguration *wkWebViewConfig;WKWebViewConfiguration *wkWebViewConfig;
+- (void)webViewDidClose:(WKWebView *)webView {
+  if (_onWebViewClosed) {
+    _onWebViewClosed([self baseEvent]);
+  }
+}
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -269,18 +276,11 @@ NSBundle* resourceBundle;
     NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
     resourceBundle = [NSBundle bundleWithPath:bundlePath];
     // endregion
+    initiated = NO;
     
 #endif // TARGET_OS_IOS
   return self;
 }
-
-// TODO: Task @9559bde
-// region to do @9559bde
-//- (void)setupConfiguration:(WKWebViewConfiguration*)configuration {
-//  wkWebViewConfig = configuration;
-//  _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
-//}
-// endregion
 
 #if !TARGET_OS_OSX
 - (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
@@ -422,19 +422,33 @@ NSBundle* resourceBundle;
 }
 
 /**
+ * Custom for Lunascape
+ *
  * See https://stackoverflow.com/questions/25713069/why-is-wkwebview-not-opening-links-with-target-blank/25853806#25853806 for details.
  */
 - (WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures
 {
-  if (!navigationAction.targetFrame.isMainFrame) {
-    NSURL *url = navigationAction.request.URL;
-
-    if (_onOpenWindow) {
-      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-      [event addEntriesFromDictionary: @{@"targetUrl": url.absoluteString}];
-      _onOpenWindow(event);
-    } else {
+  // ignore _onOpenWindow event in here because it's not used
+  // Custom for Lunascape
+  NSString *scheme = navigationAction.request.URL.scheme;
+  if ((navigationAction.targetFrame.isMainFrame || _openNewWindowInWebView) && ([scheme isEqualToString:@"http"] || [scheme isEqualToString:@"https"] || [scheme isEqualToString:@"about"])) {
+    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+    [event addEntriesFromDictionary: @{@"url": (navigationAction.request.URL).absoluteString,
+                                        @"navigationType": @(navigationAction.navigationType)
+    }];
+    RNCWebViewImpl* wkWebView = [self.delegate webView:self shouldCreateNewWindow:event withConfiguration:configuration withCallback:_onShouldCreateNewWindow];
+    if (!wkWebView) {
       [webView loadRequest:navigationAction.request];
+    } else {
+      return wkWebView.webView;
+    }
+  }/* else if (!navigationAction.targetFrame.isMainFrame) {
+    [webView loadRequest:navigationAction.request];
+  }*/ else {
+    UIApplication *app = [UIApplication sharedApplication];
+    NSURL *url = navigationAction.request.URL;
+    if ([app canOpenURL:url]) {
+      [app openURL:url];
     }
   }
   return nil;
@@ -560,11 +574,15 @@ NSBundle* resourceBundle;
   return wkWebViewConfig;
 }
 
+// Custom for Lunascape
 - (void)didMoveToWindow
 {
-  if (self.window != nil && _webView == nil) {
-    WKWebViewConfiguration *wkWebViewConfig = [self setUpWkWebViewConfig];
-    _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+  if (self.window != nil && !initiated) { // use !initiated instead of _webView == nil to avoid reinitialization
+    initiated = YES;
+    if(wkWebViewConfig == nil) { // custom for Lunascape
+      wkWebViewConfig = [self setUpWkWebViewConfig];
+      _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    }
     [self setBackgroundColor: _savedBackgroundColor];
 #if !TARGET_OS_OSX
     _webView.menuItems = _menuItems;
@@ -587,6 +605,13 @@ NSBundle* resourceBundle;
 #endif // !TARGET_OS_OSX
     _webView.allowsLinkPreview = _allowsLinkPreview;
     [_webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionOld | NSKeyValueObservingOptionNew context:nil];
+    // #region Lunascape
+    [_webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:nil];
+    [_webView addObserver:self forKeyPath:@"URL" options:NSKeyValueObservingOptionNew context:nil];
+    // #endregion Lunascape
     _webView.allowsBackForwardNavigationGestures = _allowsBackForwardNavigationGestures;
 
     _webView.customUserAgent = _userAgent;
@@ -660,6 +685,13 @@ NSBundle* resourceBundle;
     [_webView.configuration.userContentController removeScriptMessageHandlerForName:HistoryShimName];
     [_webView.configuration.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
     [_webView removeObserver:self forKeyPath:@"estimatedProgress"];
+    // #region Lunascape
+    [_webView removeObserver:self forKeyPath:@"title"];
+    [_webView removeObserver:self forKeyPath:@"loading"];
+    [_webView removeObserver:self forKeyPath:@"canGoBack"];
+    [_webView removeObserver:self forKeyPath:@"canGoForward"];
+    [_webView removeObserver:self forKeyPath:@"URL"];
+    // #endregion Lunascape
     [_webView removeFromSuperview];
     if (@available(iOS 15.0, macOS 12.0, *)) {
         [_webView pauseAllMediaPlaybackWithCompletionHandler:nil];
@@ -750,7 +782,15 @@ NSBundle* resourceBundle;
       [event addEntriesFromDictionary:@{@"progress":[NSNumber numberWithDouble:self.webView.estimatedProgress]}];
       _onLoadingProgress(event);
     }
-  }else{
+  }
+  // #region Lunascape
+  else if ([keyPath isEqualToString:@"title"] || [keyPath isEqualToString:@"loading"] || [keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"] || [keyPath isEqualToString:@"URL"]) {
+      if (_onNavigationStateChange) {
+        _onNavigationStateChange([self baseEvent]);
+      }
+  }
+  // #endregion Lunascape
+  else {
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
   }
 }
@@ -891,6 +931,17 @@ NSBundle* resourceBundle;
     [_webView loadHTMLString:html baseURL:baseURL];
     return;
   }
+    
+  // Some child windows (created by createWebViewWithConfiguration)
+  // open about:blank at first before navigate to upcoming request,
+  // the method may run before the upcoming request is navigated
+  // and will cause error "about:blank is not a valid file URL"
+  // If you want to open a blank page, you should pass source = { html: '' }
+  NSString *uri = [RCTConvert NSString:_source[@"uri"]];
+  if ([uri isEqualToString:@"about:blank"]) {
+    return;
+  }
+    
   // Add cookie for subsequent resource requests sent by page itself, if cookie was set in headers on WebView
   NSString *headerCookie = [RCTConvert NSString:_source[@"headers"][@"cookie"]];
   if(headerCookie) {
@@ -1193,6 +1244,7 @@ NSBundle* resourceBundle;
     @"title": _webView.title ?: @"",
     @"loading" : @(_webView.loading),
     @"canGoBack": @(_webView.canGoBack),
+    @"progress" : @(_webView.estimatedProgress),
     @"canGoForward" : @(_webView.canGoForward)
   };
   return [[NSMutableDictionary alloc] initWithDictionary: event];
@@ -2402,6 +2454,7 @@ didFinishNavigation:(WKNavigation *)navigation
     [_webView setEnableNightMode:enable];
 }
 
+
 - (NSDictionary*)onScrollEvent:(CGPoint)currentOffset 
                   moveDistance:(CGPoint)distance
 {
@@ -2457,6 +2510,124 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)proceedUnsafeSite:(NSString *)url {
     allowUnsafeSite = YES;
     [self reload];
+}
+
+- (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebViewImpl*)parentView {
+  if (self = [self initWithFrame:parentView.frame]) {
+    wkWebViewConfig = configuration;
+    [self setUpWkWebViewConfig:parentView configuration:wkWebViewConfig]; // copy some parent props to newWindow
+    _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
+    _webView.UIDelegate = self;
+    _webView.navigationDelegate = self;
+    if (parentView.userAgent) {
+      _webView.customUserAgent = parentView.userAgent;
+    }
+  }
+  return self;
+}
+
+// copy sender configuration to configuration parameter. Similar to setUpWkWebViewConfig
+- (void)setUpWkWebViewConfig:(RNCWebViewImpl*)sender configuration:(WKWebViewConfiguration *)configuration
+{
+  WKWebViewConfiguration *wkWebViewConfig;
+  wkWebViewConfig = configuration;
+  WKPreferences *prefs = [[WKPreferences alloc]init];
+  BOOL _prefsUsed = NO;
+  if (!sender.javaScriptEnabled) {
+    prefs.javaScriptEnabled = NO;
+    _prefsUsed = YES;
+  }
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
+  if (@available(iOS 13.0, *)) {
+    if (!sender.fraudulentWebsiteWarningEnabled) {
+        prefs.fraudulentWebsiteWarningEnabled = NO;
+        _prefsUsed = YES;
+    }
+  }
+#endif
+  if (sender.allowUniversalAccessFromFileURLs) {
+    [wkWebViewConfig setValue:@TRUE forKey:@"allowUniversalAccessFromFileURLs"];
+  }
+  if (sender.allowFileAccessFromFileURLs) {
+    [prefs setValue:@TRUE forKey:@"allowFileAccessFromFileURLs"];
+    _prefsUsed = YES;
+  }
+  if (sender.javaScriptCanOpenWindowsAutomatically) {
+    [prefs setValue:@TRUE forKey:@"javaScriptCanOpenWindowsAutomatically"];
+    _prefsUsed = YES;
+  }
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140500 /* iOS 14.5 */
+  if (@available(iOS 14.5, *)) {
+    if (!sender.textInteractionEnabled) {
+      [prefs setValue:@FALSE forKey:@"textInteractionEnabled"];
+      _prefsUsed = YES;
+    }
+  }
+#endif
+  if (_prefsUsed) {
+    wkWebViewConfig.preferences = prefs;
+  }
+  if (sender.incognito) {
+    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+  } else if (sender.cacheEnabled) {
+    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
+  }
+  if(sender.useSharedProcessPool) {
+    wkWebViewConfig.processPool = [[RNCWKProcessPoolManager sharedManager] sharedProcessPool];
+  }
+  wkWebViewConfig.userContentController = [WKUserContentController new];
+
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* iOS 13 */
+  if (@available(iOS 13.0, *)) {
+    WKWebpagePreferences *pagePrefs = [[WKWebpagePreferences alloc]init];
+    pagePrefs.preferredContentMode = sender.contentMode;
+    wkWebViewConfig.defaultWebpagePreferences = pagePrefs;
+  }
+#endif
+
+#if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 140000 /* iOS 14 */
+  if (@available(iOS 14.0, *)) {
+    if ([wkWebViewConfig respondsToSelector:@selector(limitsNavigationsToAppBoundDomains)]) {
+      if (sender.limitsNavigationsToAppBoundDomains) {
+        wkWebViewConfig.limitsNavigationsToAppBoundDomains = YES;
+      }
+    }
+  }
+#endif
+
+  // Shim the HTML5 history API:
+  [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
+                                                            name:HistoryShimName];
+  [self resetupScripts:wkWebViewConfig];
+
+  if(@available(macos 10.11, ios 9.0, *)) {
+    wkWebViewConfig.allowsAirPlayForMediaPlayback = sender.allowsAirPlayForMediaPlayback;
+  }
+
+#if !TARGET_OS_OSX
+  wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
+  wkWebViewConfig.allowsPictureInPictureMediaPlayback = sender.allowsPictureInPictureMediaPlayback;
+  wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = sender.mediaPlaybackRequiresUserAction
+  ? WKAudiovisualMediaTypeAll
+  : WKAudiovisualMediaTypeNone;
+  wkWebViewConfig.dataDetectorTypes = sender.dataDetectorTypes;
+
+  // feature: zooming webpage with any value of viewport = "... user-scalable= no/yes "
+  // Enables Zoom in website by ignoring their javascript based viewport Scale limits.
+  if (@available(iOS 10.0, *)) {
+    wkWebViewConfig.ignoresViewportScaleLimits = true;
+    } else {
+      // Fallback on earlier versions
+      }
+#endif // !TARGET_OS_OSX
+
+  if (sender.applicationNameForUserAgent) {
+    wkWebViewConfig.applicationNameForUserAgent = [NSString stringWithFormat:@"%@ %@", wkWebViewConfig.applicationNameForUserAgent, sender.applicationNameForUserAgent];
+  }
+
+  // Lunascape logic
+  [self applyAdblockRuleList:wkWebViewConfig];
+
 }
 
 @end
