@@ -4,7 +4,13 @@ import React, {
   useImperativeHandle,
   useRef,
 } from 'react';
-import { Image, View, ImageSourcePropType, HostComponent } from 'react-native';
+import {
+  Image,
+  View,
+  ImageSourcePropType,
+  HostComponent,
+  NativeModules,
+} from 'react-native';
 import invariant from 'invariant';
 
 import RNCWebView, { Commands, NativeProps } from './RNCWebViewNativeComponent';
@@ -21,6 +27,7 @@ import {
   IOSWebViewProps,
   DecelerationRateConstant,
   WebViewSourceUri,
+  ViewManager,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -256,6 +263,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       _url: string,
       lockIdentifier: number
     ) => {
+      const RNCWebViewManager = NativeModules.RNCWebView as ViewManager;
       const viewManager = nativeConfig?.viewManager || RNCWebViewManager;
 
       viewManager.createNewWindowWithResult(!!shouldCreate, lockIdentifier);
