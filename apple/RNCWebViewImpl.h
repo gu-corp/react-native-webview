@@ -33,11 +33,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)webView:(RNCWebViewImpl *)webView
 shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
    withCallback:(RCTDirectEventBlock)callback;
-// TODO: Task @9559bde
-// region to do @9559bde
-//- (RNCWebViewImpl* _Nullable)webView:(RNCWebViewImpl* _Nonnull)webView
-//shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
-// endregion
+
+- (RNCWebViewImpl* _Nullable)webView:(RNCWebViewImpl* _Nonnull)webView
+shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request withConfiguration:(WKWebViewConfiguration* _Nonnull)configuration withCallback:(RCTDirectEventBlock _Nonnull)callback;
+
 
 @end
 
@@ -69,8 +68,7 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, copy) RCTDirectEventBlock onScroll;
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) RCTDirectEventBlock onOpenWindow;
-@property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
-@property (nonatomic, copy) RCTDirectEventBlock onCaptureScreen;
+
 
 @property (nonatomic, weak) id<RNCWebViewDelegate> _Nullable delegate;
 @property (nonatomic, copy) NSDictionary * _Nullable source;
@@ -169,9 +167,10 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
-// TODO: Task @9559bde
-// region to do @9559bde
-//- (void)setupConfiguration:(WKWebViewConfiguration* _Nonnull)configuration;
+
+
+- (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebViewImpl*_Nonnull)parentView;
+
 - (void)evaluateJavaScript:(nonnull NSString *)javaScriptString completionHandler:(void (^_Nonnull)(id _Nullable, NSError* _Nullable error))completionHandler;
 - (void)findInPage:(nonnull NSString *)searchString;
 - (void)captureScreen;
@@ -182,13 +181,14 @@ shouldStartLoadForRequest:(NSMutableDictionary<NSString *, id> *)request
 - (void)setFontSize:(nonnull NSNumber *)size;
 - (void)setEnableNightMode:(nonnull NSString *)enable;
 - (void)proceedUnsafeSite:(nullable NSString*)url;
-// endregion
 
-// TODO: Task @9559bde
-// region to do @9559bde
-//@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
-//@property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
-// endregion
+
+@property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;
+@property (nonatomic, copy) RCTDirectEventBlock onGetFavicon;
+@property (nonatomic, copy) RCTDirectEventBlock onCaptureScreen;
+@property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
+@property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
+
 
 @end
 

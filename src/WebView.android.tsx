@@ -28,6 +28,7 @@ import {
   type WebViewMessageEvent,
   type ShouldStartLoadRequestEvent,
   WebViewProgressEvent,
+  WebViewNavigationEvent,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -97,6 +98,9 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       nativeConfig,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       injectedJavaScriptObject,
+      // #region Lunascape
+      onShouldCreateNewWindow,
+      // #endregion Lunascape
       ...otherProps
     },
     ref
@@ -135,6 +139,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       onLoadingProgress,
       onOpenWindow,
       onRenderProcessGone,
+      updateNavigationState,
     } = useWebViewLogic({
       onNavigationStateChange,
       onLoad,
@@ -180,6 +185,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           Commands.clearCache(webViewRef.current, includeDiskFiles),
         clearHistory: () =>
           webViewRef.current && Commands.clearHistory(webViewRef.current),
+        // #region Lunascape
         requestWebViewStatus: () => {
           webViewRef.current &&
             Commands.requestWebViewStatus(webViewRef.current);
@@ -217,6 +223,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, enable);
         },
+        // #endregion Lunascape
       }),
       [setViewState, webViewRef]
     );
@@ -314,6 +321,18 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           )
         : sourceResolved;
 
+    // #region Lunascape
+
+    /**
+     * Allows custom handling of window.open() by a JS handler. Return true
+     * or false from this method to use default behavior.
+     */
+    const onCreateNewWindow = (event: WebViewNavigationEvent) => {
+      if (onShouldCreateNewWindow) {
+        onShouldCreateNewWindow(event.nativeEvent);
+      }
+    };
+
     const onReceiveWebViewStatus = (event: WebViewProgressEvent) => {
       if (otherProps?.onReceiveWebViewStatus) {
         otherProps?.onReceiveWebViewStatus(event);
@@ -331,6 +350,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         otherProps?.onCaptureScreen(event.nativeEvent);
       }
     };
+    // #endregion Lunascape
 
     const webView = (
       <NativeWebView
@@ -369,9 +389,13 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         setDisplayZoomControls={setDisplayZoomControls}
         nestedScrollEnabled={nestedScrollEnabled}
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
+        // #region Lunascape
+        onShouldCreateNewWindow={onCreateNewWindow}
+        onNavigationStateChange={updateNavigationState}
         onGetFavicon={onGetFavicon}
         onReceiveWebViewStatus={onReceiveWebViewStatus}
         onCaptureScreen={onCaptureScreen}
+        // #endregion Lunascape
         {...nativeConfig?.props}
       />
     );

@@ -5,15 +5,12 @@ import com.facebook.react.uimanager.events.Event
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
 /**
- * Event emitted when window.open() is called
+ * Event emitted when loading has started
  */
-class TopCaptureScreenEvent(viewId: Int, private val mData: WritableMap) : Event<TopCaptureScreenEvent>(viewId) {
+class TopWebViewClosedEvent(viewId: Int, private val mEventData: WritableMap) :
+  Event<TopWebViewClosedEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "captureScreen"
-  }
-
-  init {
-    mData.putString("navigationType", "other")
+    const val EVENT_NAME = "topWebViewClosed"
   }
 
   override fun getEventName(): String = EVENT_NAME
@@ -23,5 +20,5 @@ class TopCaptureScreenEvent(viewId: Int, private val mData: WritableMap) : Event
   override fun getCoalescingKey(): Short = 0
 
   override fun dispatch(rctEventEmitter: RCTEventEmitter) =
-    rctEventEmitter.receiveEvent(viewTag, EVENT_NAME, mData)
+    rctEventEmitter.receiveEvent(viewTag, eventName, mEventData)
 }

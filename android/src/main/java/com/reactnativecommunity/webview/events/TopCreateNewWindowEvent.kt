@@ -7,9 +7,9 @@ import com.facebook.react.uimanager.events.RCTEventEmitter
 /**
  * Event emitted when window.open() is called
  */
-class TopCaptureScreenEvent(viewId: Int, private val mData: WritableMap) : Event<TopCaptureScreenEvent>(viewId) {
+class TopCreateNewWindowEvent(viewId: Int, private val mData: WritableMap) : Event<TopCreateNewWindowEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "captureScreen"
+    const val EVENT_NAME = "topCreateNewWindow"
   }
 
   init {

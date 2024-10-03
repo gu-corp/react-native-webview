@@ -3,6 +3,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Linking, View, ActivityIndicator, Text, Platform } from 'react-native';
 import {
   OnShouldStartLoadWithRequest,
+  OnShouldCreateNewWindow,
   ShouldStartLoadRequestEvent,
   WebViewError,
   WebViewErrorEvent,
@@ -71,6 +72,30 @@ const createOnShouldStartLoadWithRequest = (
   };
 };
 
+// #region Lunascape
+
+const createOnShouldCreateNewWindow = (
+  createNewWindow: (
+    shouldCreate: boolean,
+    url: string,
+    lockIdentifier: number
+  ) => void,
+  onShouldCreateNewWindow?: OnShouldCreateNewWindow
+) => {
+  return ({ nativeEvent }: WebViewNavigationEvent) => {
+    let shouldStart = true;
+    const { url, lockIdentifier } = nativeEvent;
+
+    if (onShouldCreateNewWindow) {
+      shouldStart = onShouldCreateNewWindow(nativeEvent);
+    }
+
+    createNewWindow(shouldStart, url, lockIdentifier);
+  };
+};
+
+// #endregion Lunascape
+
 const defaultRenderLoading = () => (
   <View style={styles.loadingOrErrorView}>
     <ActivityIndicator />
@@ -92,6 +117,7 @@ const defaultRenderError = (
 export {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
+  createOnShouldCreateNewWindow,
   defaultRenderLoading,
   defaultRenderError,
 };
@@ -229,13 +255,6 @@ export const useWebViewLogic = ({
     [onMessageProp]
   );
 
-  const onGetFavicon = useCallback(
-    (event: WebViewMessageEvent) => {
-      onGetFaviconProp?.(event);
-    },
-    [onGetFaviconProp]
-  );
-
   const onLoadingProgress = useCallback(
     (event: WebViewProgressEvent) => {
       const {
@@ -274,6 +293,19 @@ export const useWebViewLogic = ({
     [onOpenWindowProp]
   );
 
+  // #region Lunascape
+  /**
+   * Lunascape
+   */
+  const onGetFavicon = useCallback(
+    (event: WebViewMessageEvent) => {
+      onGetFaviconProp?.(event);
+    },
+    [onGetFaviconProp]
+  );
+
+  // #endregion Lunascape
+
   return {
     onShouldStartLoadWithRequest,
     onLoadingStart,
@@ -289,5 +321,6 @@ export const useWebViewLogic = ({
     setViewState,
     lastErrorEvent,
     onGetFavicon,
+    updateNavigationState,
   };
 };
