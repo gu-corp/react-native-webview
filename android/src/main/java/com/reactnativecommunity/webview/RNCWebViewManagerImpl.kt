@@ -17,6 +17,7 @@ import android.webkit.CookieManager
 import android.webkit.DownloadListener
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.widget.Toast
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import com.facebook.react.bridge.Arguments
@@ -25,8 +26,11 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.MapBuilder
 import com.facebook.react.common.build.ReactBuildConfig
 import com.facebook.react.uimanager.ThemedReactContext
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent
 import com.reactnativecommunity.webview.events.TopMessageEvent
 import com.reactnativecommunity.webview.events.TopWebViewOnFullScreenEvent
+import com.reactnativecommunity.webview.lunascape.LunascapeUtils
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequest
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.UnsupportedEncodingException
@@ -154,15 +158,32 @@ class RNCWebViewManagerImpl {
 
       webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
             webView.setIgnoreErrFailedForThisURL(url)
+            // Download blob url
+            if (url.startsWith("blob")) {
+                val jsConvert = "getBase64StringFromBlobUrl('$url');"
+                webView.loadUrl("javascript:$jsConvert")
+                return@DownloadListener
+            }
+
+            // block non-http/https download links
+            if (!android.webkit.URLUtil.isNetworkUrl(url)) {
+                Toast.makeText(context, R.string.download_protocol_not_supported, Toast.LENGTH_LONG).show()
+                return@DownloadListener
+            }
+
             val module = webView.reactApplicationContext.getNativeModule(RNCWebViewModule::class.java) ?: return@DownloadListener
             val request: DownloadManager.Request = try {
                 DownloadManager.Request(Uri.parse(url))
             } catch (e: IllegalArgumentException) {
                 Log.w(TAG, "Unsupported URI, aborting download", e)
+                Toast.makeText(context, R.string.download_protocol_not_supported, Toast.LENGTH_LONG).show()
                 return@DownloadListener
             }
-            var fileName = URLUtil.guessFileName(url, contentDisposition, mimetype)
-
+            var fileName = LunascapeUtils.getDownloadFileName(url, contentDisposition, mimetype)
+            var subPath = fileName
+            if (!downloadFolder.isNullOrBlank()) {
+                subPath = "$downloadFolder/$fileName"
+            }
             // Sanitize filename by replacing invalid characters with "_"
             fileName = fileName.replace(invalidCharRegex, "_")
 
@@ -170,10 +191,11 @@ class RNCWebViewManagerImpl {
 
             //Attempt to add cookie, if it exists
             var urlObj: URL? = null
+            var cookie = ""
             try {
                 urlObj = URL(url)
                 val baseUrl = urlObj.protocol + "://" + urlObj.host
-                val cookie = CookieManager.getInstance().getCookie(baseUrl)
+                cookie = CookieManager.getInstance()?.getCookie(baseUrl) ?: ""
                 request.addRequestHeader("Cookie", cookie)
             } catch (e: MalformedURLException) {
                 Log.w(TAG, "Error getting cookie for DownloadManager", e)
@@ -185,8 +207,11 @@ class RNCWebViewManagerImpl {
             request.setDescription(downloadMessage)
             request.allowScanningByMediaScanner()
             request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
-            module.setDownloadRequest(request)
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subPath)
+            module.setDownloadRequest(
+                request,
+                DownloadRequest(-1, -1, url, userAgent, contentDisposition, mimetype, cookie, 0)
+            )
             if (module.grantFileDownloaderPermissions(
                     getDownloadingMessageOrDefault(),
                     getLackPermissionToDownloadMessageOrDefault()
@@ -194,6 +219,13 @@ class RNCWebViewManagerImpl {
             ) {
                 module.downloadFile(
                     getDownloadingMessageOrDefault()
+                )
+
+                val eventData = Arguments.createMap()
+                eventData.putString("downloadUrl", url)
+                webView.dispatchEvent(
+                    webView,
+                    TopFileDownloadEvent(RNCWebViewWrapper.getReactTagFromWebView(webView), eventData)
                 )
             }
         })
@@ -822,6 +854,8 @@ class RNCWebViewManagerImpl {
     /**
      * Lunascape props
      * */
+    private var downloadFolder: String? = null
+
     fun setAdblockRuleList(viewWrapper: RNCWebViewWrapper, rules: ReadableArray?) {
         viewWrapper.webView.mRNCWebViewClient?.apply {
             setAdblockRuleList(rules)
@@ -832,6 +866,18 @@ class RNCWebViewManagerImpl {
         val client = viewWrapper.webView.mRNCWebViewClient
         if (client != null && additionalUserAgent != null) {
             client.setAdditionalUserAgent(additionalUserAgent)
+        }
+    }
+
+    fun setDownloadConfig(viewWrapper: RNCWebViewWrapper, downloadConfig: ReadableMap?) {
+        downloadConfig?.let {
+            if (downloadConfig.hasKey("downloadFolder")) {
+                val downloadFolderName = downloadConfig.getString("downloadFolder")
+                val module = RNCWebViewModule.getRNCWebViewModule(viewWrapper.webView.themedReactContext)
+                module.setDownloadFolder(downloadFolderName)
+                viewWrapper.webView.DOWNLOAD_FOLDER = downloadFolderName
+                this.downloadFolder = downloadFolderName
+            }
         }
     }
 }

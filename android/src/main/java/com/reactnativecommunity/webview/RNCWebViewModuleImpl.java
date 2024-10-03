@@ -6,6 +6,7 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -17,6 +18,7 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.util.Pair;
 
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -25,28 +27,42 @@ import android.widget.Toast;
 
 import com.facebook.common.activitylistener.ActivityListenerManager;
 import com.facebook.react.bridge.ActivityEventListener;
+import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.WritableArray;
+import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequest;
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequestDBHelper;
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequestStatus;
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.SecurityException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static android.app.Activity.RESULT_OK;
+
+import kotlin.text.Charsets;
 
 public class RNCWebViewModuleImpl implements ActivityEventListener {
     public static final String NAME = "RNCWebViewModule";
@@ -190,6 +206,9 @@ public class RNCWebViewModuleImpl implements ActivityEventListener {
                             if (mDownloadRequest != null) {
                                 downloadFile(downloadingMessage);
                             }
+                            if (downloadBase64Data != null) {
+                                saveBase64DataToFile();
+                            }
                         } else {
                             Toast.makeText(mContext, lackPermissionToDownloadMessage, Toast.LENGTH_LONG).show();
                         }
@@ -310,15 +329,30 @@ public class RNCWebViewModuleImpl implements ActivityEventListener {
         return true;
     }
 
-    public void setDownloadRequest(DownloadManager.Request request) {
+    public void setDownloadRequest(DownloadManager.Request request, DownloadRequest tempDownloadRequest) {
         mDownloadRequest = request;
+        this.tempDownloadRequest = tempDownloadRequest;
     }
 
     public void downloadFile(String downloadingMessage) {
         DownloadManager dm = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
 
         try {
-            dm.enqueue(mDownloadRequest);
+            long downloadRequestId = dm.enqueue(mDownloadRequest);
+            if (tempDownloadRequest != null) {
+                // save download request
+                DownloadRequestDBHelper helper = new DownloadRequestDBHelper(mContext);
+                helper.insetDownloadRequest(
+                    downloadRequestId,
+                    tempDownloadRequest.getUrl(),
+                    tempDownloadRequest.getUserAgent(),
+                    tempDownloadRequest.getContentDisposition(),
+                    tempDownloadRequest.getMimetype(),
+                    tempDownloadRequest.getCookie()
+                );
+                helper.close();
+                tempDownloadRequest = null;
+            }
         } catch (IllegalArgumentException | SecurityException e) {
             Log.w("RNCWebViewModule", "Unsupported URI, aborting download", e);
             return;
@@ -628,5 +662,241 @@ public class RNCWebViewModuleImpl implements ActivityEventListener {
 
     public Engine getAdblockEngine(String name) {
         return engines.get(name);
+    }
+
+    /**
+     * Download manager
+     * */
+    private DownloadRequest tempDownloadRequest;
+    private String DOWNLOAD_FOLDER;
+
+    public void setDownloadFolder(String folder) {
+        this.DOWNLOAD_FOLDER = folder;
+    }
+
+    public void getDownloadingFiles(final Promise promise) {
+        WritableArray fileMaps = Arguments.createArray();
+
+        DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+        DownloadManager.Query query = new DownloadManager.Query();
+        query.setFilterByStatus(DownloadManager.STATUS_PENDING | DownloadManager.STATUS_RUNNING | DownloadManager.STATUS_PAUSED);
+        try {
+            // 1. get downloading file from DownloadManager
+            Cursor cursor = downloadManager.query(query);
+            if (cursor != null) {
+                int idColumn = cursor.getColumnIndex(DownloadManager.COLUMN_ID);
+                int titleColumn = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE);
+                int fileUriColumn = cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI);
+                int statusColumn = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS);
+                int bytesDownloadedColumn = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR);
+                int totalBytesColumn = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES);
+
+                while (cursor.moveToNext()) {
+                    long downloadId = cursor.getLong(idColumn);
+                    String title = cursor.getString(titleColumn);
+                    String fileUri = cursor.getString(fileUriColumn);
+                    int status = cursor.getInt(statusColumn);
+                    long bytesDownloaded = cursor.getLong(bytesDownloadedColumn);
+                    long totalBytes = cursor.getLong(totalBytesColumn);
+
+                    WritableMap fileMap = Arguments.createMap();
+                    fileMap.putInt(DownloadUtils.SESSION_ID, (int) downloadId);
+                    fileMap.putString(DownloadUtils.FILE_NAME, title);
+                    String mimeType = "";
+                    if (fileUri != null) {
+                        String extension = MimeTypeMap.getFileExtensionFromUrl(URLEncoder.encode(fileUri, Charsets.UTF_8.name()));
+                        mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension.toLowerCase(Locale.ROOT));
+                    }
+                    fileMap.putString(DownloadUtils.MIME_TYPE, mimeType);
+                    fileMap.putInt(DownloadUtils.TOTAL_BYTES, (int) totalBytes);
+                    fileMap.putInt(DownloadUtils.BYTES_DOWNLOADED, (int) bytesDownloaded);
+                    fileMap.putString(DownloadUtils.STATUS, DownloadUtils.Companion.convertStatusDownloadingFile(status));
+                    fileMaps.pushMap(fileMap);
+                }
+
+                cursor.close();
+            }
+
+            // 2. get download request have paused status from DownloadRequestDatabase
+            DownloadRequestDBHelper helper = new DownloadRequestDBHelper(mContext);
+            ArrayList<DownloadRequest> downloadRequests = helper.getAllDownloadRequestByStatus(DownloadRequestStatus.PAUSED.getStatus());
+            helper.close();
+            for (DownloadRequest request : downloadRequests) {
+                String fileName = LunascapeUtils.Companion.getDownloadFileName(
+                    request.getUrl(),
+                    request.getContentDisposition(),
+                    request.getMimetype()
+                );
+
+                WritableMap fileMap = Arguments.createMap();
+                fileMap.putInt(DownloadUtils.SESSION_ID, (int) request.getDownloadRequestId());
+                fileMap.putString(DownloadUtils.FILE_NAME, fileName);
+                fileMap.putString(DownloadUtils.MIME_TYPE, request.getMimetype());
+                fileMap.putInt(DownloadUtils.TOTAL_BYTES, 0);
+                fileMap.putInt(DownloadUtils.BYTES_DOWNLOADED, 0);
+                fileMap.putString(DownloadUtils.STATUS, DownloadUtils.Companion.convertStatusDownloadingFile(4));
+                fileMaps.pushMap(fileMap);
+            }
+
+            promise.resolve(fileMaps);
+        } catch (Exception e) {
+            e.printStackTrace();
+            promise.reject(null, e.getMessage());
+        }
+    }
+
+    public void deleteDownloadingFileById(int downloadId, final Promise promise) {
+        // 1. delete downloading file in DownloadManager
+        DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+        downloadManager.remove(downloadId);
+
+        // 2. delete download request in DownloadRequestDatabase
+        DownloadRequestDBHelper helper = new DownloadRequestDBHelper(mContext);
+        int number = helper.deleteDownloadRequest(downloadId);
+        helper.close();
+
+        promise.resolve(number);
+    }
+
+    public void pauseDownloadingFileById(int downloadId) {
+        // 1. remove download request in DownloadManager
+        DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+        downloadManager.remove(downloadId);
+
+        // 2. update download request status in DownloadRequestDatabase
+        DownloadRequestDBHelper helper = new DownloadRequestDBHelper(mContext);
+        helper.updateDownloadRequestStatus(downloadId, DownloadRequestStatus.PAUSED.getStatus());
+        helper.close();
+    }
+
+    public void resumeDownloadingFileById(int downloadId, String downloadFolderConfig, final Promise promise) {
+        // 1. get download request by download id
+        DownloadRequestDBHelper helper = new DownloadRequestDBHelper(mContext);
+        DownloadRequest downloadRequest = helper.getDownloadRequestById(downloadId);
+
+        if (downloadRequest != null) {
+            // 2. re-make download request
+            DownloadManager downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadRequest.getUrl()));
+            String fileName = LunascapeUtils.Companion.getDownloadFileName(
+                downloadRequest.getUrl(),
+                downloadRequest.getContentDisposition(),
+                downloadRequest.getMimetype()
+            );
+            String subPath = fileName;
+            if (downloadFolderConfig != null && !downloadFolderConfig.isEmpty()) {
+                subPath = downloadFolderConfig + "/" + fileName;
+            }
+            String downloadMessage = "Downloading " + fileName;
+            if (downloadRequest.getCookie() != null && !downloadRequest.getCookie().isEmpty()) {
+                request.addRequestHeader("Cookie", downloadRequest.getCookie());
+            }
+            request.addRequestHeader("User-Agent", downloadRequest.getUserAgent());
+            request.setTitle(fileName);
+            request.setDescription(downloadMessage);
+            request.allowScanningByMediaScanner();
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, subPath);
+            long newDownloadRequestId = downloadManager.enqueue(request);
+
+            // 3. reset download request to new download request id
+            helper.resetDownloadRequestWithNewId(downloadId, newDownloadRequestId);
+            helper.close();
+            promise.resolve((int) newDownloadRequestId);
+        } else {
+            helper.close();
+            promise.resolve(-1);
+        }
+    }
+
+    /**
+     * Download blob file
+     * */
+    private ArrayList<String> downloadBase64Data;
+
+    public void sendPartialBase64Data(String base64Data) {
+        if (this.downloadBase64Data == null) this.downloadBase64Data = new ArrayList<String>();
+        this.downloadBase64Data.add(base64Data);
+    }
+
+    public void saveBase64DataToFile() {
+        if (downloadBase64Data != null) {
+            String fileName = String.valueOf(System.currentTimeMillis());
+            String fileExtension = null;
+            String mimeType = null;
+            if (!downloadBase64Data.isEmpty()) {
+                fileExtension = LunascapeUtils.Companion.getFileExtensionFromBase64Data(downloadBase64Data.get(0));
+                mimeType = LunascapeUtils.Companion.getMimeTypeFromBase64Data(downloadBase64Data.get(0));
+            }
+            if (fileExtension != null) {
+                fileName = fileName + "." + fileExtension;
+            }
+
+            try {
+                File downloadFolder;
+                if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+                    downloadFolder = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_FOLDER);
+                    if (!downloadFolder.exists()) {
+                        downloadFolder.mkdirs();
+                    }
+                } else {
+                    downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                }
+
+                File downloadPath = new File(downloadFolder, fileName);
+                FileOutputStream fileOutputStream = new FileOutputStream(downloadPath, false);
+
+                for (String base64String : downloadBase64Data) {
+                    fileOutputStream.write(Base64.decode(LunascapeUtils.Companion.getBase64Data(base64String), Base64.DEFAULT));
+                }
+                fileOutputStream.flush();
+
+                if (downloadPath.exists()) {
+                    Uri fileUri = FileProvider.getUriForFile(mContext, mContext.getPackageName() + ".provider", downloadPath);
+                    if (isPostNotificationGranted()) {
+                        LunascapeUtils.Companion.makeNotificationDownloadedBlobFile(mContext, fileUri, mimeType, fileName);
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (NullPointerException e) {
+                e.printStackTrace();
+            } catch (IllegalArgumentException e) {
+                e.printStackTrace();
+            }
+
+            downloadBase64Data = null;
+        }
+    }
+
+    /**
+     * @TargetApi33 Notification permission
+     * */
+    public static final int POST_NOTIFICATIONS_PERMISSION_REQUEST = 12;
+
+    public boolean isPostNotificationGranted() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+
+        Activity activity = mContext.getCurrentActivity();
+        boolean result = ContextCompat.checkSelfPermission(activity, Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED;
+        if (!result) {
+            PermissionAwareActivity PAactivity = getPermissionAwareActivity();
+            PAactivity.requestPermissions(
+                new String[]{ Manifest.permission.POST_NOTIFICATIONS },
+                POST_NOTIFICATIONS_PERMISSION_REQUEST,
+                (requestCode, permissions, grantResults) -> {
+                    if (requestCode == POST_NOTIFICATIONS_PERMISSION_REQUEST) {
+                        // no need to do anything
+                      return true;
+                    }
+                    return false;
+                }
+            );
+        }
+
+        return result;
     }
 }

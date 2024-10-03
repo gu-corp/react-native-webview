@@ -13,6 +13,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.module.annotations.ReactModule;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequest;
 
 @ReactModule(name = RNCWebViewModuleImpl.NAME)
 public class RNCWebViewModule extends ReactContextBaseJavaModule {
@@ -41,8 +42,8 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule {
         return mRNCWebViewModuleImpl.startPhotoPickerIntent(acceptTypes, allowMultiple, callback, isCaptureEnabled);
     }
 
-    public void setDownloadRequest(DownloadManager.Request request) {
-        mRNCWebViewModuleImpl.setDownloadRequest(request);
+    public void setDownloadRequest(DownloadManager.Request request, DownloadRequest tempDownloadRequest) {
+        mRNCWebViewModuleImpl.setDownloadRequest(request, tempDownloadRequest);
     }
 
     public void downloadFile(String downloadingMessage) {
@@ -86,5 +87,55 @@ public class RNCWebViewModule extends ReactContextBaseJavaModule {
 
     public Engine getAdblockEngine(String name) {
       return mRNCWebViewModuleImpl.getAdblockEngine(name);
+    }
+
+    /**
+     * Download manager
+     * */
+    /**
+     * Get list downloading files
+     * */
+    @ReactMethod
+    public void getDownloadingFiles(final Promise promise) {
+        mRNCWebViewModuleImpl.getDownloadingFiles(promise);
+    }
+
+    /**
+     * Delete downloading file by download id
+     * */
+    @ReactMethod
+    public void deleteDownloadingFileById(int downloadId, final Promise promise) {
+        mRNCWebViewModuleImpl.deleteDownloadingFileById(downloadId, promise);
+    }
+
+    /**
+     * Pause downloading file by downloadId
+     * */
+    @ReactMethod
+    public void pauseDownloadingFileById(int downloadId) {
+        mRNCWebViewModuleImpl.pauseDownloadingFileById(downloadId);
+    }
+
+    /**
+     * Resume downloading file by downloadId
+     * */
+    @ReactMethod
+    public void resumeDownloadingFileById(int downloadId, String downloadFolderConfig, final Promise promise) {
+        mRNCWebViewModuleImpl.resumeDownloadingFileById(downloadId, downloadFolderConfig, promise);
+    }
+
+    /**
+     * Download blob file
+     * */
+    public void setDownloadFolder(String folder) {
+        mRNCWebViewModuleImpl.setDownloadFolder(folder);
+    }
+
+    public void sendPartialBase64Data(String base64Data) {
+        mRNCWebViewModuleImpl.sendPartialBase64Data(base64Data);
+    }
+
+    public void saveBase64DataToFile() {
+        mRNCWebViewModuleImpl.saveBase64DataToFile();
     }
 }
