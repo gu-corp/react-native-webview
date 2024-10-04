@@ -1216,6 +1216,11 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @platform android
    */
   setFontSize?: (event: WebViewMessage) => void;
+
+  /**
+   * Lunascape: this prop already in iOS, also add on Android
+   */
+  onFileDownload?: (event: FileDownloadEvent) => void;
 }
 
 export interface WebViewSharedProps extends ViewProps {
@@ -1440,6 +1445,11 @@ export interface WebViewSharedProps extends ViewProps {
    * Webview will be reloaded when capture screen on IOS and Android
    */
   onCaptureScreen?: (event: WebViewMessage | WebViewMessageEvent) => void;
+
+  /**
+   * Set the download config for the Webview.
+   */
+  downloadConfig?: DownloadConfigProp;
   // #endregion
 }
 
@@ -1454,4 +1464,8 @@ export interface AdditionalUserAgent {
   // to match URL
   domain: string;
   extendedUserAgent: string;
+}
+
+export interface DownloadConfigProp {
+  downloadFolder?: string;
 }

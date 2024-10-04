@@ -16,6 +16,7 @@ import com.facebook.react.viewmanagers.RNCWebViewManagerInterface;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -548,6 +549,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
         export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
         export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
+        export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
         return export;
     }
 
@@ -575,6 +577,16 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     @ReactProp(name = "adblockRuleList")
     public void setAdblockRuleList(RNCWebViewWrapper view, @Nullable ReadableArray rules) {
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
+    }
+
+    @ReactProp(name = "additionalUserAgent")
+    public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
+        mRNCWebViewManagerImpl.setAdditionalUserAgent(view, additionalUserAgent);
+    }
+
+    @ReactProp(name = "downloadConfig")
+    public void setDownloadConfig(RNCWebViewWrapper view, @Nullable ReadableMap downloadConfig) {
+        mRNCWebViewManagerImpl.setDownloadConfig(view ,downloadConfig);
     }
 
     @Override
@@ -606,11 +618,6 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void setEnableNightMode(RNCWebViewWrapper view, String enable) {}
-
-    @ReactProp(name = "additionalUserAgent")
-    public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
-        mRNCWebViewManagerImpl.setAdditionalUserAgent(view, additionalUserAgent);
-    }
 
     @Override
     public void proceedUnsafeSite(RNCWebViewWrapper view, String url) {}

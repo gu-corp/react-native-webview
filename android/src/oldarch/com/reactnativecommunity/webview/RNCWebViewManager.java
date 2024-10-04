@@ -12,6 +12,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.views.scroll.ScrollEventType;
 import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
+import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
@@ -320,6 +321,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         export.put(TopWebViewOnFullScreenEvent.EVENT_NAME, MapBuilder.of("registrationName", "onVideoFullScreen"));
         export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
         export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
+        export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
         return export;
     }
 
@@ -352,5 +354,10 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
     @ReactProp(name = "additionalUserAgent")
     public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
         mRNCWebViewManagerImpl.setAdditionalUserAgent(view ,additionalUserAgent);
+    }
+
+    @ReactProp(name = "downloadConfig")
+    public void setDownloadConfig(RNCWebViewWrapper view, @Nullable ReadableMap downloadConfig) {
+        mRNCWebViewManagerImpl.setDownloadConfig(view ,downloadConfig);
     }
 }

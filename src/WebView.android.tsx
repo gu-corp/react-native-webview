@@ -100,6 +100,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       injectedJavaScriptObject,
       // #region Lunascape
       onShouldCreateNewWindow,
+      onFileDownload,
       // #endregion Lunascape
       ...otherProps
     },
@@ -395,6 +396,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         onGetFavicon={onGetFavicon}
         onReceiveWebViewStatus={onReceiveWebViewStatus}
         onCaptureScreen={onCaptureScreen}
+        onFileDownload={onFileDownload}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />

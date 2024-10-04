@@ -480,17 +480,17 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     /**
      * Lunascape logic
      * */
+    public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
+    public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
     public static final String BLANK_URL = "about:blank";
     public static final String FAVICON_INTERFACE = "FaviconWebView";
     public static final String NATIVE_SCRIPT_INTERFACE = "nativeScriptHandler";
 
     protected String activeUrl;
+    protected String DOWNLOAD_FOLDER = "";
     
     // this is a static variable to store the new window instance then we can keep it alive until the new window is added to the parent view
-    private static RNCWebView newWindow; 
-
-    public static final String DOWNLOAD_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/downloads/";
-    public static final String TEMP_DIRECTORY = Environment.getExternalStorageDirectory() + "/Android/data/jp.co.lunascape.android.ilunascape/temps/";
+    private static RNCWebView newWindow;
 
     public static RNCWebView createNewInstance(ThemedReactContext reactContext) {
         RNCWebView webView;
@@ -626,22 +626,16 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public void captureScreen(String type) {
         final String fileName = System.currentTimeMillis() + ".jpg";
         // Old logic: save internal storage
-        String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
-        File d = new File(directory);
-        if (!d.exists()) {
-            d.mkdirs();
-        }
-        File downloadPath = new File(directory, fileName);
+        // String directory = type.equals("SCREEN_SHOT") ? TEMP_DIRECTORY : DOWNLOAD_DIRECTORY;
 
-      // New logic waiting done download
-  //    File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-  //    if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
-  //      saveDir = new File(saveDir, DOWNLOAD_FOLDER);
-  //      if (!saveDir.exists()) {
-  //        saveDir.mkdirs();
-  //      }
-  //    }
-  //    File downloadPath = new File(saveDir, fileName);
+        File saveDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        if (DOWNLOAD_FOLDER != null && !DOWNLOAD_FOLDER.isEmpty()) {
+            saveDir = new File(saveDir, DOWNLOAD_FOLDER);
+            if (!saveDir.exists()) {
+                saveDir.mkdirs();
+            }
+        }
+        File downloadPath = new File(saveDir, fileName);
 
         boolean success = false;
         try {
