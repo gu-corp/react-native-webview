@@ -69,7 +69,6 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, copy) RCTDirectEventBlock onContentProcessDidTerminate;
 @property (nonatomic, copy) RCTDirectEventBlock onOpenWindow;
 
-
 @property (nonatomic, weak) id<RNCWebViewDelegate> _Nullable delegate;
 @property (nonatomic, copy) NSDictionary * _Nullable source;
 @property (nonatomic, assign) BOOL messagingEnabled;
@@ -188,6 +187,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, copy) RCTDirectEventBlock onCaptureScreen;
 @property (nonatomic, copy) RCTDirectEventBlock onShouldCreateNewWindow;
 @property (nonatomic, copy) RCTDirectEventBlock onNavigationStateChange;
+@property (nonatomic, copy) RCTDirectEventBlock onUpdateHistory;
 
 
 @end

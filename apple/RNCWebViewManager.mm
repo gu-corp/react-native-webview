@@ -94,7 +94,6 @@ RCT_EXPORT_VIEW_PROPERTY(allowsLinkPreview, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowingReadAccessToURL, NSString)
 RCT_EXPORT_VIEW_PROPERTY(basicAuthCredential, NSDictionary)
 
-
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 110000 /* __IPHONE_11_0 */
 RCT_EXPORT_VIEW_PROPERTY(contentInsetAdjustmentBehavior, UIScrollViewContentInsetAdjustmentBehavior)
 #endif
@@ -235,6 +234,7 @@ RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onUpdateHistory, RCTDirectEventBlock)
 
 - (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView
  shouldCreateNewWindow:(NSMutableDictionary<NSString *, id> *)request
