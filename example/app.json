@@ -27,5 +27,12 @@
   },
   "windows": {
     "appxManifest": "windows/Package.appxmanifest"
+  },
+  "android": {
+    "permissions": [
+      {
+        "android:name": "android.permission.POST_NOTIFICATIONS"
+      }
+    ]
   }
 }

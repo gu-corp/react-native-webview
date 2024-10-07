@@ -1,0 +1,9 @@
+{
+  "android": {
+    "permissions": [
+      {
+        "android:name": "android.permission.POST_NOTIFICATIONS"
+      }
+    ]
+  }
+}

@@ -1,15 +1,18 @@
 package com.reactnativecommunity.webview.lunascape
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.webkit.MimeTypeMap
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import com.reactnativecommunity.webview.R
 import okhttp3.Response
 import java.io.IOException
@@ -79,6 +82,9 @@ class LunascapeUtils {
         }
 
         fun makeNotificationDownloadedBlobFile(context: Context, fileUri: Uri, mimeType: String?, fileName: String) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) return
+
             val intent = Intent(Intent.ACTION_VIEW)
             intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             if (mimeType != null) {
