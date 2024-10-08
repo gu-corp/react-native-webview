@@ -22,6 +22,11 @@
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
+#import "Utility.h"
+#import "DownloadHelper.h"
+#import "DownloadQueue.h"
+#import "PassBookHelper.h"
+#import "DownloadModule.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 // endregion
@@ -125,7 +130,7 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 #endif // TARGET_OS_OSX
 @end
 
-@interface RNCWebViewImpl () <WKUIDelegate, WKNavigationDelegate, WKScriptMessageHandler, WKHTTPCookieStoreObserver,
+@interface RNCWebViewImpl () <WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler, WKHTTPCookieStoreObserver,
 #if !TARGET_OS_OSX
 UIScrollViewDelegate,
 UIGestureRecognizerDelegate,
@@ -184,6 +189,8 @@ RCTAutoInsetsProtocol>
   BOOL allowUnsafeSite;
   BOOL longPress;
   NSBundle* resourceBundle;
+  BOOL shouldDownloadNavigationResponse;
+  NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -1500,19 +1507,18 @@ RCTAutoInsetsProtocol>
 
     NSURL *requestURL = request.URL;
     if (request && requestURL) {
-        // TODO: update logic here
-//        NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
-//        if ([downloadSchemes containsObject:requestURL.scheme]) {
-//            // Logic pkpass: set shouldDownloadNavigationResponse = true
-//            // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L438
-//            if (@available(iOS 14.5, *)) {
-//                if (navigationAction.shouldPerformDownload) {
-//                    shouldDownloadNavigationResponse = true;
-//                }
-//            }
-//            
-//            [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
-//        }
+        NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
+        if ([downloadSchemes containsObject:requestURL.scheme]) {
+            // Logic pkpass: set shouldDownloadNavigationResponse = true
+            // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L438
+            if (@available(iOS 14.5, *)) {
+                if (navigationAction.shouldPerformDownload) {
+                    shouldDownloadNavigationResponse = true;
+                }
+            }
+            
+            [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
+        }
         
         NSArray *allowSchemes = @[@"data", @"blob"];
         if ([allowSchemes containsObject:requestURL.scheme]) {
@@ -1664,24 +1670,84 @@ RCTAutoInsetsProtocol>
         _onHttpError(httpErrorEvent);
       }
 
-      NSString *disposition = nil;
-      if (@available(iOS 13, macOS 10.15, *)) {
-        disposition = [response valueForHTTPHeaderField:@"Content-Disposition"];
-      }
-      BOOL isAttachment = disposition != nil && [disposition hasPrefix:@"attachment"];
-      if (isAttachment || !navigationResponse.canShowMIMEType) {
-        if (_onFileDownload) {
-          policy = WKNavigationResponsePolicyCancel;
+      // TODO: Need check this logic
+      // This is logic of lib, but it is not necessary on Lunascape, so comment it.
+      // NSString *disposition = nil;
+      // if (@available(iOS 13, macOS 10.15, *)) {
+      //   disposition = [response valueForHTTPHeaderField:@"Content-Disposition"];
+      // }
+      // BOOL isAttachment = disposition != nil && [disposition hasPrefix:@"attachment"];
+      // if (isAttachment || !navigationResponse.canShowMIMEType) {
+      //   if (_onFileDownload) {
+      //     policy = WKNavigationResponsePolicyCancel;
 
-          NSMutableDictionary<NSString *, id> *downloadEvent = [self baseEvent];
-          [downloadEvent addEntriesFromDictionary: @{
-            @"downloadUrl": (response.URL).absoluteString,
-          }];
-          _onFileDownload(downloadEvent);
-        }
-      }
+      //     NSMutableDictionary<NSString *, id> *downloadEvent = [self baseEvent];
+      //     [downloadEvent addEntriesFromDictionary: @{
+      //       @"downloadUrl": (response.URL).absoluteString,
+      //     }];
+      //     _onFileDownload(downloadEvent);
+      //   }
+      // }
     }
   }
+
+  // Lunascape
+  NSURLResponse *response = navigationResponse.response;
+  NSURL *responseURL = [response URL];
+        
+  BOOL canShowInWebView = navigationResponse.canShowMIMEType;
+  WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
+  WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+    
+  // Logic pkpass: Check if this response should be handed off to Passbook.
+  // Brave: https://github.com/brave/brave-ios/blob/398f8b763aa88cdc23289138863d62f05b2c2a23/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L549
+  if (shouldDownloadNavigationResponse) {
+    shouldDownloadNavigationResponse = false;
+    NSString *urlString = response.URL.absoluteString;
+    if ([response.MIMEType isEqualToString:@"application/vnd.apple.pkpass"]) {
+      if (@available(iOS 14.5, *)) {
+        decisionHandler(WKNavigationResponsePolicyDownload);
+      }
+      return;
+    }
+  }
+    
+  if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+    PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                  cookieStore:cookieStore
+                                                               viewController:[self topViewController]];
+    // Open our helper and nullify the helper when done with it
+    [passBookHelper open];
+    passBookHelper.delegate = [DownloadModule sharedInstance];
+      
+    // Cancel this response from the webview.
+    decisionHandler(WKNavigationActionPolicyCancel);
+    return;
+  }
+    
+  NSURLRequest *request = nil;
+  if (responseURL) {
+    request = [[DownloadHelper pendingRequests] objectForKey:responseURL.absoluteString];
+    [[DownloadHelper pendingRequests] removeObjectForKey:responseURL.absoluteString];
+  }
+    
+  DownloadHelper *downloadHelper = [[DownloadHelper alloc] initWithRequest:request 
+                                                                  response:response
+                                                               cookieStore:cookieStore
+                                                          canShowInWebView:canShowInWebView];
+  if (downloadHelper) {
+    id downloadAlertAction = ^(HTTPDownload *download) {
+      [[DownloadQueue downloadQueue] appendSessionInfo];
+      [[DownloadQueue downloadQueue] enqueue: download];
+    };
+    UIViewController *rootVC = [[UIApplication sharedApplication].delegate window].rootViewController;
+    UIAlertController *alertView = [downloadHelper downloadAlertFromView:rootVC.view okAction:downloadAlertAction];
+    if (alertView) {
+      [rootVC presentViewController:alertView animated:YES completion:nil];
+    }
+    policy = WKNavigationResponsePolicyCancel;
+  }
+  //@end Lunascape
 
   decisionHandler(policy);
 }
@@ -2519,6 +2585,7 @@ didFinishNavigation:(WKNavigation *)navigation
     _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = self;
+    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
@@ -2626,9 +2693,103 @@ didFinishNavigation:(WKNavigation *)navigation
   }
 
   // Lunascape logic
+  if (sender.adblockRuleList) {
+    _adblockRuleList = [NSArray arrayWithArray:sender.adblockRuleList];
+  }
+  if (sender.adblockAllowList) {
+    _adblockAllowList = [NSArray arrayWithArray:sender.adblockAllowList];
+  }
   [self applyAdblockRuleList:wkWebViewConfig];
 
 }
+
+- (void)setDownloadConfig:(NSDictionary *)downloadConfig {
+    _downloadConfig = downloadConfig;
+    [Utility setDownloadConfig:downloadConfig];
+}
+
+/**
+ * Called when the navigation is return WKNavigationResponsePolicyDownload.
+ */
+- (void)    webView:(WKWebView *)webView
+ navigationResponse:(nonnull WKNavigationResponse *)navigationResponse 
+  didBecomeDownload:(nonnull WKDownload *)download API_AVAILABLE(ios(14.5))
+{
+    download.delegate = self;
+}
+
+/**
+ * WKDownloadDelegate
+ */
+- (void)                download:(WKDownload *)download
+  decideDestinationUsingResponse:(nonnull NSURLResponse *)response
+               suggestedFilename:(nonnull NSString *)suggestedFilename
+               completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler API_AVAILABLE(ios(14.5))
+{
+    NSString *temporaryDir = NSTemporaryDirectory();
+    NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
+    NSURL *url = [NSURL fileURLWithPath:fileName];
+    PendingDownload *pendingDownload = [[PendingDownload alloc] initWithFileUrl:url response:response];
+    if (pendingDownloads == nil) {
+        pendingDownloads = [NSMutableDictionary dictionary];
+    }
+    pendingDownloads[download.originalRequest] = pendingDownload;
+    completionHandler(url);
+}
+
+- (void)            download:(WKDownload *) download
+  willPerformHTTPRedirection:(nonnull NSHTTPURLResponse *)response
+                  newRequest:(nonnull NSURLRequest *)request
+             decisionHandler:(nonnull void (^)(WKDownloadRedirectPolicy))decisionHandler API_AVAILABLE(ios(14.5))
+{
+    decisionHandler(WKDownloadRedirectPolicyAllow);
+}
+
+- (void)                    download:(WKDownload *)download
+   didReceiveAuthenticationChallenge:(nonnull NSURLAuthenticationChallenge *)challenge
+                   completionHandler:(nonnull void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler API_AVAILABLE(ios(14.5))
+{
+    completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+}
+
+- (void)downloadDidFinish:(WKDownload *)download API_AVAILABLE(ios(14.5))
+{
+    if (pendingDownloads == nil) {
+        return;
+    }
+    
+    PendingDownload *downloadInfo = pendingDownloads[download.originalRequest];
+    if (!downloadInfo) {
+        return;
+    }
+    
+    [pendingDownloads removeObjectForKey:download.originalRequest];
+    NSURLResponse *response = [[NSURLResponse alloc] initWithURL:downloadInfo.fileUrl
+                                                        MIMEType:downloadInfo.response.MIMEType
+                                           expectedContentLength:(NSInteger)downloadInfo.response.expectedContentLength
+                                                textEncodingName:downloadInfo.response.textEncodingName];
+    WKWebsiteDataStore *dataStore = _webView.configuration.websiteDataStore;
+    WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+    if ([PassBookHelper canOpenPassBookWithResponse:response]) {
+        PassBookHelper *passBookHelper = [[PassBookHelper alloc] initWithResponse:response
+                                                                      cookieStore:cookieStore
+                                                                   viewController:[self topViewController]];
+        // Open our helper and nullify the helper when done with it
+        [passBookHelper open];
+        passBookHelper.delegate = [DownloadModule sharedInstance];
+    }
+}
+
+- (void)    download:(WKDownload *)download
+    didFailWithError:(nonnull NSError *)error
+          resumeData:(nullable NSData *)resumeData API_AVAILABLE(ios(14.5))
+{
+    // maybe show error and remove pendingDownload
+    if (pendingDownloads) {
+        [pendingDownloads removeObjectForKey:download.originalRequest];
+    }
+}
+// @end WKDownloadDelegate
 
 @end
 
