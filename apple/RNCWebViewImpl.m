@@ -17,14 +17,11 @@
 
 #import "objc/runtime.h"
 
-// TODO: Task @9559bde but use in task @9be6385
-// region to do @9559bde
 #import "WKWebView+BrowserHack.h"
 #import "WKWebView+Highlight.h"
 #import "WKWebView+Capture.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
-// endregion
 
 static NSTimer *keyboardTimer;
 static NSString *const HistoryShimName = @"ReactNativeHistoryShim";
@@ -271,11 +268,9 @@ RCTAutoInsetsProtocol>
                                                object:nil];
 
   }
-    // TODO: Task @9559bde
-    // region to do @9559bde
+
     NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
     resourceBundle = [NSBundle bundleWithPath:bundlePath];
-    // endregion
     initiated = NO;
     
 #endif // TARGET_OS_IOS
@@ -550,9 +545,16 @@ RCTAutoInsetsProtocol>
 #if !TARGET_OS_OSX
   wkWebViewConfig.allowsInlineMediaPlayback = _allowsInlineMediaPlayback;
   wkWebViewConfig.allowsPictureInPictureMediaPlayback = _allowsPictureInPictureMediaPlayback;
+  // issue: https://github.com/gu-corp/lunascape-mobile/issues/2449 dont use mediaTypesRequiringUserActionForPlayback
+#if false
   wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
-  ? WKAudiovisualMediaTypeAll
-  : WKAudiovisualMediaTypeNone;
+    ? WKAudiovisualMediaTypeAll
+    : WKAudiovisualMediaTypeNone;
+#else
+  if(_mediaPlaybackRequiresUserAction) {
+    wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+  }
+#endif
   wkWebViewConfig.dataDetectorTypes = _dataDetectorTypes;
 
   // feature: zooming webpage with any value of viewport = "... user-scalable= no/yes "
@@ -2281,8 +2283,6 @@ didFinishNavigation:(WKNavigation *)navigation
 }
 // @end Adblock logic
 
-// TODO: Task @9559bde
-// region to do task @9559bde add Custom Lunascape functions
 #pragma mark - Custom Lunascape functions
 - (WKWebView*)webview {
   return _webView;
@@ -2607,9 +2607,16 @@ didFinishNavigation:(WKNavigation *)navigation
 #if !TARGET_OS_OSX
   wkWebViewConfig.allowsInlineMediaPlayback = sender.allowsInlineMediaPlayback;
   wkWebViewConfig.allowsPictureInPictureMediaPlayback = sender.allowsPictureInPictureMediaPlayback;
-  wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = sender.mediaPlaybackRequiresUserAction
-  ? WKAudiovisualMediaTypeAll
-  : WKAudiovisualMediaTypeNone;
+  // issue: https://github.com/gu-corp/lunascape-mobile/issues/2449 dont use mediaTypesRequiringUserActionForPlayback
+#if false
+  wkWebViewConfig.mediaTypesRequiringUserActionForPlayback = _mediaPlaybackRequiresUserAction
+    ? WKAudiovisualMediaTypeAll
+    : WKAudiovisualMediaTypeNone;
+#else
+  if(_mediaPlaybackRequiresUserAction) {
+    wkWebViewConfig.mediaPlaybackRequiresUserAction = _mediaPlaybackRequiresUserAction;
+  }
+#endif
   wkWebViewConfig.dataDetectorTypes = sender.dataDetectorTypes;
 
   // feature: zooming webpage with any value of viewport = "... user-scalable= no/yes "

@@ -421,6 +421,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         super.destroy();
     }
 
+    @Override
+    public int getContentHeight() {
+        return computeVerticalScrollRange();
+    }
+
   public ThemedReactContext getThemedReactContext() {
     return (ThemedReactContext) this.getContext();
   }
