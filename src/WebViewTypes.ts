@@ -1468,4 +1468,6 @@ export interface AdditionalUserAgent {
 
 export interface DownloadConfigProp {
   downloadFolder?: string;
+  downloadButton?: string;
+  downloadCancelButton?: string;
 }

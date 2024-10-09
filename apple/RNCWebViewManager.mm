@@ -228,13 +228,13 @@ QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(injectJavaScript, script:(NSString *)scri
 QUICK_RCT_EXPORT_COMMAND_METHOD_PARAMS(clearCache, includeDiskFiles:(BOOL)includeDiskFiles, includeDiskFiles)
 
 // Lunascape
-
 RCT_EXPORT_VIEW_PROPERTY(onWebViewClosed, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(additionalUserAgent, NSArray<NSDictionary>)
 RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(downloadConfig, NSDictionary)
 
 - (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView
  shouldCreateNewWindow:(NSMutableDictionary<NSString *, id> *)request

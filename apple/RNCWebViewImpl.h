@@ -167,6 +167,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
+@property (nonatomic, copy) NSDictionary * _Nullable downloadConfig;
 
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebViewImpl*_Nonnull)parentView;
