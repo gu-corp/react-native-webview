@@ -2575,7 +2575,13 @@ didFinishNavigation:(WKNavigation *)navigation
 
 - (void)proceedUnsafeSite:(NSString *)url {
     allowUnsafeSite = YES;
-    [self reload];
+    if (_webView && url) {
+        NSURL *nsUrl = [NSURL URLWithString:url];
+        NSURLRequest *request = [NSURLRequest requestWithURL:nsUrl];
+        [_webView loadRequest:request];
+    } else {
+        [self reload];
+    }
 }
 
 - (id)initWithConfiguration:(WKWebViewConfiguration*)configuration from:(RNCWebViewImpl*)parentView {
