@@ -90,7 +90,7 @@ class RNCWebViewManagerImpl {
         settings.displayZoomControls = false
         settings.domStorageEnabled = true
         settings.setSupportMultipleWindows(true)
-        settings.allowFileAccess = false
+        settings.allowFileAccess = true
         settings.allowContentAccess = false
         settings.allowFileAccessFromFileURLs = false
         settings.allowUniversalAccessFromFileURLs = false
