@@ -513,7 +513,7 @@ RCTAutoInsetsProtocol>
     wkWebViewConfig.preferences = prefs;
   }
   if (_incognito) {
-    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+    wkWebViewConfig.websiteDataStore = [Utility sharedNonPersistentStore];
   } else if (_cacheEnabled) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
   }
@@ -2125,6 +2125,10 @@ didFinishNavigation:(WKNavigation *)navigation
   [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:MessageHandlerName];
   [wkWebViewConfig.userContentController removeScriptMessageHandlerForName:PrintScriptHandler];
 
+  if (_incognito) {
+    wkWebViewConfig.websiteDataStore = [Utility sharedNonPersistentStore];
+  }
+
   if(self.enableApplePay){
     if (self.postMessageScript){
       [wkWebViewConfig.userContentController addScriptMessageHandler:[[RNCWeakScriptMessageDelegate alloc] initWithDelegate:self]
@@ -2164,7 +2168,7 @@ didFinishNavigation:(WKNavigation *)navigation
       // See also https://forums.developer.apple.com/thread/97194
       // check if websiteDataStore has not been initialized before
       if(!_incognito && !_cacheEnabled) {
-        wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+        wkWebViewConfig.websiteDataStore = [Utility sharedNonPersistentStore];
       }
       [self syncCookiesToWebView:^{}];
     } else {
@@ -2635,7 +2639,7 @@ didFinishNavigation:(WKNavigation *)navigation
     wkWebViewConfig.preferences = prefs;
   }
   if (sender.incognito) {
-    wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+    wkWebViewConfig.websiteDataStore = [Utility sharedNonPersistentStore];
   } else if (sender.cacheEnabled) {
     wkWebViewConfig.websiteDataStore = [WKWebsiteDataStore defaultDataStore];
   }

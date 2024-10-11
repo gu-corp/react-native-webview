@@ -1,7 +1,8 @@
 #import <Foundation/Foundation.h>
 #import "DownloadHelper.h"
+#import <React/RCTBridgeModule.h>
 
-@interface Utility : NSObject
+@interface Utility : NSObject <RCTBridgeModule>
 + (NSString *)getBase64Data:(NSString *)base64Data;
 + (NSString *)getMimeTypeFromBase64Data:(NSString *)base64Data;
 + (NSString *)getFileExtensionFromBase64Data:(NSString *)base64Data;
@@ -29,4 +30,6 @@
 + (NSString *)appVersion;
 + (NSString *)buildNumber;
 + (NSString *)displayName;
+
++ (WKWebsiteDataStore *)sharedNonPersistentStore;
 @end
