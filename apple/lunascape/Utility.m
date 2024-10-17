@@ -3,7 +3,26 @@
 
 @implementation Utility
 
+RCT_EXPORT_MODULE(UtilityWebView);
+
 static NSDictionary *_downloadConfig = nil;
+
+static WKWebsiteDataStore *_nonPersistentDataStore = nil;
+
+RCT_EXPORT_METHOD(removeNonPersistentStoreIncognito)
+{
+    _nonPersistentDataStore = nil;
+}
+
++ (WKWebsiteDataStore *)sharedNonPersistentStore {
+    if (_nonPersistentDataStore) {
+        return _nonPersistentDataStore;
+    }
+
+    WKWebsiteDataStore *dataStore = [WKWebsiteDataStore nonPersistentDataStore];
+    _nonPersistentDataStore = dataStore;
+    return dataStore;
+}
 
 + (void)initialize {
     if (self == [Utility class]) {
