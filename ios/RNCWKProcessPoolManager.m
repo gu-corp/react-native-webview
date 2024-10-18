@@ -7,6 +7,7 @@
 
 #import <Foundation/Foundation.h>
 #import "RNCWKProcessPoolManager.h"
+#import "RNCWebView-Swift.h"
 
 @interface RNCWKProcessPoolManager() {
     WKProcessPool *_sharedProcessPool;
