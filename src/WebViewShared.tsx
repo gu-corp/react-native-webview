@@ -1,12 +1,16 @@
 import escapeStringRegexp from 'escape-string-regexp';
 import React from 'react';
-import { Linking, View, ActivityIndicator, Text } from 'react-native';
+import { Linking, View, ActivityIndicator, Text, NativeModules } from 'react-native';
 import {
   WebViewNavigationEvent,
   OnShouldStartLoadWithRequest,
   OnShouldCreateNewWindow,
 } from './WebViewTypes';
 import styles from './WebView.styles';
+
+
+// eslint-disable-next-line prefer-destructuring
+const RNCEngineAdBlock = NativeModules.RNCEngineAdBlock;
 
 const defaultOriginWhitelist = ['http://*', 'https://*'];
 
@@ -95,10 +99,22 @@ const defaultRenderError = (
   </View>
 );
 
+// #region Lunascape
+const initialEngineAdBlock = () => {
+  try {
+    RNCEngineAdBlock.initialEngine();
+  } catch (error) {
+    console.log('error', error);
+  }
+};
+
+// #endregion Lunascape
+
 export {
   defaultOriginWhitelist,
   createOnShouldStartLoadWithRequest,
   createOnShouldCreateNewWindow,
   defaultRenderLoading,
   defaultRenderError,
+  initialEngineAdBlock,
 };

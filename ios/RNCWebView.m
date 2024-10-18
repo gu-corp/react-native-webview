@@ -22,6 +22,7 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
+#import "react_native_webview-Swift.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
