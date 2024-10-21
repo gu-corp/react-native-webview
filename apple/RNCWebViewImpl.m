@@ -167,7 +167,6 @@ RCTAutoInsetsProtocol>
 #endif
 
   // Lunascape
-    
   WKWebViewConfiguration *wkWebViewConfig;
     
   // common script for all webviews
@@ -1585,8 +1584,6 @@ RCTAutoInsetsProtocol>
                  */
                 // Lunascape logic
                 [self applyAdblockLogic:webView request:request];
-                [self injectCommonFirefoxJS:webView];
-                [self injectNightModeJS:webView];
                 [self injectYoutubePictureInPictureJS:webView request:request];
 
                 // Allow all navigation by default
@@ -1627,8 +1624,6 @@ RCTAutoInsetsProtocol>
 
     // Lunascape logic
     [self applyAdblockLogic:webView request:request];
-    [self injectCommonFirefoxJS:webView];
-    [self injectNightModeJS:webView];
     [self injectYoutubePictureInPictureJS:webView request:request];
 
     // Allow all navigation by default
@@ -1845,13 +1840,14 @@ RCTAutoInsetsProtocol>
 - (void)webView:(WKWebView *)webView
 didFinishNavigation:(WKNavigation *)navigation
 {
-    if (resourceBundle) {
-        NSString *jsFile = @"_webview";
+  if (resourceBundle) {
+    NSString *jsFile = @"_webview";
         
-        NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
-        NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
-        NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-        [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];    }
+    NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
+    NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
+    NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
+    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+  }
     
   if (_ignoreSilentHardwareSwitch) {
     [self forceIgnoreSilentHardwareSwitch:true];
@@ -1861,14 +1857,14 @@ didFinishNavigation:(WKNavigation *)navigation
     _onLoadingFinish([self baseEvent]);
   }
     
-    NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
-    NSDictionary *event = @{
-        @"data": favicon ? favicon : @""
-    };
+  NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
+  NSDictionary *event = @{
+    @"data": favicon ? favicon : @""
+  };
     
-    if (_onGetFavicon!= nil) {
-       _onGetFavicon(event);
-    }
+  if (_onGetFavicon!= nil) {
+    _onGetFavicon(event);
+  }
 }
 
 - (void)cookiesDidChangeInCookieStore:(WKHTTPCookieStore *)cookieStore
@@ -2242,6 +2238,9 @@ didFinishNavigation:(WKNavigation *)navigation
 
   WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
   [wkWebViewConfig.userContentController addUserScript:scriptPrint];
+  // default js, inject for all
+  [self injectCommonFirefoxJS:wkWebViewConfig];
+  [self injectNightModeJS:wkWebViewConfig];
 
   // Whether or not messaging is enabled, add the startup script if it exists.
   if (self.atStartScript) {
@@ -2276,16 +2275,10 @@ didFinishNavigation:(WKNavigation *)navigation
 // Adblock logic
 -(void)setAdblockRuleList:(NSArray<NSString *> *)adblockRuleList {
     _adblockRuleList = adblockRuleList;
-    if(_webView != nil) {
-        [self resetupScripts:_webView.configuration];
-    }
 }
 
 -(void)setAdblockAllowList:(NSArray<NSString *> *)adblockAllowList {
     _adblockAllowList = adblockAllowList;
-    if(_webView != nil) {
-        [self resetupScripts:_webView.configuration];
-    }
 }
 
 -(void)applyAdblockRuleList:(WKWebViewConfiguration *)wkWebViewConfig
@@ -2426,7 +2419,7 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
--(void)injectCommonFirefoxJS:(WKWebView *)webView
+-(void)injectCommonFirefoxJS:(WKWebViewConfiguration *)configuration
 {
     // inject common scripts
     if (@available(iOS 13.0, *)) {
@@ -2439,8 +2432,8 @@ didFinishNavigation:(WKNavigation *)navigation
                                                          injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                       forMainFrameOnly:YES];
         }
-        if([webView.configuration.userContentController.userScripts containsObject:scriptFirefoxObject] == false) {
-            [webView.configuration.userContentController addUserScript:scriptFirefoxObject];
+        if([configuration.userContentController.userScripts containsObject:scriptFirefoxObject] == false) {
+            [configuration.userContentController addUserScript:scriptFirefoxObject];
         }
     }
 }
@@ -2471,7 +2464,7 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
--(void)injectNightModeJS:(WKWebView *)webView
+-(void)injectNightModeJS:(WKWebViewConfiguration *)configuration
 {
     if (@available(iOS 13.0, *)) {
         if(scriptNightMode == nil) {
@@ -2484,8 +2477,8 @@ didFinishNavigation:(WKNavigation *)navigation
                                                      injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                   forMainFrameOnly:YES];
         }
-        if([webView.configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
-            [webView.configuration.userContentController addUserScript:scriptNightMode];
+        if([configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
+            [configuration.userContentController addUserScript:scriptNightMode];
         }
     }
 }
