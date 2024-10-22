@@ -34,7 +34,7 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.UIManagerHelper;
 import com.reactnativecommunity.webview.events.TopCreateNewWindowEvent;
 import com.reactnativecommunity.webview.events.TopLoadingProgressEvent;
-import com.reactnativecommunity.webview.events.TopOpenWindowEvent;
+import com.reactnativecommunity.webview.events.TopWebViewClosedEvent;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -437,7 +437,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         event.putDouble("progress", (float) webView.getProgress() / 100);
         ((RNCWebView) webView).dispatchEvent(
           webView,
-          new TopCreateNewWindowEvent(RNCWebViewWrapper.getReactTagFromWebView(webView), event)
+          new TopWebViewClosedEvent(RNCWebViewWrapper.getReactTagFromWebView(webView), event)
         );
     }
 
