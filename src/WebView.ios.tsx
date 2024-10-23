@@ -51,6 +51,8 @@ const processDecelerationRate = (
 };
 
 const RNCWebViewManager = NativeModules.RNCWebViewManager as ViewManager;
+// eslint-disable-next-line prefer-destructuring
+// const RNCEngineAdBlock = NativeModules.RNCEngineAdBlock;
 
 const RNCWebView: typeof NativeWebViewIOS = requireNativeComponent(
   'RNCWebView',
@@ -100,6 +102,14 @@ class WebView extends React.Component<IOSWebViewProps, State> {
       undefined,
     );
   };
+
+  // initialEngineAdBlock = () => {
+  //   try {
+  //     RNCEngineAdBlock.initialEngine();
+  //   } catch (error) {
+  //     console.log('error', error);
+  //   }
+  // };
 
   /**
    * Reloads the current page.

@@ -90,6 +90,14 @@ class WebView extends React.Component<AndroidWebViewProps, State> {
     );
   };
 
+  // initialEngineAdBlock = () => {
+  //   // try {
+  //   //   // RNCEngineAdBlock.initialEngine();
+  //   // } catch (error) {
+  //   //   console.log('error', error);
+  //   // }
+  // };
+
   reload = () => {
     this.setState({
       viewState: 'LOADING',

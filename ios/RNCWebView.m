@@ -22,13 +22,20 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
-#import "react_native_webview-Swift.h"
+#import "RCTEngineAdBlock.h"
+// Note: call swift function from objective-c https://developer.apple.com/documentation/swift/importing-swift-into-objective-c
+// https://stackoverflow.com/a/26756530
+// <ProductModuleName>-Swift.h
+// The Product Module Name is "react_native_webview" if you install this library to react-native project.
+// The Product Module Name based on the name of the target in the project at Build Settings -> Product Module Name (Xcode)
+#import "react_native_webview-Swift.h" // #import <RNCWebView-Swift.h> // for development
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
 static NSTimer *keyboardTimer;
 static NSString *const MessageHandlerName = @"ReactNativeWebView";
 static NSString *const PrintScriptHandler = @"printScriptHandler";
+static NSString *const RequestBlockingScript = @"RequestBlockingScript";
 static NSURLCredential* clientAuthenticationCredential;
 static NSDictionary* customCertificatesForHost;
 
