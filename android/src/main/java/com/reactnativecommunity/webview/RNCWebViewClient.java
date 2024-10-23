@@ -168,6 +168,7 @@ public class RNCWebViewClient extends WebViewClient {
             final AtomicReference<RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState> lockObject = lock.second;
 
             final WritableMap event = createWebViewEvent(view, url);
+            event.putBoolean("mainFrame", isMainFrame);
             event.putDouble("lockIdentifier", lockIdentifier);
             rncWebView.dispatchDirectShouldStartLoadWithRequest(event);
 
@@ -189,12 +190,6 @@ public class RNCWebViewClient extends WebViewClient {
                 RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
                 return false;
             }
-            WritableMap event2 = createWebViewEvent(view, url);
-            event2.putBoolean("mainFrame", isMainFrame);
-            rncWebView.dispatchEvent(
-              view,
-              new TopShouldStartLoadWithRequestEvent(RNCWebViewWrapper.getReactTagFromWebView(view), event2)
-            );
 
             final boolean shouldOverride = lockObject.get() == RNCWebViewModuleImpl.ShouldOverrideUrlLoadingLock.ShouldOverrideCallbackState.SHOULD_OVERRIDE;
             RNCWebViewModuleImpl.shouldOverrideUrlLoadingLock.removeLock(lockIdentifier);
