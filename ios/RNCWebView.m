@@ -1266,6 +1266,11 @@ static NSDictionary* customCertificatesForHost;
     }
   }
     
+ // TODO: call Adblock UserScriptManager
+    
+    
+ // TODO: set Blocklist rule
+    
   // Allow all navigation by default
   decisionHandler(WKNavigationActionPolicyAllow);
 }

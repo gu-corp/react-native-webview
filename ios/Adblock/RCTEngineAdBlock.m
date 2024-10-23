@@ -12,29 +12,29 @@
 // The Product Module Name is "react_native_webview" if you install this library to react-native project.
 // The Product Module Name based on the name of the target in the project at Build Settings -> Product Module Name (Xcode)
 #import "react_native_webview-Swift.h" // #import <RNCWebView-Swift.h> // for development
-@implementation RCTEngineAdBlock
-
-// To export a module named EngineAdBlock
-RCT_EXPORT_MODULE(EngineAdBlock);
-
-API_AVAILABLE(ios(11.0))
-Engine *engine ;
-RCT_EXPORT_METHOD(initialEngine ){
-    if (@available(iOS 11.0, *)) {
-        Engine *e = [[Engine alloc] init];
-        engine = e;
-    } else {
-        // Fallback on earlier versions
-    }
-}
-
-+ (id)getEngine{
-    if (@available(iOS 11.0, *)) {
-        return engine;
-    } else {
-        return nil;
-    }
-}
-
-
-@end
+//@implementation RCTEngineAdBlock
+//
+//// To export a module named EngineAdBlock
+//RCT_EXPORT_MODULE(EngineAdBlock);
+//
+//API_AVAILABLE(ios(11.0))
+////Engine *engine ;
+////RCT_EXPORT_METHOD(initialEngine ){
+////    if (@available(iOS 11.0, *)) {
+////        Engine *e = [[Engine alloc] init];
+////        engine = e;
+////    } else {
+////        // Fallback on earlier versions
+////    }
+////}
+////
+////+ (id)getEngine{
+////    if (@available(iOS 11.0, *)) {
+////        return engine;
+////    } else {
+////        return nil;
+////    }
+////}
+//
+//
+//@end
