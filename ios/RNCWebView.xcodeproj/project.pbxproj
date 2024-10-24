@@ -100,22 +100,6 @@
 		D5CDE5182CC11E130050E48F /* RNCWebView-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RNCWebView-Bridging-Header.h"; sourceTree = "<group>"; };
 		D5D5979A2CC20106009AC7BA /* Rule.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Rule.swift; sourceTree = "<group>"; };
 		D5D5979B2CC20106009AC7BA /* RuleLabel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RuleLabel.swift; sourceTree = "<group>"; };
-		D5D5979F2CC20147009AC7BA /* public_suffix_list.dat */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = public_suffix_list.dat; sourceTree = "<group>"; };
-		D5D597A72CC208EF009AC7BA /* RequestBlockingScript.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = RequestBlockingScript.js; sourceTree = "<group>"; };
-		D5D597A82CC208EF009AC7BA /* FarblingProtectionScript.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = FarblingProtectionScript.js; sourceTree = "<group>"; };
-		D5D597A92CC208EF009AC7BA /* nacl.min.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = nacl.min.js; sourceTree = "<group>"; };
-		D5D597AA2CC208EF009AC7BA /* SelectorsPollerScript.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = SelectorsPollerScript.js; sourceTree = "<group>"; };
-		D5D597AB2CC208EF009AC7BA /* gpc.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = gpc.js; sourceTree = "<group>"; };
-		D5D597AC2CC208EF009AC7BA /* FrameCheckWrapper.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = FrameCheckWrapper.js; sourceTree = "<group>"; };
-		D5D597AD2CC20976009AC7BA /* list7545.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = list7545.txt; sourceTree = "<group>"; };
-		D5D597AE2CC20976009AC7BA /* list.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = list.txt; sourceTree = "<group>"; };
-		D5D597AF2CC20976009AC7BA /* list8055.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = list8055.txt; sourceTree = "<group>"; };
-		D5D597B02CC20976009AC7BA /* list1458.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = list1458.txt; sourceTree = "<group>"; };
-		D5D597B22CC20A71009AC7BA /* resources.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = resources.json; sourceTree = "<group>"; };
-		D5D597B32CC20B0F009AC7BA /* block-cookies.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "block-cookies.json"; sourceTree = "<group>"; };
-		D5D597B42CC20B0F009AC7BA /* block-ads.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "block-ads.json"; sourceTree = "<group>"; };
-		D5D597B52CC20B0F009AC7BA /* block-trackers.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "block-trackers.json"; sourceTree = "<group>"; };
-		D5D597B62CC20B0F009AC7BA /* mixed-content-upgrade.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "mixed-content-upgrade.json"; sourceTree = "<group>"; };
 		D5D597B72CC2134C009AC7BA /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		E91B351921446E6C00F9801F /* RNCWebViewManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNCWebViewManager.h; sourceTree = "<group>"; };
 		E91B351A21446E6C00F9801F /* RNCWebView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RNCWebView.h; sourceTree = "<group>"; };
@@ -183,10 +167,6 @@
 				D52395562CC26F4000DEC189 /* EngineAdBlock.swift */,
 				D52395582CC26F4000DEC189 /* RCTEngineAdBlock.h */,
 				D52395552CC26F4000DEC189 /* RCTEngineAdBlock.m */,
-				D5D597B12CC20A16009AC7BA /* Resources */,
-				D5D597A62CC2066A009AC7BA /* Blocklist */,
-				D5D597A52CC20659009AC7BA /* Easylist */,
-				D5D597A42CC2062E009AC7BA /* Scripts */,
 				D5CDE4D22CC1168E0050E48F /* DomainParser */,
 				D5CDE4FF2CC11CB90050E48F /* AdblockRustEngine.swift */,
 				D5CDE4FA2CC11CB80050E48F /* AdBlockStats.swift */,
@@ -214,7 +194,6 @@
 		D5CDE4D22CC1168E0050E48F /* DomainParser */ = {
 			isa = PBXGroup;
 			children = (
-				D5D5979E2CC2011F009AC7BA /* Resources */,
 				D5D597992CC200D0009AC7BA /* Model */,
 				D5CDE4D62CC118EE0050E48F /* BasicDomainParser.swift */,
 				D5CDE4DB2CC118EE0050E48F /* Constant.swift */,
@@ -252,57 +231,6 @@
 				D5D5979B2CC20106009AC7BA /* RuleLabel.swift */,
 			);
 			path = Model;
-			sourceTree = "<group>";
-		};
-		D5D5979E2CC2011F009AC7BA /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				D5D5979F2CC20147009AC7BA /* public_suffix_list.dat */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
-		D5D597A42CC2062E009AC7BA /* Scripts */ = {
-			isa = PBXGroup;
-			children = (
-				D5D597A82CC208EF009AC7BA /* FarblingProtectionScript.js */,
-				D5D597AC2CC208EF009AC7BA /* FrameCheckWrapper.js */,
-				D5D597AB2CC208EF009AC7BA /* gpc.js */,
-				D5D597A92CC208EF009AC7BA /* nacl.min.js */,
-				D5D597A72CC208EF009AC7BA /* RequestBlockingScript.js */,
-				D5D597AA2CC208EF009AC7BA /* SelectorsPollerScript.js */,
-			);
-			path = Scripts;
-			sourceTree = "<group>";
-		};
-		D5D597A52CC20659009AC7BA /* Easylist */ = {
-			isa = PBXGroup;
-			children = (
-				D5D597AE2CC20976009AC7BA /* list.txt */,
-				D5D597B02CC20976009AC7BA /* list1458.txt */,
-				D5D597AD2CC20976009AC7BA /* list7545.txt */,
-				D5D597AF2CC20976009AC7BA /* list8055.txt */,
-			);
-			path = Easylist;
-			sourceTree = "<group>";
-		};
-		D5D597A62CC2066A009AC7BA /* Blocklist */ = {
-			isa = PBXGroup;
-			children = (
-				D5D597B42CC20B0F009AC7BA /* block-ads.json */,
-				D5D597B32CC20B0F009AC7BA /* block-cookies.json */,
-				D5D597B52CC20B0F009AC7BA /* block-trackers.json */,
-				D5D597B62CC20B0F009AC7BA /* mixed-content-upgrade.json */,
-			);
-			path = Blocklist;
-			sourceTree = "<group>";
-		};
-		D5D597B12CC20A16009AC7BA /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				D5D597B22CC20A71009AC7BA /* resources.json */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

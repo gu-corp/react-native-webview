@@ -10,6 +10,7 @@ import WebKit
 
 @available(iOS 14.0, *)
 @objcMembers public class Engine {
+    // TODO: change class Name to AdblockHandler
     
     private var customUserScripts = Set<UserScriptType>()
 
@@ -93,6 +94,61 @@ import WebKit
 //    }
     
     // new version
+    
+    // init resources
+    @objc static func loadEasylistAndBlocklist() {
+        let listInfo = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.adBlock, localFileURL: Bundle.main.url(forResource: "list", withExtension: "txt")!)
+        let resourceInfo = CachedAdBlockEngine.ResourcesInfo(localFileURL: Bundle.main.url(forResource: "resources", withExtension: "json")!)
+        
+        let listInfo7326 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "bfpgedeaaibpoidldhjcknekahbikncb"), localFileURL: Bundle.main.url(forResource: "list7545", withExtension: "txt")!)
+        
+        let listInfo7844 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "cdbbhgbmjhfnhnmgeddbliobbofkgdhe"), localFileURL: Bundle.main.url(forResource: "list8055", withExtension: "txt")!)
+        
+        let listInfo1416 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "llgjaaddopeckcifdceaaadmemagkepi"), localFileURL: Bundle.main.url(forResource: "list1458", withExtension: "txt")!)
+        
+        let allowedModes: Set<ContentBlockerManager.BlockingMode> = [
+            .aggressive,
+            .standard,
+            .general
+        ]
+        
+        Task {
+            await loadBundledDataIfNeeded(allowedModes: allowedModes)
+            
+            await AdBlockStats.shared.compile(lazyInfo: listInfo, resourcesInfo: resourceInfo)
+            await AdBlockStats.shared.compile(lazyInfo: listInfo7326, resourcesInfo: resourceInfo)
+            await AdBlockStats.shared.compile(lazyInfo: listInfo7844, resourcesInfo: resourceInfo)
+            await AdBlockStats.shared.compile(lazyInfo: listInfo1416, resourcesInfo: resourceInfo)
+            print("nap xong engine")
+        }
+    }
+    
+    private static func loadBundledDataIfNeeded(allowedModes: Set<ContentBlockerManager.BlockingMode>) async {
+      // Compile bundled blocklists but only if we don't have anything already loaded.
+      await ContentBlockerManager.GenericBlocklistType.allCases.asyncConcurrentForEach { genericType in
+        let blocklistType = ContentBlockerManager.BlocklistType.generic(genericType)
+        let modes = await blocklistType.allowedModes.asyncFilter { mode in
+          guard allowedModes.contains(mode) else { return false }
+          // Non .blockAds can be recompiled safely because they are never replaced by downloaded files
+          if genericType != .blockAds { return true }
+          
+          // .blockAds is special because it can be replaced by a downloaded file.
+          // Hence we need to first check if it already exists.
+          if await ContentBlockerManager.shared.hasRuleList(for: blocklistType, mode: mode) {
+              print("hasRuleList->blocklistType->\(blocklistType)")
+            return false
+          } else {
+            return true
+          }
+        }
+        
+        do {
+          try await ContentBlockerManager.shared.compileBundledRuleList(for: genericType, modes: modes)
+        } catch {
+          assertionFailure("A bundled file should not fail to compile")
+        }
+      }
+    }
     
     private func setScripts(webview: WKWebView, scripts: [UserScriptManager.ScriptType: Bool]) {
       var scriptsToAdd = Set<UserScriptManager.ScriptType>()
