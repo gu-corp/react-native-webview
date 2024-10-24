@@ -1,0 +1,1 @@
+- `nacl.min.js`. Source: https://github.com/dchest/tweetnacl-js

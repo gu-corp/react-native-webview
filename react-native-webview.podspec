@@ -13,8 +13,11 @@ Pod::Spec.new do |s|
   s.platform     = :ios, "9.0"
 
   s.source       = { :git => "https://github.com/react-native-community/react-native-webview.git", :tag => "v#{s.version}" }
-  s.source_files = "ios/**/*.{h,m}"
+  s.source_files = "ios/**/*.{h,m,swift}"
   s.resource     = "ios/Settings.bundle"
+  s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" }
+  s.ios.vendored_library = 'ios/libs/libadblock.a'
+  s.public_header_files = 'ios/libs/*.h'
 
   s.dependency 'React'
 end
