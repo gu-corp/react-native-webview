@@ -96,6 +96,7 @@ export interface WebViewNativeEvent {
   canGoBack: boolean;
   canGoForward: boolean;
   lockIdentifier: number;
+  contentType?: string;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
@@ -1470,4 +1471,8 @@ export interface DownloadConfigProp {
   downloadFolder?: string;
   downloadButton?: string;
   downloadCancelButton?: string;
+}
+
+export interface TRefValiable {
+  contentType: string;
 }

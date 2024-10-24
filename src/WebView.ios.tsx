@@ -28,6 +28,8 @@ import {
   DecelerationRateConstant,
   WebViewSourceUri,
   ViewManager,
+  WebViewNavigationEvent,
+  TRefValiable,
 } from './WebViewTypes';
 
 import styles from './WebView.styles';
@@ -107,6 +109,9 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
     const webViewRef = useRef<React.ComponentRef<
       HostComponent<NativeProps>
     > | null>(null);
+    const refValiable = useRef<TRefValiable>({
+      contentType: '',
+    });
 
     const onShouldStartLoadWithRequestCallback = useCallback(
       (shouldStart: boolean, _url: string, lockIdentifier = 0) => {
@@ -214,6 +219,13 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
             console.log(err);
           }
         },
+        evaluateJavaScript: (js: string) => {
+          webViewRef.current &&
+            Commands.evaluateJavaScript(webViewRef.current, js);
+        },
+        getContentTypes: () => {
+          return refValiable.current.contentType;
+        },
       }),
       [setViewState, webViewRef]
     );
@@ -273,6 +285,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onShouldCreateNewWindowCallback,
       onShouldCreateNewWindowProp
     );
+
+    const onChangeContentType = (e: WebViewNavigationEvent) => {
+      refValiable.current.contentType = e.nativeEvent.contentType || '';
+    };
     // #endregion Lunascape
 
     const NativeWebView =
@@ -357,6 +373,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         onCaptureScreen={onCaptureScreen}
         onShouldCreateNewWindow={onShouldCreateNewWindow}
         onNavigationStateChange={updateNavigationState}
+        onChangeContentType={onChangeContentType}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />
