@@ -221,7 +221,7 @@ actor ContentBlockerManager {
       guard !modes.isEmpty else { return }
         let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle")!
         let resourceBundle = Bundle(path: bundlePath)
-      guard let fileURL = resourceBundle?.url(forResource: genericType.bundledFileName, withExtension: "json") else {
+      guard let fileURL = resourceBundle?.url(forResource: "AdblockResources/Blocklist/"+genericType.bundledFileName, withExtension: "json") else {
         assertionFailure("A bundled file shouldn't fail to load")
         return
       }

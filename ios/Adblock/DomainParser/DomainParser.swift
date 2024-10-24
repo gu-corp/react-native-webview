@@ -27,7 +27,7 @@ public struct DomainParser: DomainParserProtocol {
     public init(quickParsing: Bool = false) throws {
         let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle")!
         let resourceBundle = Bundle(path: bundlePath)
-        let linkList = (resourceBundle?.url(forResource: "public_suffix_list", withExtension: "dat"))!
+        let linkList = (resourceBundle?.url(forResource: "AdblockResources/public_suffix_list", withExtension: "dat"))!
         let data = try Data(contentsOf: linkList)
 
         // We don't need to sort the rules from "public_suffix_list" since

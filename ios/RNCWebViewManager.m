@@ -10,6 +10,7 @@
 #import <React/RCTUIManager.h>
 #import <React/RCTDefines.h>
 #import "RNCWebView.h"
+#import "react_native_webview-Swift.h"
 
 @interface RNCWebViewManager () <RNCWebViewDelegate>
 @end
@@ -447,7 +448,10 @@ RCT_REMAP_METHOD(addContentRuleList,
           if (error) {
               reject(RCTErrorUnspecified, nil, error);
           } else {
-              resolve(nil);
+              [Engine loadEasylistAndBlocklistWithCompletionHandler: ^{
+                  resolve(nil);
+              }];
+//              resolve(nil);
           }
       }];
   });

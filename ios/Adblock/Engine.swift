@@ -9,7 +9,8 @@ import Foundation
 import WebKit
 
 @available(iOS 14.0, *)
-@objcMembers public class Engine {
+@objc(Engine)
+public class Engine: NSObject {
     // TODO: change class Name to AdblockHandler
     
     private var customUserScripts = Set<UserScriptType>()
@@ -96,15 +97,21 @@ import WebKit
     // new version
     
     // init resources
-    @objc static func loadEasylistAndBlocklist() {
-        let listInfo = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.adBlock, localFileURL: Bundle.main.url(forResource: "list", withExtension: "txt")!)
-        let resourceInfo = CachedAdBlockEngine.ResourcesInfo(localFileURL: Bundle.main.url(forResource: "resources", withExtension: "json")!)
+    @objc static public func loadEasylistAndBlocklist() async {
+        NSLog("=====> loadEasylistAndBlocklist -- start")
+        let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle")
+        if(bundlePath == nil) {
+            return
+        }
+        let resourceBundle = Bundle(path: bundlePath!)
+        let listInfo = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.adBlock, localFileURL: (resourceBundle?.url(forResource: "AdblockResources/Easylist/list", withExtension: "txt")!)!) //Bundle.main.url(forResource: "list", withExtension: "txt")!)
+        let resourceInfo = CachedAdBlockEngine.ResourcesInfo(localFileURL: (resourceBundle?.url(forResource: "AdblockResources/resources", withExtension: "json")!)!) //Bundle.main.url(forResource: "resources", withExtension: "json")!)
         
-        let listInfo7326 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "bfpgedeaaibpoidldhjcknekahbikncb"), localFileURL: Bundle.main.url(forResource: "list7545", withExtension: "txt")!)
+        let listInfo7326 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "bfpgedeaaibpoidldhjcknekahbikncb"), localFileURL: (resourceBundle?.url(forResource: "AdblockResources/Easylist/list7545", withExtension: "txt")!)!) //Bundle.main.url(forResource: "list7545", withExtension: "txt")!)
         
-        let listInfo7844 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "cdbbhgbmjhfnhnmgeddbliobbofkgdhe"), localFileURL: Bundle.main.url(forResource: "list8055", withExtension: "txt")!)
+        let listInfo7844 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "cdbbhgbmjhfnhnmgeddbliobbofkgdhe"), localFileURL: (resourceBundle?.url(forResource: "AdblockResources/Easylist/list8055", withExtension: "txt")!)!) //Bundle.main.url(forResource: "list8055", withExtension: "txt")!)
         
-        let listInfo1416 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "llgjaaddopeckcifdceaaadmemagkepi"), localFileURL: Bundle.main.url(forResource: "list1458", withExtension: "txt")!)
+        let listInfo1416 = CachedAdBlockEngine.FilterListInfo(source: CachedAdBlockEngine.Source.filterList(componentId: "llgjaaddopeckcifdceaaadmemagkepi"), localFileURL: (resourceBundle?.url(forResource: "AdblockResources/Easylist/list1458", withExtension: "txt")!)!) //Bundle.main.url(forResource: "list1458", withExtension: "txt")!)
         
         let allowedModes: Set<ContentBlockerManager.BlockingMode> = [
             .aggressive,
@@ -113,13 +120,13 @@ import WebKit
         ]
         
         Task {
-            await loadBundledDataIfNeeded(allowedModes: allowedModes)
+            await self.loadBundledDataIfNeeded(allowedModes: allowedModes)
             
             await AdBlockStats.shared.compile(lazyInfo: listInfo, resourcesInfo: resourceInfo)
             await AdBlockStats.shared.compile(lazyInfo: listInfo7326, resourcesInfo: resourceInfo)
             await AdBlockStats.shared.compile(lazyInfo: listInfo7844, resourcesInfo: resourceInfo)
             await AdBlockStats.shared.compile(lazyInfo: listInfo1416, resourcesInfo: resourceInfo)
-            print("nap xong engine")
+            NSLog("=====> loadEasylistAndBlocklist -- end")
         }
     }
     

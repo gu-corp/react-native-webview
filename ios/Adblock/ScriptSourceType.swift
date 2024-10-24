@@ -37,7 +37,7 @@ enum ScriptSourceType {
   func loadScript() throws -> String {
       let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle")!
       let resourceBundle = Bundle(path: bundlePath)
-    guard let path = resourceBundle?.url(forResource: fileName, withExtension: "js") else {
+    guard let path = resourceBundle?.url(forResource: "AdblockResources/Scripts/"+fileName, withExtension: "js") else {
       assertionFailure("Cannot load script. This should not happen as it's part of the codebase")
       throw ScriptLoadFailure.notFound
     }
