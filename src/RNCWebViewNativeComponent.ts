@@ -351,6 +351,10 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     url: string
   ) => void;
+  evaluateJavaScript: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    js: string
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -377,6 +381,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'setFontSize',
     'setEnableNightMode',
     'proceedUnsafeSite',
+    'evaluateJavaScript',
   ],
 });
 

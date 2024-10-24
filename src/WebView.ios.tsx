@@ -214,6 +214,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
             console.log(err);
           }
         },
+        evaluateJavaScript: (js: string) => {
+          webViewRef.current &&
+            Commands.evaluateJavaScript(webViewRef.current, js);
+        },
       }),
       [setViewState, webViewRef]
     );
