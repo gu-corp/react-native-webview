@@ -96,6 +96,8 @@ static NSDictionary* customCertificatesForHost;
 
   BOOL longPress;
   NSBundle* resourceBundle;
+    
+  Engine *tabAdblock;
   WKWebViewConfiguration *wkWebViewConfig;
   // common script for all webviews
   WKUserScript *scriptFirefoxObject;
@@ -104,7 +106,7 @@ static NSDictionary* customCertificatesForHost;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   WKUserScript *scriptNightMode;
-    
+  
   CGPoint lastOffset;
   BOOL decelerating;
   BOOL dragging;
@@ -181,9 +183,13 @@ static NSDictionary* customCertificatesForHost;
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = self;
-    // _webView.inspectable = YES; // to inspect webview for ios 16.4+
+     _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
+    }
+    
+    if (tabAdblock == nil) { // move to setupConfiguration
+      tabAdblock = [[Engine alloc] init];
     }
   }
   return self;
@@ -386,7 +392,11 @@ static NSDictionary* customCertificatesForHost;
       }
       [self setupConfiguration:self];
       _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
-      //_webView.inspectable = YES; // to inspect webview for ios 16.4+
+      _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    }
+      
+    if (tabAdblock == nil) { // TODO: move to setupConfiguration
+        tabAdblock = [[Engine alloc] init];
     }
 
     [self setBackgroundColor: _savedBackgroundColor];
@@ -1266,13 +1276,17 @@ static NSDictionary* customCertificatesForHost;
     }
   }
     
- // TODO: call Adblock UserScriptManager
-    
-    
- // TODO: set Blocklist rule
-    
-  // Allow all navigation by default
-  decisionHandler(WKNavigationActionPolicyAllow);
+    // TODO: call Adblock UserScriptManager
+    if(tabAdblock !=nil){
+        [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction completionHandler:^(BOOL) {
+            decisionHandler(WKNavigationActionPolicyAllow);
+        }];
+        
+        // TODO: set Blocklist rule
+    }else {
+        // Allow all navigation by default
+        decisionHandler(WKNavigationActionPolicyAllow);
+    }
 }
 
 

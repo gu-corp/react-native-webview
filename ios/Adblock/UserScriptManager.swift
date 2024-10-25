@@ -69,13 +69,14 @@ class UserScriptManager {
             (WKUserScriptInjectionTime.atDocumentEnd, mainFrameOnly: false, sandboxed: true),
         ].compactMap { (injectionTime, mainFrameOnly, sandboxed) in
             
-            if let source = ScriptLoader.loadUserScript(named: "__firefox__") {
-                return WKUserScript(
-                    source: source,
-                    injectionTime: injectionTime,
-                    forMainFrameOnly: mainFrameOnly,
-                    in: sandboxed ? .defaultClient : .page)
-            }
+            // TODO: refactor later
+//            if let source = ScriptLoader.loadUserScript(named: "__firefox__") {
+//                return WKUserScript(
+//                    source: source,
+//                    injectionTime: injectionTime,
+//                    forMainFrameOnly: mainFrameOnly,
+//                    in: sandboxed ? .defaultClient : .page)
+//            }
             
             return nil
         }

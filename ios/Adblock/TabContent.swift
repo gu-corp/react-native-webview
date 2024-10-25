@@ -40,7 +40,7 @@ extension TabContentScriptLoader {
   static func loadUserScript(named: String) -> String? {
       let bundlePath = Bundle.main.path(forResource: "Settings", ofType: "bundle")!
       let resourceBundle = Bundle(path: bundlePath)
-      guard let path = resourceBundle?.url(forResource: named, withExtension: "js"),
+      guard let path = resourceBundle?.url(forResource: "AdblockResources/Scripts/"+named, withExtension: "js"),
             let source = try? String(contentsOf: path) else {
           assertionFailure("Failed to Load Script: \(named).js")
           return nil

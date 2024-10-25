@@ -196,16 +196,18 @@ public class Engine: NSObject {
     }
     
     
-    @MainActor func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences) async -> Bool {
+    @MainActor
+    @objc
+    public func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> Bool {
         guard var requestURL = navigationAction.request.url else {
-            return false;
+            return false; // check later
         }
         
         if let mainDocumentURL = navigationAction.request.mainDocumentURL {
             if mainDocumentURL != self.currentPageData?.mainFrameURL {
                 // Clear the current page data if the page changes.
                 // Do this before anything else so that we have a clean slate.
-                self.setPageData(mainFrameUrl: mainDocumentURL)
+                self.currentPageData = PageData(mainFrameURL: mainDocumentURL)
             }
             
             if navigationAction.targetFrame?.isMainFrame == true {
