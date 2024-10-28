@@ -60,7 +60,7 @@ static NSDictionary* customCertificatesForHost;
 }
 @end
 
-@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol>
+@interface RNCWebView () <WKUIDelegate, WKNavigationDelegate, WKDownloadDelegate, WKScriptMessageHandler, UIScrollViewDelegate, RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingStart;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingFinish;
 @property (nonatomic, copy) RCTDirectEventBlock onLoadingError;
@@ -96,8 +96,10 @@ static NSDictionary* customCertificatesForHost;
 
   BOOL longPress;
   NSBundle* resourceBundle;
-    
+  
+  // Adblocker
   Engine *tabAdblock;
+    
   WKWebViewConfiguration *wkWebViewConfig;
   // common script for all webviews
   WKUserScript *scriptFirefoxObject;
@@ -183,16 +185,24 @@ static NSDictionary* customCertificatesForHost;
     _webView = [[WKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     _webView.UIDelegate = self;
     _webView.navigationDelegate = self;
-     _webView.inspectable = YES; // to inspect webview for ios 16.4+
+    _webView.inspectable = YES; // to inspect webview for ios 16.4+
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
-    
-    if (tabAdblock == nil) { // move to setupConfiguration
-      tabAdblock = [[Engine alloc] init];
-    }
+      
+    [self setupAdblocker:_webView];
   }
   return self;
+}
+
+// init Adblocker object for a tab - webview
+- (void)setupAdblocker:(WKWebView*)webView {
+    if (@available(iOS 14.0, *)) {
+      if (tabAdblock == nil && webView != nil) {
+          tabAdblock = [[Engine alloc] init];
+          [tabAdblock setupContentScriptWithWebView:_webView scriptMessageHandlerWithReply:self];
+      }
+    }
 }
 
 - (void)setupConfiguration:(RNCWebView*)sender {
@@ -395,9 +405,7 @@ static NSDictionary* customCertificatesForHost;
       _webView.inspectable = YES; // to inspect webview for ios 16.4+
     }
       
-    if (tabAdblock == nil) { // TODO: move to setupConfiguration
-        tabAdblock = [[Engine alloc] init];
-    }
+    [self setupAdblocker:_webView];
 
     [self setBackgroundColor: _savedBackgroundColor];
     _webView.scrollView.delegate = self;
@@ -581,6 +589,13 @@ static NSDictionary* customCertificatesForHost;
   } else if(message.name == PrintScriptHandler){
     [self printContent];
   }
+}
+
+// Lunascape custom
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
+    if(tabAdblock != nil) {
+        [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
+    }
 }
 
 - (void)setSource:(NSDictionary *)source

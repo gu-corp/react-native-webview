@@ -13,6 +13,10 @@ import WebKit
 public class Engine: NSObject {
     // TODO: change class Name to AdblockHandler
     
+    fileprivate var helpers = [String: TabContentScript]()
+    
+    private var requestBlockingContentHelper: RequestBlockingContentScriptHandler?
+    
     private var customUserScripts = Set<UserScriptType>()
 
     private var userScripts = Set<UserScriptManager.ScriptType>()
@@ -195,6 +199,17 @@ public class Engine: NSObject {
       }
     }
     
+    func addContentScript(_ helper: TabContentScript, name: String, forweb webview: WKWebView, contentWorld: WKContentWorld, scriptMessageHandlerWithReply: WKScriptMessageHandlerWithReply) {
+        if let _ = helpers[name] {
+          assertionFailure("Duplicate helper added: \(name)")
+        }
+
+        helpers[name] = helper
+        // If this helper handles script messages, then get the handler name and register it. The Tab
+      // receives all messages and then dispatches them to the right TabHelper.
+      let scriptMessageHandlerName = type(of: helper).messageHandlerName
+        webview.configuration.userContentController.addScriptMessageHandler(scriptMessageHandlerWithReply, contentWorld: contentWorld, name: scriptMessageHandlerName)
+    }
     
     @MainActor
     @objc
@@ -236,6 +251,7 @@ public class Engine: NSObject {
             
         }
         
+        // TODO: check later
 //        if let mainDocumentURL = navigationAction.request.mainDocumentURL,
 //          mainDocumentURL.schemelessAbsoluteString == requestURL.schemelessAbsoluteString,
 //          navigationAction.sourceFrame.isMainFrame || navigationAction.targetFrame?.isMainFrame == true {
@@ -249,11 +265,26 @@ public class Engine: NSObject {
         return true
     }
     
-    func setPageData(mainFrameUrl: URL) {
-        self.currentPageData = PageData(mainFrameURL: mainFrameUrl)
+    @objc
+    public func setupContentScript(webView: WKWebView, scriptMessageHandlerWithReply: WKScriptMessageHandlerWithReply) {
+        if(self.requestBlockingContentHelper == nil) {
+            self.requestBlockingContentHelper = RequestBlockingContentScriptHandler(webView: webView)
+            self.addContentScript(self.requestBlockingContentHelper!, name: RequestBlockingContentScriptHandler.scriptName, forweb: webView, contentWorld: RequestBlockingContentScriptHandler.scriptSandbox, scriptMessageHandlerWithReply: scriptMessageHandlerWithReply)
+        } else {
+            NSLog("The requestBlockingContentHelper object already inited !!!");
+        }
     }
     
-    func getPageData () -> PageData? {
-        return self.currentPageData
+    // call in WKScriptMessageHandlerWithReply -> userContentController
+    @objc
+    public func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage, replyHandler: @escaping (Any?, String?) -> Void) {
+        for helper in helpers.values {
+          let scriptMessageHandlerName = type(of: helper).messageHandlerName
+          if scriptMessageHandlerName == message.name {
+            helper.userContentController(userContentController, didReceiveScriptMessage: message, replyHandler: replyHandler)
+            return
+          }
+        }
     }
+    
 }
