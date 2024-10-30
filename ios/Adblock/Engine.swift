@@ -165,6 +165,7 @@ public class Engine: NSObject {
       var scriptsToAdd = Set<UserScriptManager.ScriptType>()
       var scriptsToRemove = Set<UserScriptManager.ScriptType>()
       
+      // TODO: check Script. Only add script one time
       for (script, enabled) in scripts {
         let scriptExists = userScripts.contains(script)
         
@@ -213,11 +214,11 @@ public class Engine: NSObject {
     
     @MainActor
     @objc
-    public func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> Bool {
+    public func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, enableRequestBlocking: Bool) async -> Bool {
         guard var requestURL = navigationAction.request.url else {
             return false; // check later
         }
-        
+        NSLog("<<<<< react-native-webview -- handleAdblockScript -- isMainFrame = %@", (navigationAction.targetFrame?.isMainFrame ?? false) ? "YES": "NO" );
         if let mainDocumentURL = navigationAction.request.mainDocumentURL {
             if mainDocumentURL != self.currentPageData?.mainFrameURL {
                 // Clear the current page data if the page changes.
@@ -233,7 +234,7 @@ public class Engine: NSObject {
                 
                 // Add request blocking script
                 // This script will block certian `xhr` and `window.fetch()` requests
-                .requestBlocking: true
+                .requestBlocking: enableRequestBlocking
                 
                 // The tracker protection script
                 // This script will track what is blocked and increase stats
@@ -248,7 +249,7 @@ public class Engine: NSObject {
               let scriptTypes = await self.currentPageData?.makeUserScriptTypes() ?? []
               self.setCustomUserScript( webview: webView, scripts: scriptTypes)
             }
-            
+//            
         }
         
         // TODO: check later
@@ -274,6 +275,7 @@ public class Engine: NSObject {
             NSLog("The requestBlockingContentHelper object already inited !!!");
         }
     }
+    
     
     // call in WKScriptMessageHandlerWithReply -> userContentController
     @objc
