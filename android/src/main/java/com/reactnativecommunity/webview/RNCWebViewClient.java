@@ -243,7 +243,7 @@ public class RNCWebViewClient extends WebViewClient {
                     synchronized (engine) {
                         if (request.isForMainFrame()) {
                             blockerResult = engine.match(url.toString(), url.getHost(),
-                              "", false, "document");
+                              mainUrl.getHost(), false, "document");
                         } else {
                             blockerResult = engine.match(url.toString(), url.getHost(),
                               mainUrl.getHost(), false, "");
@@ -584,7 +584,7 @@ public class RNCWebViewClient extends WebViewClient {
                 URL url = new URL(urlString);
                 for (Engine engine : adblockEngines) {
                     synchronized (engine) {
-                        blockerResult = engine.match(url.toString(), url.getHost(), "", false, "");
+                        blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
                         if (blockerResult.exception) {
                             enable = false;
                             break;
