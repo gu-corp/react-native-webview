@@ -234,6 +234,7 @@ RCT_EXPORT_VIEW_PROPERTY(onGetFavicon, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onCaptureScreen, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onChangeContentType, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(downloadConfig, NSDictionary)
 
 - (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView
@@ -335,22 +336,14 @@ RCT_REMAP_METHOD(removeContentRuleList,
 // @end Adblock
 
 RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
-                  js:(NSString *)js
-                  resolver:(RCTPromiseResolveBlock)resolve
-                  rejecter:(RCTPromiseRejectBlock)reject)
+                  js:(NSString *)js)
 {
     [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
         RNCView *view = viewRegistry[reactTag];
         if (![view isKindOfClass:[RNCWebViewImpl class]]) {
             RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
         } else {
-            [(RNCWebViewImpl *)view evaluateJavaScript:js completionHandler:^(id result, NSError *error) {
-                if (error) {
-                    reject(@"js_error", @"Error occurred while evaluating Javascript", error);
-                } else {
-                    resolve(result);
-                }
-            }];
+            [(RNCWebViewImpl *)view evaluateJavaScript:js completionHandler:^(id result, NSError *error) {}];
         }
     }];
 }

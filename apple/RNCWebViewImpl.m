@@ -784,6 +784,13 @@ RCTAutoInsetsProtocol>
 #endif // TARGET_OS_IOS
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey,id> *)change context:(void *)context{
+  if(_onChangeContentType){
+    [self.webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
+      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+      [event addEntriesFromDictionary:@{@"contentType":result}];
+      self->_onChangeContentType(event);
+    }];
+  }
   if ([keyPath isEqual:@"estimatedProgress"] && object == self.webView) {
     if(_onLoadingProgress){
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
