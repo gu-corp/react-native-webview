@@ -97,6 +97,7 @@ export interface WebViewNativeEvent {
   canGoForward: boolean;
   lockIdentifier: number;
   contentType?: string;
+  progress?: number;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {

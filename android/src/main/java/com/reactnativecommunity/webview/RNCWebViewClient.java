@@ -514,6 +514,7 @@ public class RNCWebViewClient extends WebViewClient {
         event.putString("title", webView.getTitle());
         event.putBoolean("canGoBack", webView.canGoBack());
         event.putBoolean("canGoForward", webView.canGoForward());
+        event.putDouble("progress", webView.getProgress());
         return event;
     }
 
