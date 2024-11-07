@@ -117,6 +117,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
                 eventData.putString("title", webView.getTitle());
                 eventData.putBoolean("canGoBack", webView.canGoBack());
                 eventData.putBoolean("canGoForward", webView.canGoForward());
+                eventData.putDouble("progress", (float) webView.getProgress() / 100);
 
                 ((RNCWebView) view).dispatchEvent(
                 webView,
