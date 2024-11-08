@@ -2,6 +2,8 @@ import { NativeModules } from 'react-native';
 
 interface UtilityWebViewT {
   removeNonPersistentStoreIncognito: () => void;
+  removeCacheStoreIncognito: (res?: any) => void;
+  removeCookiesStoreIncognito: (res?: any) => void;
 }
 
 const { UtilityWebView } = NativeModules;

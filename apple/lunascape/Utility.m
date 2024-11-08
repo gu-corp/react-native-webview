@@ -14,11 +14,62 @@ RCT_EXPORT_METHOD(removeNonPersistentStoreIncognito)
     _nonPersistentDataStore = nil;
 }
 
+RCT_EXPORT_METHOD(removeCookiesStoreIncognito:(RCTResponseSenderBlock)callback)
+{
+    if (@available(iOS 11.3, *)) {
+        NSSet *websiteDataTypes = [NSSet setWithArray:@[
+            WKWebsiteDataTypeCookies,
+            WKWebsiteDataTypeSessionStorage,
+        ]];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(_nonPersistentDataStore != nil){
+                [_nonPersistentDataStore removeDataOfTypes:websiteDataTypes
+                                             modifiedSince:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                         completionHandler:^{
+                    callback(@[@(true)]);
+                }];
+            }
+        });
+    } else {
+        // Fallback on earlier versions
+        callback(@[@(false)]);
+    }
+}
+
+
+RCT_EXPORT_METHOD(removeCacheStoreIncognito:(RCTResponseSenderBlock)callback)
+{
+    if (@available(iOS 11.3, *)) {
+        NSSet *websiteDataTypes = [NSSet setWithArray:@[
+            WKWebsiteDataTypeDiskCache,
+            WKWebsiteDataTypeServiceWorkerRegistrations,
+            WKWebsiteDataTypeOfflineWebApplicationCache,
+            WKWebsiteDataTypeMemoryCache,
+            WKWebsiteDataTypeLocalStorage,
+            WKWebsiteDataTypeIndexedDBDatabases,
+            WKWebsiteDataTypeWebSQLDatabases
+        ]];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if(_nonPersistentDataStore != nil){
+                [_nonPersistentDataStore removeDataOfTypes:websiteDataTypes
+                                             modifiedSince:[NSDate dateWithTimeIntervalSinceReferenceDate:0]
+                                         completionHandler:^{
+                    callback(@[@(true)]);
+                }];
+            }
+        });
+    } else {
+        // Fallback on earlier versions
+        callback(@[@(false)]);
+    }
+}
+
 + (WKWebsiteDataStore *)sharedNonPersistentStore {
     if (_nonPersistentDataStore) {
         return _nonPersistentDataStore;
     }
-
     WKWebsiteDataStore *dataStore = [WKWebsiteDataStore nonPersistentDataStore];
     _nonPersistentDataStore = dataStore;
     return dataStore;
