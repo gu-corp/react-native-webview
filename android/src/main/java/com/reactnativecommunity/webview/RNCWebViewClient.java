@@ -120,7 +120,9 @@ public class RNCWebViewClient extends WebViewClient {
             // load additional userAgent
             loadAdditionalUserAgent(webView, webviewUrl);
 
-            emitFinishEvent(webView, url);
+            if (mLoadingProgress == 100) {
+                emitFinishEvent(webView, url);
+            }
 
             reactWebView.getFaviconUrl();
 
@@ -510,7 +512,7 @@ public class RNCWebViewClient extends WebViewClient {
         // Don't use webView.getUrl() here, the URL isn't updated to the new value yet in callbacks
         // like onPageFinished
         event.putString("url", url);
-        event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100);
+        event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100 && mLoadingProgress != 100);
         event.putString("title", webView.getTitle());
         event.putBoolean("canGoBack", webView.canGoBack());
         event.putBoolean("canGoForward", webView.canGoForward());
