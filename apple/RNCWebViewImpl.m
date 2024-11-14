@@ -187,9 +187,9 @@ RCTAutoInsetsProtocol>
   NSBundle* resourceBundle;
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
-  NSURL *url_history;
-  NSString *title_history_back;
-  NSString *title_history_forward;
+  NSURL *historyUrl;
+  NSString *historyBackTitle;
+  NSString *historyForwardTitle;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -878,21 +878,21 @@ RCTAutoInsetsProtocol>
       [event addEntriesFromDictionary: @{@"navigationType": message.body}];
       _onLoadingFinish(event);
     }
-      if(_onUpdateHistory){
-        if(![_webView.URL isEqual:url_history]){
-          url_history = _webView.URL;
-          NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-          if(title_history_back != nil){
-            [event addEntriesFromDictionary: @{@"title": title_history_back}];
-            title_history_back = nil;
-          }
-          if(title_history_forward != nil){
-            [event addEntriesFromDictionary: @{@"title": title_history_forward}];
-            title_history_forward = nil;
-          }
-          _onUpdateHistory(event);
+    if(_onUpdateHistory && _webView.URL != nil) {
+      if(![_webView.URL isEqual:historyUrl]) {
+        historyUrl = _webView.URL;
+        NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+        if(historyBackTitle != nil) {
+          [event addEntriesFromDictionary: @{@"title": historyBackTitle}];
+          historyBackTitle = nil;
         }
+        if(historyForwardTitle != nil) {
+          [event addEntriesFromDictionary: @{@"title": historyForwardTitle}];
+          historyForwardTitle = nil;
+        }
+        _onUpdateHistory(event);
       }
+    }
   } else if ([message.name isEqualToString:MessageHandlerName]) {
     if (_onMessage) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1877,21 +1877,21 @@ didFinishNavigation:(WKNavigation *)navigation
       _onLoadingFinish([self baseEvent]);
   }
     
-  if (_onUpdateHistory) {
-    if(![_webView.URL isEqual:url_history]){
+  if (_onUpdateHistory && _webView.URL != nil) {
+    if(![_webView.URL isEqual:historyUrl]) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       [event addEntriesFromDictionary:@{
         @"loading": @(false)
       }];
-      if(title_history_back != nil){
-        [event addEntriesFromDictionary: @{@"title": title_history_back}];
-        title_history_back = nil;
+      if(historyBackTitle != nil){
+        [event addEntriesFromDictionary: @{@"title": historyBackTitle}];
+        historyBackTitle = nil;
       }
-      if(title_history_forward != nil){
-        [event addEntriesFromDictionary: @{@"title": title_history_forward}];
-        title_history_forward = nil;
+      if(historyForwardTitle != nil){
+        [event addEntriesFromDictionary: @{@"title": historyForwardTitle}];
+        historyForwardTitle = nil;
       }
-      url_history = _webView.URL;
+      historyUrl = _webView.URL;
       _onUpdateHistory(event);
     }
   }
@@ -1937,9 +1937,9 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)goForward
 {
   WKBackForwardList *backForwardList = [_webView backForwardList];
-  if (backForwardList.forwardList.count > 0) {
+  if (backForwardList != nil && backForwardList.forwardList != nil && backForwardList.forwardList.count > 0) {
     WKBackForwardListItem *firstForwardItem = backForwardList.forwardList.firstObject;
-    title_history_forward = firstForwardItem.title;
+    historyForwardTitle = firstForwardItem.title;
   }
   [_webView goForward];
 }
@@ -1947,8 +1947,10 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)goBack
 {
   WKBackForwardList *backForwardList = [_webView backForwardList];
-  WKBackForwardListItem *lastBackItem = [backForwardList.backList lastObject];
-  title_history_back = lastBackItem.title;
+  if(backForwardList != nil && backForwardList.backList != nil && backForwardList.backList.count > 0) {
+    WKBackForwardListItem *lastBackItem = [backForwardList.backList lastObject];
+    historyBackTitle = lastBackItem.title;
+  }
   [_webView goBack];
 }
 
