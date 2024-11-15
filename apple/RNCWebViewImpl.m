@@ -1666,25 +1666,6 @@ RCTAutoInsetsProtocol>
 
         _onHttpError(httpErrorEvent);
       }
-
-      // TODO: Need check this logic
-      // This is logic of lib, but it is not necessary on Lunascape, so comment it.
-      // NSString *disposition = nil;
-      // if (@available(iOS 13, macOS 10.15, *)) {
-      //   disposition = [response valueForHTTPHeaderField:@"Content-Disposition"];
-      // }
-      // BOOL isAttachment = disposition != nil && [disposition hasPrefix:@"attachment"];
-      // if (isAttachment || !navigationResponse.canShowMIMEType) {
-      //   if (_onFileDownload) {
-      //     policy = WKNavigationResponsePolicyCancel;
-
-      //     NSMutableDictionary<NSString *, id> *downloadEvent = [self baseEvent];
-      //     [downloadEvent addEntriesFromDictionary: @{
-      //       @"downloadUrl": (response.URL).absoluteString,
-      //     }];
-      //     _onFileDownload(downloadEvent);
-      //   }
-      // }
     }
   }
 

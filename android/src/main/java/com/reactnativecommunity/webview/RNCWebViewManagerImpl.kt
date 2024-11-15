@@ -105,7 +105,6 @@ class RNCWebViewManagerImpl {
             WebView.setWebContentsDebuggingEnabled(true)
         }
 
-      // region set onpress  https://github.com/gu-corp/react-native-webview/commit/e866d6ab176f231f3e4b57c5f759c2179b035def
       webView.setOnLongClickListener { view ->
         val webView = view as RNCWebView
         val result = webView.hitTestResult
@@ -153,7 +152,6 @@ class RNCWebViewManagerImpl {
 
         false // return true to disable copy/paste action bar
       }
-      // endregion
 
 
       webView.setDownloadListener(DownloadListener { url, userAgent, contentDisposition, mimetype, contentLength ->
