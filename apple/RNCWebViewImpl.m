@@ -188,6 +188,7 @@ RCTAutoInsetsProtocol>
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
   NSURL *historyUrl;
+  NSURL *historyTitle;
   NSString *historyBackTitle;
   NSString *historyForwardTitle;
 }
@@ -799,6 +800,16 @@ RCTAutoInsetsProtocol>
       if (_onNavigationStateChange) {
         _onNavigationStateChange([self baseEvent]);
       }
+
+      if([_webView.URL isEqual:historyUrl]) {
+        if(![_webView.title isEqual:historyTitle]) {
+          if(_onUpdateHistory) {
+            NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+            [event addEntriesFromDictionary: @{@"title": _webView.title}];
+            _onUpdateHistory(event);
+          }
+        }
+      }
   }
   // #endregion Lunascape
   else {
@@ -878,9 +889,10 @@ RCTAutoInsetsProtocol>
       [event addEntriesFromDictionary: @{@"navigationType": message.body}];
       _onLoadingFinish(event);
     }
-    if(_onUpdateHistory && _webView.URL != nil) {
+    if(_onAddHistory && _webView.URL != nil) {
       if(![_webView.URL isEqual:historyUrl]) {
         historyUrl = _webView.URL;
+        historyTitle = _webView.title;
         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
         if(historyBackTitle != nil) {
           [event addEntriesFromDictionary: @{@"title": historyBackTitle}];
@@ -890,7 +902,7 @@ RCTAutoInsetsProtocol>
           [event addEntriesFromDictionary: @{@"title": historyForwardTitle}];
           historyForwardTitle = nil;
         }
-        _onUpdateHistory(event);
+        _onAddHistory(event);
       }
     }
   } else if ([message.name isEqualToString:MessageHandlerName]) {
@@ -1877,7 +1889,7 @@ didFinishNavigation:(WKNavigation *)navigation
       _onLoadingFinish([self baseEvent]);
   }
     
-  if (_onUpdateHistory && _webView.URL != nil) {
+  if (_onAddHistory && _webView.URL != nil) {
     if(![_webView.URL isEqual:historyUrl]) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       [event addEntriesFromDictionary:@{
@@ -1892,7 +1904,8 @@ didFinishNavigation:(WKNavigation *)navigation
         historyForwardTitle = nil;
       }
       historyUrl = _webView.URL;
-      _onUpdateHistory(event);
+      historyTitle = _webView.title;
+      _onAddHistory(event);
     }
   }
     

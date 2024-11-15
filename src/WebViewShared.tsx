@@ -303,7 +303,7 @@ export const useWebViewLogic = ({
     [onGetFaviconProp]
   );
 
-  const onUpdateHistory = useCallback(
+  const onAddHistory = useCallback(
     (event: WebViewNavigationEvent) => {
       onLoad?.(event);
     },
@@ -328,6 +328,6 @@ export const useWebViewLogic = ({
     lastErrorEvent,
     onGetFavicon,
     updateNavigationState,
-    onUpdateHistory,
+    onAddHistory,
   };
 };

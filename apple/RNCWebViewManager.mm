@@ -235,6 +235,7 @@ RCT_EXPORT_VIEW_PROPERTY(onShouldCreateNewWindow, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onNavigationStateChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onChangeContentType, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(downloadConfig, NSDictionary)
+RCT_EXPORT_VIEW_PROPERTY(onAddHistory, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onUpdateHistory, RCTDirectEventBlock)
 
 - (RNCWebViewImpl*)webView:(__unused RNCWebViewImpl *)webView

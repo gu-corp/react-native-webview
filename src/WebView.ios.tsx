@@ -138,7 +138,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       onContentProcessDidTerminate,
       onGetFavicon,
       updateNavigationState,
-      onUpdateHistory,
+      onAddHistory,
     } = useWebViewLogic({
       onNavigationStateChange,
       onLoad,
@@ -375,7 +375,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         onShouldCreateNewWindow={onShouldCreateNewWindow}
         onNavigationStateChange={updateNavigationState}
         onChangeContentType={onChangeContentType}
-        onUpdateHistory={onUpdateHistory}
+        onAddHistory={onAddHistory}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />

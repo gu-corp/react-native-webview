@@ -358,6 +358,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
   onWebViewClosed?: (event: WebViewNavigationEvent) => void;
   onGetFavicon?: (event: WebViewMessageEvent) => void;
   onCaptureScreen?: (event: WebViewMessageEvent) => void;
+  onUpdateHistory?: (event: WebViewMessageEvent) => void;
   // #endregion Lunascape props
 }
 
@@ -1452,6 +1453,11 @@ export interface WebViewSharedProps extends ViewProps {
    * Set the download config for the Webview.
    */
   downloadConfig?: DownloadConfigProp;
+
+  /**
+   * Webview will update history when the page is have new title but not new url only iOS
+   */
+  onUpdateHistory?: (event: WebViewMessage | WebViewMessageEvent) => void;
   // #endregion
 }
 
