@@ -141,6 +141,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       onOpenWindow,
       onRenderProcessGone,
       updateNavigationState,
+      onAddHistory,
     } = useWebViewLogic({
       onNavigationStateChange,
       onLoad,
@@ -397,6 +398,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         onReceiveWebViewStatus={onReceiveWebViewStatus}
         onCaptureScreen={onCaptureScreen}
         onFileDownload={onFileDownload}
+        onAddHistory={onAddHistory}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />

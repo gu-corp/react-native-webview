@@ -36,6 +36,7 @@ import com.facebook.react.uimanager.UIManagerHelper;
 import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopAddHistoryEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -121,9 +122,15 @@ public class RNCWebViewClient extends WebViewClient {
             loadAdditionalUserAgent(webView, webviewUrl);
 
             if (mLoadingProgress == 100) {
-                emitFinishEvent(webView, url);
+                if(!mIsUpdateManual){
+                    emitAddHistoryEvent(webView, url);
+                    mIsDoUpdateVisitedHistory = false;
+                }else{
+                    mIsUpdateManual = false;
+                }
             }
 
+            emitFinishEvent(webView, url);
             reactWebView.getFaviconUrl();
 
             String jsNightMode = "window.NightMode.setEnabled(" + mEnableNightMode + ");";
@@ -136,6 +143,9 @@ public class RNCWebViewClient extends WebViewClient {
         super.doUpdateVisitedHistory(view, url, isReload);
         if (url != null && !url.equals(currentPageUrl)) {
             currentPageUrl = url;
+            mIsDoUpdateVisitedHistory = true;
+        }else {
+            mIsDoUpdateVisitedHistory = false;
         }
         ((RNCWebView) view).dispatchEvent(
           view,
@@ -173,7 +183,6 @@ public class RNCWebViewClient extends WebViewClient {
             event.putBoolean("mainFrame", isMainFrame);
             event.putDouble("lockIdentifier", lockIdentifier);
             rncWebView.dispatchDirectShouldStartLoadWithRequest(event);
-
             try {
                 assert lockObject != null;
                 synchronized (lockObject) {
@@ -449,6 +458,7 @@ public class RNCWebViewClient extends WebViewClient {
 
         int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
         UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingErrorEvent(reactTag, eventData));
+        emitAddHistoryEvent(webView, failingUrl);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
@@ -506,6 +516,11 @@ public class RNCWebViewClient extends WebViewClient {
         UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingFinishEvent(reactTag, createWebViewEvent(webView, url)));
     }
 
+    protected void emitAddHistoryEvent(WebView webView, String url) {
+        int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
+        UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopAddHistoryEvent(reactTag, createWebViewEvent(webView, url)));
+    }
+
     protected WritableMap createWebViewEvent(WebView webView, String url) {
         WritableMap event = Arguments.createMap();
         event.putDouble("target", RNCWebViewWrapper.getReactTagFromWebView(webView));
@@ -538,6 +553,9 @@ public class RNCWebViewClient extends WebViewClient {
     private boolean isMainDocumentException;
     private String currentPageUrl = null;
     private String currentPageTitle = null;
+
+    protected boolean mIsDoUpdateVisitedHistory = true;
+    protected boolean mIsUpdateManual = false;
 
     private @Nullable String mUserAgent = null; // to append with additional user agent
     protected @Nullable ReadableArray mAdditionalUserAgent = null;
@@ -615,6 +633,7 @@ public class RNCWebViewClient extends WebViewClient {
     }
 
     public void setLoadingProgress(int newProgress) {
+        Log.d("bách newProgress", String.valueOf(newProgress));
         this.mLoadingProgress = newProgress;
     }
 
@@ -630,6 +649,16 @@ public class RNCWebViewClient extends WebViewClient {
               view,
               new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl))
             );
+            if (mLoadingProgress == 100) {
+              if(mIsDoUpdateVisitedHistory){
+                if(!mIsUpdateManual){
+                  emitAddHistoryEvent(view, newRequestURL);
+                }else{
+                  mIsUpdateManual = false;
+                }
+                mIsDoUpdateVisitedHistory = false;
+              }
+            }
         }
     }
 
@@ -664,4 +693,22 @@ public class RNCWebViewClient extends WebViewClient {
         mUserAgent = userAgent;
     }
 
+    public void addHistoryManual(WebView view, String url, String title){
+        mIsUpdateManual = true;
+        currentPageUrl = url;
+        currentPageTitle = title;
+
+        WritableMap event = Arguments.createMap();
+        event.putDouble("target", RNCWebViewWrapper.getReactTagFromWebView(view));
+        event.putString("url", url);
+        event.putString("title", title);
+        ((RNCWebView) view).dispatchEvent(
+              view,
+              new TopAddHistoryEvent(RNCWebViewWrapper.getReactTagFromWebView(view), event)
+            );
+    }
+
+    public void setReload(){
+        mIsUpdateManual = true;
+    }
 }

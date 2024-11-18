@@ -550,6 +550,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
         export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
         export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
+        export.put(TopAddHistoryEvent.EVENT_NAME, MapBuilder.of("registrationName", "onAddHistory"));
         return export;
     }
 

@@ -24,6 +24,8 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebBackForwardList;
+import android.webkit.WebHistoryItem;
 
 import androidx.annotation.Nullable;
 
@@ -723,5 +725,50 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             mRNCWebViewClient.mAllowUnsafeSite = true;
         }
         loadUrl(url);
+    }
+
+    @Override
+    public void goBack(){
+        WebView webView = this;
+        WebBackForwardList historyList = webView.copyBackForwardList();
+        if (historyList != null && historyList.getSize() > 0) {
+            int index = historyList.getCurrentIndex() - 1;
+            String url = historyList.getItemAtIndex(index).getUrl();
+            String title = historyList.getItemAtIndex(index).getTitle();
+
+            if (mRNCWebViewClient != null) {
+                mRNCWebViewClient.addHistoryManual(webView, url, title);
+            }
+        }
+
+        super.goBack();
+    }
+
+    @Override
+    public void goForward(){
+        WebView webView = this;
+        WebBackForwardList historyList = webView.copyBackForwardList();
+        if (historyList != null && historyList.getSize() > 0) {
+            int index = historyList.getCurrentIndex() + 1;
+            if (index < historyList.getSize()) {
+                String url = historyList.getItemAtIndex(index).getUrl();
+                String title = historyList.getItemAtIndex(index).getTitle();
+
+                if (mRNCWebViewClient != null) {
+                    mRNCWebViewClient.addHistoryManual(webView, url, title);
+                }
+            }
+        }
+
+        super.goForward();
+    }
+
+    @Override
+    public void reload(){
+        if (mRNCWebViewClient != null) {
+            mRNCWebViewClient.setReload();
+        }
+
+        super.reload();
     }
 }

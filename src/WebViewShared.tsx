@@ -233,7 +233,7 @@ export const useWebViewLogic = ({
 
   const onLoadingFinish = useCallback(
     (event: WebViewNavigationEvent) => {
-      onLoad?.(event);
+      // onLoad?.(event);
       onLoadEnd?.(event);
       const {
         nativeEvent: { url },
@@ -245,7 +245,14 @@ export const useWebViewLogic = ({
       // !on Android, only if url === startUrl
       updateNavigationState(event);
     },
-    [onLoad, onLoadEnd, updateNavigationState]
+    [onLoadEnd, updateNavigationState]
+  );
+
+  const onAddHistory = useCallback(
+    (event: WebViewNavigationEvent) => {
+      onLoad?.(event);
+    },
+    [onLoad]
   );
 
   const onMessage = useCallback(
@@ -322,5 +329,6 @@ export const useWebViewLogic = ({
     lastErrorEvent,
     onGetFavicon,
     updateNavigationState,
+    onAddHistory,
   };
 };
