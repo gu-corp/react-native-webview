@@ -1631,6 +1631,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                 [self injectYoutubePictureInPictureJS:webView request:request];
 
                 // TODO: need to check AdBlock logic here
+                NSLog(@"-- debug -- handleAdblockScriptWithWebView --2 - in _onShouldStartLoadWithRequest ");
 
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
@@ -1675,15 +1676,16 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     // TODO: need to check Adblock logic here
 
     BOOL isAllowWebsite = false;
-    if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
-      isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
+    if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
+      isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
     }
 
     BOOL enableAdblocker = false;
-    if(_contentRuleLists!=nil && _contentRuleLists.count > 0) {
+    if(_adblockRuleList!=nil && _adblockRuleList.count > 0) {
       enableAdblocker = true;
     }
 
+    NSLog(@"-- debug -- handleAdblockScriptWithWebView --1 ");
 
     if (enableAdblocker && !isAllowWebsite && tabAdblock) {
       // ablocker is enabled and the website is not in the allow list. Check if the request should be blocked or not
