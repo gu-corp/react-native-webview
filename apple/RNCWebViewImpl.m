@@ -25,6 +25,12 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
+// Note: call swift function from objective-c https://developer.apple.com/documentation/swift/importing-swift-into-objective-c
+// https://stackoverflow.com/a/26756530
+// <ProductModuleName>-Swift.h
+// The Product Module Name is "react_native_webview" if you install this library to react-native project.
+// The Product Module Name based on the name of the target in the project at Build Settings -> Product Module Name (Xcode)
+#import "react_native_webview-Swift.h" 
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -132,7 +138,7 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 UIScrollViewDelegate,
 UIGestureRecognizerDelegate,
 #endif // !TARGET_OS_OSX
-RCTAutoInsetsProtocol>
+RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 
 @property (nonatomic, copy) RNCWKWebView *webView;
 @property (nonatomic, strong) WKUserScript *postMessageScript;
@@ -191,6 +197,9 @@ RCTAutoInsetsProtocol>
   NSURL *historyTitle;
   NSString *historyBackTitle;
   NSString *historyForwardTitle;
+
+  // Adblocker
+  Engine *tabAdblock;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -595,6 +604,9 @@ RCTAutoInsetsProtocol>
       wkWebViewConfig = [self setUpWkWebViewConfig];
       _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
+
+    [self setupAdblocker:_webView];
+
     [self setBackgroundColor: _savedBackgroundColor];
 #if !TARGET_OS_OSX
     _webView.menuItems = _menuItems;
@@ -1618,6 +1630,8 @@ RCTAutoInsetsProtocol>
                 [self applyAdblockLogic:webView request:request];
                 [self injectYoutubePictureInPictureJS:webView request:request];
 
+                // TODO: need to check AdBlock logic here
+
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
             });
@@ -1658,8 +1672,29 @@ RCTAutoInsetsProtocol>
     [self applyAdblockLogic:webView request:request];
     [self injectYoutubePictureInPictureJS:webView request:request];
 
-    // Allow all navigation by default
-    decisionHandler(WKNavigationActionPolicyAllow);
+    // TODO: need to check Adblock logic here
+
+    BOOL isAllowWebsite = false;
+    if (_adBlockAllowList != nil && _adBlockAllowList.count > 0) {
+      isAllowWebsite = [_adBlockAllowList containsObject:request.mainDocumentURL.host];
+    }
+
+    BOOL enableAdblocker = false;
+    if(_contentRuleLists!=nil && _contentRuleLists.count > 0) {
+      enableAdblocker = true;
+    }
+
+
+    if (enableAdblocker && !isAllowWebsite && tabAdblock) {
+      // ablocker is enabled and the website is not in the allow list. Check if the request should be blocked or not
+      [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES completionHandler:^(BOOL) {
+        decisionHandler(WKNavigationActionPolicyAllow);
+      }];
+    } else {
+      // Allow all navigation by default
+      decisionHandler(WKNavigationActionPolicyAllow);
+    }
+    
 }
 
 /**
@@ -2644,8 +2679,30 @@ didFinishNavigation:(WKNavigation *)navigation
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
+
+    [self setupAdblocker:_webView];
   }
   return self;
+}
+
+// init Adblocker object for a tab - webview
+- (void)setupAdblocker:(WKWebView*)webView {
+  if (@available(iOS 14.0, *)) {
+    if (tabAdblock == nil && webView != nil) {
+        tabAdblock = [[Engine alloc] init];
+        NSLog(@"====> react-native-webview -- setupAdblocker");
+        [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
+    }
+  }
+}
+
+// Lunascape custom
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
+  if(tabAdblock != nil) {
+      // check adblocker On/Off
+      NSLog(@"====> react-native-webview -- userContentController didReceiveScriptMessage replyHandler ");
+      [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
+  }
 }
 
 // copy sender configuration to configuration parameter. Similar to setUpWkWebViewConfig
