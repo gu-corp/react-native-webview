@@ -633,7 +633,6 @@ public class RNCWebViewClient extends WebViewClient {
     }
 
     public void setLoadingProgress(int newProgress) {
-        Log.d("bách newProgress", String.valueOf(newProgress));
         this.mLoadingProgress = newProgress;
     }
 
