@@ -14,6 +14,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.viewmanagers.RNCWebViewManagerDelegate;
 import com.facebook.react.viewmanagers.RNCWebViewManagerInterface;
 import com.facebook.react.views.scroll.ScrollEventType;
+import com.reactnativecommunity.webview.events.TopUpdateHistoryEvent;
 import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopFileDownloadEvent;
@@ -550,6 +551,7 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         export.put(TopCreateNewWindowEvent.EVENT_NAME, MapBuilder.of("registrationName", "onShouldCreateNewWindow"));
         export.put(TopWebViewClosedEvent.EVENT_NAME, MapBuilder.of("registrationName", "onWebViewClosed"));
         export.put(TopFileDownloadEvent.EVENT_NAME, MapBuilder.of("registrationName", "onFileDownload"));
+        export.put(TopUpdateHistoryEvent.EVENT_NAME, MapBuilder.of("registrationName", "onUpdateHistory"));
         return export;
     }
 
