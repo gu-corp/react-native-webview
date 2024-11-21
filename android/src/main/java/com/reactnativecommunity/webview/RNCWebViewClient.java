@@ -122,7 +122,6 @@ public class RNCWebViewClient extends WebViewClient {
             loadAdditionalUserAgent(webView, webviewUrl);
 
             emitUpdateHistoryEvent(webView, url);
-            Log.d("bách", "bách");
             emitFinishEvent(webView, url);
 
             reactWebView.getFaviconUrl();

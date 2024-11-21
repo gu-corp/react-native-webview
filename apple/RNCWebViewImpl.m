@@ -889,7 +889,7 @@ RCTAutoInsetsProtocol>
       [event addEntriesFromDictionary: @{@"navigationType": message.body}];
       _onLoadingFinish(event);
     }
-    if(_onAddHistory && _webView.URL != nil) {
+    if(_onUpdateHistory && _webView.URL != nil) {
       if(![_webView.URL isEqual:historyUrl]) {
         historyUrl = _webView.URL;
         historyTitle = _webView.title;
@@ -902,7 +902,7 @@ RCTAutoInsetsProtocol>
           [event addEntriesFromDictionary: @{@"title": historyForwardTitle}];
           historyForwardTitle = nil;
         }
-        _onAddHistory(event);
+        _onUpdateHistory(event);
       }
     }
   } else if ([message.name isEqualToString:MessageHandlerName]) {
@@ -1889,7 +1889,7 @@ didFinishNavigation:(WKNavigation *)navigation
       _onLoadingFinish([self baseEvent]);
   }
     
-  if (_onAddHistory && _webView.URL != nil) {
+  if (_onUpdateHistory && _webView.URL != nil) {
     if(![_webView.URL isEqual:historyUrl]) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       [event addEntriesFromDictionary:@{
@@ -1905,7 +1905,7 @@ didFinishNavigation:(WKNavigation *)navigation
       }
       historyUrl = _webView.URL;
       historyTitle = _webView.title;
-      _onAddHistory(event);
+      _onUpdateHistory(event);
     }
   }
     

@@ -1455,7 +1455,7 @@ export interface WebViewSharedProps extends ViewProps {
   downloadConfig?: DownloadConfigProp;
 
   /**
-   * Webview will update history when the page is have new title but not new url only iOS
+   * Webview will update history when the page is have new title but not new url
    */
   onUpdateHistory?: (event: WebViewMessage | WebViewMessageEvent) => void;
   // #endregion

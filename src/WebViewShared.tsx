@@ -233,6 +233,7 @@ export const useWebViewLogic = ({
 
   const onLoadingFinish = useCallback(
     (event: WebViewNavigationEvent) => {
+      onLoad?.(event);
       onLoadEnd?.(event);
       const {
         nativeEvent: { url },
@@ -244,7 +245,7 @@ export const useWebViewLogic = ({
       // !on Android, only if url === startUrl
       updateNavigationState(event);
     },
-    [onLoadEnd, updateNavigationState]
+    [onLoad, onLoadEnd, updateNavigationState]
   );
 
   const onMessage = useCallback(
@@ -303,13 +304,6 @@ export const useWebViewLogic = ({
     [onGetFaviconProp]
   );
 
-  const onAddHistory = useCallback(
-    (event: WebViewNavigationEvent) => {
-      onLoad?.(event);
-    },
-    [onLoad]
-  );
-
   // #endregion Lunascape
 
   return {
@@ -328,6 +322,5 @@ export const useWebViewLogic = ({
     lastErrorEvent,
     onGetFavicon,
     updateNavigationState,
-    onAddHistory,
   };
 };
