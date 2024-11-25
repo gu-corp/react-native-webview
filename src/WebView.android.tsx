@@ -101,6 +101,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       // #region Lunascape
       onShouldCreateNewWindow,
       onFileDownload,
+      onUpdateHistory,
       // #endregion Lunascape
       ...otherProps
     },
@@ -397,6 +398,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         onReceiveWebViewStatus={onReceiveWebViewStatus}
         onCaptureScreen={onCaptureScreen}
         onFileDownload={onFileDownload}
+        onUpdateHistory={onUpdateHistory}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />

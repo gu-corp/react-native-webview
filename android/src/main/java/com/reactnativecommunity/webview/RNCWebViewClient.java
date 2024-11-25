@@ -36,6 +36,7 @@ import com.facebook.react.uimanager.UIManagerHelper;
 import com.facebook.react.uimanager.UIManagerModule;
 import com.facebook.react.uimanager.events.Event;
 import com.facebook.react.uimanager.events.EventDispatcher;
+import com.reactnativecommunity.webview.events.TopUpdateHistoryEvent;
 import com.reactnativecommunity.webview.events.TopHttpErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingErrorEvent;
 import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
@@ -120,6 +121,7 @@ public class RNCWebViewClient extends WebViewClient {
             // load additional userAgent
             loadAdditionalUserAgent(webView, webviewUrl);
 
+            emitUpdateHistoryEvent(webView, url);
             emitFinishEvent(webView, url);
 
             reactWebView.getFaviconUrl();
@@ -504,6 +506,11 @@ public class RNCWebViewClient extends WebViewClient {
         UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingFinishEvent(reactTag, createWebViewEvent(webView, url)));
     }
 
+    protected void emitUpdateHistoryEvent(WebView webView, String url) {
+        int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
+        UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopUpdateHistoryEvent(reactTag, createWebViewEvent(webView, url)));
+    }
+
     protected WritableMap createWebViewEvent(WebView webView, String url) {
         WritableMap event = Arguments.createMap();
         event.putDouble("target", RNCWebViewWrapper.getReactTagFromWebView(webView));
@@ -624,6 +631,7 @@ public class RNCWebViewClient extends WebViewClient {
         if (newRequestURL != null && (!newRequestURL.equals((currentPageUrl)) || !newRequestTitle.equals((currentPageTitle)))) {
             currentPageUrl = newRequestURL;
             currentPageTitle = newRequestTitle;
+            emitUpdateHistoryEvent(view, newRequestURL);
             ((RNCWebView) view).dispatchEvent(
               view,
               new TopLoadingStartEvent(RNCWebViewWrapper.getReactTagFromWebView(view), createWebViewEvent(view, currentPageUrl))
