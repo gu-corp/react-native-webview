@@ -1598,13 +1598,14 @@ RCTAutoInsetsProtocol>
                     decisionHandler(WKNavigationActionPolicyCancel);
                     return;
                 }
-                if (self->_onLoadingStart) {
+                if (self->_onLoadingStart && !hasTargetFrame) {
                     // We have this check to filter out iframe requests and whatnot
                     if (isTopFrame) {
                         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
                         [event addEntriesFromDictionary: @{
                             @"url": (request.URL).absoluteString,
-                            @"navigationType": navigationTypes[@(navigationType)]
+                            @"navigationType": navigationTypes[@(navigationType)],
+                            @"hasTargetFrame": @(!hasTargetFrame)
                         }];
                         self->_onLoadingStart(event);
                     }
