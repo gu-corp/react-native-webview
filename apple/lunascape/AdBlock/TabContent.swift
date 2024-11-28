@@ -2,8 +2,6 @@
 //  TabContent.swift
 //  react-native-webview
 //
-//  Created by Alobridge on 2/8/24.
-//
 
 import UIKit
 import WebKit

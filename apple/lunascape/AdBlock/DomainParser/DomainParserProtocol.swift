@@ -2,9 +2,6 @@
 //  DomainParserProtocol.swift
 //  DomainParser
 //
-//  Created by Rayane Kurrimboccus on 31/01/2023.
-//  Copyright © 2023 Dashlane. All rights reserved.
-//
 
 import Foundation
 

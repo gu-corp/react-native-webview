@@ -199,7 +199,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   NSString *historyForwardTitle;
 
   // Adblocker
-  Engine *tabAdblock;
+  EngineHandler *tabAdblock;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -2691,7 +2691,7 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)setupAdblocker:(WKWebView*)webView {
   if (@available(iOS 14.0, *)) {
     if (tabAdblock == nil && webView != nil) {
-        tabAdblock = [[Engine alloc] init];
+        tabAdblock = [[EngineHandler alloc] init];
         NSLog(@"====> react-native-webview -- setupAdblocker");
         [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
     }

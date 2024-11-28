@@ -68,19 +68,6 @@ public actor AdBlockStats {
           }
         }
       }
-        
-//        if let blocklistType = lazyInfo.blocklistType {
-//          let modes = await ContentBlockerManager.shared.missingModes(for: blocklistType)
-//          guard !modes.isEmpty else { return }
-//
-//          do {
-//            try await ContentBlockerManager.shared.compileRuleList(
-//              at: lazyInfo.localFileURL, for: blocklistType, modes: modes
-//            )
-//          } catch {
-//            print("Failed to compile rule list for \(lazyInfo.source.debugDescription)")
-//          }
-//        }
       
       await currentCompileTask?.value
     }

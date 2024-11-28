@@ -298,7 +298,7 @@ RCT_REMAP_METHOD(addContentRuleList,
                 if (error) {
                     reject(RCTErrorUnspecified, nil, error);
                 } else {
-                    [Engine loadEasylistAndBlocklistWithCompletionHandler: ^{
+                    [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
                         resolve(nil);
                     }];
                     // resolve(nil);

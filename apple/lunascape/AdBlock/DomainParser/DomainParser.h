@@ -2,9 +2,6 @@
 //  DomainParser.h
 //  DomainParser
 //
-//  Created by Jason Akakpo on 18/07/2018.
-//  Copyright © 2018 Dashlane. All rights reserved.
-//
 
 #import <Foundation/Foundation.h>
 
