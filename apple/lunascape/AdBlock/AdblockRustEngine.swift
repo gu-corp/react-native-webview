@@ -108,6 +108,10 @@ class AdblockRustEngine {
                      &didMatchRule, &didMatchException,
                      &didMatchImportant,
                      UnsafeMutablePointer(mutating: &emptyPointer),UnsafeMutablePointer(mutating: &emptyPointer))
+        NSLog("-- debug adblock -- 1 shouldBlock = %@", String(describing: didMatchRule))
+        NSLog("-- debug adblock -- 2 requestURL = %@", String(describing: requestURL.absoluteString))
+        NSLog("-- debug adblock -- 3 sourceURL = %@", String(describing: sourceURL.absoluteString))
+        NSLog("-- debug adblock -- 4 resourceType = %@", String(describing: resourceType.rawValue))
         return didMatchRule
     }
     

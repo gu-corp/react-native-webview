@@ -6,6 +6,7 @@
 import Foundation
 import WebKit
 
+@available(iOS 14.0, *)
 @objc(EngineHandler)
 public class EngineHandler: NSObject {
     
