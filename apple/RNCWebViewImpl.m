@@ -2441,6 +2441,7 @@ didFinishNavigation:(WKNavigation *)navigation
     printInfo.duplex = UIPrintInfoDuplexLongEdge;
     controller.printInfo = printInfo;
     controller.showsPageRange = YES;
+    controller.printingItem = _webView.URL;
     
     UIViewPrintFormatter *viewFormatter = [_webView viewPrintFormatter];
     viewFormatter.startPage = 0;
