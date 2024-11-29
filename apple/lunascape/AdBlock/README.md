@@ -8,4 +8,4 @@ Docs: https://developer.apple.com/documentation/webkit/wkcontentruleliststore
 - Block ads with Adblock-rust library (https://github.com/brave/adblock-rust)
   - A FFI crate C++ wrapper: https://github.com/gu-corp/adblock-rust-jni/tree/dev-v0.7.9. Please check details in {root_dir}/apple/libs/README.md
   - Request blocking with Adblock-rust library via window.fetch and XMLHttpRequest.
-  - [WIP] Create customUserScript with Adblock-rust library.
+  - Create customUserScript with Adblock-rust library. (support later)
