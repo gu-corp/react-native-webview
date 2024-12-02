@@ -138,7 +138,7 @@ public class EngineHandler: NSObject {
     
     @MainActor
     @objc
-    public func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, enableRequestBlocking: Bool) async -> Bool {
+    public func handleAdblockScript(webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, enableRequestBlocking: Bool) -> Bool {
         guard var requestURL = navigationAction.request.url else {
             return false; // check later
         }
@@ -182,6 +182,16 @@ public class EngineHandler: NSObject {
       //  }
         
         return true
+    }
+    
+    @MainActor
+    @objc
+    public func isExistedRequestBlockingScript(webView: WKWebView?) -> Bool {
+        var result: Bool = false
+        if(webView != nil && RequestBlockingContentScriptHandler.userScript != nil) {
+            result = webView!.configuration.userContentController.userScripts.contains(RequestBlockingContentScriptHandler.userScript!)
+        }
+        return result
     }
     
     @objc
