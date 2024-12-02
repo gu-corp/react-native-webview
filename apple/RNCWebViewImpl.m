@@ -2299,15 +2299,15 @@ didFinishNavigation:(WKNavigation *)navigation
   // override window.print script
   [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
     
-    if(scriptPrinting == nil) {
-        NSString *sourcePrintScript = [NSString stringWithFormat:
-          @"window.print = function () {"
-            "    window.webkit.messageHandlers.%@.postMessage(String());"
-            "};", PrintScriptHandler
-        ];
+  if(scriptPrinting == nil) {
+    NSString *sourcePrintScript = [NSString stringWithFormat:
+      @"window.print = function () {"
+        "    window.webkit.messageHandlers.%@.postMessage(String());"
+        "};", PrintScriptHandler
+    ];
 
-        scriptPrinting = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
-    }
+    scriptPrinting = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+  }
   [wkWebViewConfig.userContentController addUserScript:scriptPrinting];
   
   // default js, inject for all
