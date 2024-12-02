@@ -182,6 +182,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   WKUserScript *scriptNightMode;
+  // override window.print method
+  WKUserScript *scriptPrinting;
 
   CGPoint lastOffset;
   BOOL decelerating;
@@ -1632,27 +1634,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 
                 // TODO: need to check AdBlock logic here
                 NSLog(@"-- debug -- handleAdblockScriptWithWebView --2 - in _onShouldStartLoadWithRequest ");
-
-                
-//                BOOL isAllowWebsite = false;
-//                if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
-//                  isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
-//                }
-//
-//                BOOL enableAdblocker = false;
-//                if(_adblockRuleList!=nil && _adblockRuleList.count > 0) {
-//                  enableAdblocker = true;
-//                }
-
-                NSLog(@"-- debug -- handleAdblockScriptWithWebView --1 ");
-
-//                if (enableAdblocker && !isAllowWebsite && tabAdblock) {
-//                  // ablocker is enabled and the website is not in the allow list. Check if the request should be blocked or not
-//                  [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
-//                } else {
-//                  // Allow all navigation by default
-//                  decisionHandler(WKNavigationActionPolicyAllow);
-//                }
                 
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
@@ -1694,28 +1675,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     // Lunascape logic
     [self applyAdblockLogic:webView navigationAction:navigationAction];
     [self injectYoutubePictureInPictureJS:webView request:request];
-
-    // TODO: need to check Adblock logic here
-
-//    BOOL isAllowWebsite = false;
-//    if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
-//      isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
-//    }
-//
-//    BOOL enableAdblocker = false;
-//    if(_adblockRuleList!=nil && _adblockRuleList.count > 0) {
-//      enableAdblocker = true;
-//    }
-//
-//    NSLog(@"-- debug -- handleAdblockScriptWithWebView --1 ");
-//
-//    if (enableAdblocker && !isAllowWebsite && tabAdblock) {
-//      // ablocker is enabled and the website is not in the allow list. Check if the request should be blocked or not
-//      [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
-//    } else {
-//      // Allow all navigation by default
-//      decisionHandler(WKNavigationActionPolicyAllow);
-//    }
     
     // Allow all navigation by default
     decisionHandler(WKNavigationActionPolicyAllow);
@@ -2342,14 +2301,18 @@ didFinishNavigation:(WKNavigation *)navigation
   // Lunascape
   // override window.print script
   [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
-  NSString *sourcePrintScript = [NSString stringWithFormat:
-    @"window.print = function () {"
-      "    window.webkit.messageHandlers.%@.postMessage(String());"
-      "};", PrintScriptHandler
-  ];
+    
+    if(scriptPrinting == nil) {
+        NSString *sourcePrintScript = [NSString stringWithFormat:
+          @"window.print = function () {"
+            "    window.webkit.messageHandlers.%@.postMessage(String());"
+            "};", PrintScriptHandler
+        ];
 
-  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
-  [wkWebViewConfig.userContentController addUserScript:scriptPrint];
+        scriptPrinting = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+    }
+  [wkWebViewConfig.userContentController addUserScript:scriptPrinting];
+  
   // default js, inject for all
   [self injectCommonFirefoxJS:wkWebViewConfig];
   [self injectNightModeJS:wkWebViewConfig];
@@ -2434,10 +2397,7 @@ didFinishNavigation:(WKNavigation *)navigation
         }
         
         bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
-        bool isExistedRequestBlockingScript = false;
-        if(tabAdblock != nil) {
-            isExistedRequestBlockingScript = [tabAdblock isExistedRequestBlockingScriptWithWebView:_webView];
-        }
+
         
         if (_adblockRuleList != nil && _adblockRuleList.count > 0 && isAllowWebsite == false) {
             [self applyAdblockRuleList:webView.configuration];
@@ -2447,22 +2407,23 @@ didFinishNavigation:(WKNavigation *)navigation
                 [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
             }
             
-            NSLog(@"-- debug load requestBlocking Script -1 isExistedRequestBlockingScript = %@", isExistedRequestBlockingScript ? "YES" : "NO");
             // add requestBlockingScript
-            if(tabAdblock != nil && isExistedRequestBlockingScript == false) {
-                NSLog(@"-- debug load requestBlocking Script");
+            if(tabAdblock != nil) {
               [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
             }
         } else {
             [webView.configuration.userContentController removeAllContentRuleLists];
             
+            bool isExistedRequestBlockingScript = false;
+            if(tabAdblock != nil) {
+                isExistedRequestBlockingScript = [tabAdblock isExistedRequestBlockingScriptWithWebview:_webView];
+            }
+            
             // remove youtubeAdblock and requestBlockingScript --> remove all userScripts and then add common scripts
             if(
-               (
-                (request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true) ||
-                (isExistedRequestBlockingScript == true))
+               (request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true) ||
+               (isExistedRequestBlockingScript == true)
                ) {
-                   NSLog(@"-- debug load resetupScripts Script");
                 [self resetupScripts:_webView.configuration];
             }
         }

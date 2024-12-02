@@ -66,10 +66,6 @@ struct PageData {
     return userScriptTypes.union(allEngineScriptTypes)
   }
   
-//  func makeMainFrameEngineScriptTypes(domain: Domain) async -> Set<UserScriptType> {
-//    return await adBlockStats.makeEngineScriptTypes(frameURL: mainFrameURL, isMainFrame: true, domain: domain)
-//  }
-//  
   func makeAllEngineScripts() async -> Set<UserScriptType> {
     // Add engine scripts for the main frame
     async let engineScripts = adBlockStats.makeEngineScriptTypes(frameURL: mainFrameURL, isMainFrame: true)

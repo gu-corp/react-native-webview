@@ -108,11 +108,6 @@ class AdblockRustEngine {
                      &didMatchRule, &didMatchException,
                      &didMatchImportant,
                      UnsafeMutablePointer(mutating: &emptyPointer),UnsafeMutablePointer(mutating: &emptyPointer))
-        // NSLog("-- debug adblock -- 1 shouldBlock = %@", String(describing: didMatchRule))
-        // NSLog("-- debug adblock -- 2 requestURL = %@", String(describing: requestURL.absoluteString))
-        // NSLog("-- debug adblock -- 3 sourceURL = %@", String(describing: sourceURL.absoluteString))
-        // NSLog("-- debug adblock -- 4 resourceType = %@", String(describing: resourceType.rawValue))
-        NSLog("-- debug adblock -- 1 💙 shouldBlock = %@ \n 2 💙 requestURL = %@ \n 3 💛 sourceURL = %@ \n 4 💛 resourceType = %@", String(describing: didMatchRule), requestURL.absoluteString, sourceURL.absoluteString, String(describing: resourceType.rawValue))
         return didMatchRule
     }
     
@@ -181,27 +176,6 @@ class AdblockRustEngine {
         return try JSONDecoder().decode(CosmeticFilterModel.self, from: data)
     }
     
-//    static func contentBlockerRules(fromFilterSet: String) -> String {
-//        // Convert the Swift String to a C string
-//        let cRules = fromFilterSet.cString(using: .utf8)
-//
-//        // Create a pointer for the truncated boolean
-//        var cTruncated: Bool = false
-//
-//        // Call the C function
-//        if let cContentBlockingJSON = convert_rules_to_content_blocking(cRules, &cTruncated) {
-//            // Convert the C string back to a Swift String
-//            let result = String(cString: cContentBlockingJSON)
-//
-//            // Free the allocated C string
-//            c_char_buffer_destroy(cContentBlockingJSON)
-//
-//            return result
-//        } else {
-//            // Handle the case where the conversion fails (return an empty string or handle error appropriately)
-//            return ""
-//        }
-//    }
 }
 
 extension Data {

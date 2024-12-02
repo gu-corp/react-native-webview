@@ -63,6 +63,12 @@ class RequestBlockingContentScriptHandler: TabContentScript {
         let shouldBlock = await AdBlockStats.shared.shouldBlock(
           requestURL: requestURL, sourceURL: sourceURL, resourceType: dto.data.resourceType
         )
+        
+        // TODO: debugging
+        // if(shouldBlock == true) {
+        //   NSLog("-- Log -- 🔴 RequestBlockingScript blocks 🔴 --  \n requestURL = %@ \n sourceURL = %@ \n resourceType = %@", requestURL.absoluteString, sourceURL.absoluteString, String(describing: dto.data.resourceType.rawValue))
+        // }
+           
         replyHandler(shouldBlock, nil)
       }
     } catch {
