@@ -1631,9 +1631,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                 // Lunascape logic
                 [self applyAdblockLogic:webView navigationAction:navigationAction];
                 [self injectYoutubePictureInPictureJS:webView request:request];
-
-                // TODO: need to check AdBlock logic here
-                NSLog(@"-- debug -- handleAdblockScriptWithWebView --2 - in _onShouldStartLoadWithRequest ");
                 
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
@@ -2692,9 +2689,8 @@ didFinishNavigation:(WKNavigation *)navigation
 - (void)setupAdblocker:(WKWebView*)webView {
   if (@available(iOS 14.0, *)) {
     if (tabAdblock == nil && webView != nil) {
-        tabAdblock = [[EngineHandler alloc] init];
-        NSLog(@"====> react-native-webview -- setupAdblocker");
-        [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
+      tabAdblock = [[EngineHandler alloc] init];
+      [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
     }
   }
 }
@@ -2702,9 +2698,7 @@ didFinishNavigation:(WKNavigation *)navigation
 // Lunascape custom
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
   if(tabAdblock != nil) {
-      // check adblocker On/Off
-      NSLog(@"====> react-native-webview -- userContentController didReceiveScriptMessage replyHandler ");
-      [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
+    [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
   }
 }
 

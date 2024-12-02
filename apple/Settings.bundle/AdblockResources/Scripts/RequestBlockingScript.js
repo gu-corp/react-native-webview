@@ -42,13 +42,10 @@ window.__firefox__.execute(function($) {
     }
 
     const url = new URL(urlString, window.location.href)
-    console.log(`--- RequestBlockingScript fetch -- sendMessage -- url = `, url)
     return sendMessage(url).then(blocked => {
       if (blocked) {
-        console.log(`--- RequestBlockingScript fetch -- blocked = true -- sendMessage -- url = `, url)
         return Promise.reject(new TypeError('Load failed'))
       } else {
-        console.log(`--- RequestBlockingScript fetch -- blocked = false -- sendMessage -- url = `, url)
         return originalFetch.apply(this, arguments)
       }
     })
@@ -88,18 +85,15 @@ window.__firefox__.execute(function($) {
       return originalSend.apply(this, arguments)
     }
 
-    console.log(`--- RequestBlockingScript XMLHttpRequest -- sendMessage -- resourceUrl = `, resourceURL)
     // Ask iOS if we need to block this request
     sendMessage(resourceURL).then(blocked => {
       if (blocked) {
-        console.log(`--- RequestBlockingScript XMLHttpRequest -- blocked = true -- resourceUrl = `, resourceURL)
         Object.defineProperties(this, {
           readyState: { value: 4 }
         })
         this.dispatchEvent(new Event('readystatechange'))
         this.dispatchEvent(new ProgressEvent('error'))
       } else {
-        console.log(`--- RequestBlockingScript XMLHttpRequest -- blocked = false -- resourceUrl = `, resourceURL)
         originalSend.apply(this, arguments)
       }
     })
