@@ -25,6 +25,12 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
+// Note: call swift function from objective-c https://developer.apple.com/documentation/swift/importing-swift-into-objective-c
+// https://stackoverflow.com/a/26756530
+// <ProductModuleName>-Swift.h
+// The Product Module Name is "react_native_webview" if you install this library to react-native project.
+// The Product Module Name based on the name of the target in the project at Build Settings -> Product Module Name (Xcode)
+#import "react_native_webview-Swift.h" 
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -132,7 +138,7 @@ NSString *const CUSTOM_SELECTOR = @"_CUSTOM_SELECTOR_";
 UIScrollViewDelegate,
 UIGestureRecognizerDelegate,
 #endif // !TARGET_OS_OSX
-RCTAutoInsetsProtocol>
+RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 
 @property (nonatomic, copy) RNCWKWebView *webView;
 @property (nonatomic, strong) WKUserScript *postMessageScript;
@@ -176,6 +182,8 @@ RCTAutoInsetsProtocol>
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   WKUserScript *scriptNightMode;
+  // override window.print method
+  WKUserScript *scriptPrinting;
 
   CGPoint lastOffset;
   BOOL decelerating;
@@ -191,6 +199,9 @@ RCTAutoInsetsProtocol>
   NSURL *historyTitle;
   NSString *historyBackTitle;
   NSString *historyForwardTitle;
+
+  // Adblocker
+  EngineHandler *tabAdblock;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -595,6 +606,9 @@ RCTAutoInsetsProtocol>
       wkWebViewConfig = [self setUpWkWebViewConfig];
       _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
+
+    [self setupAdblocker:_webView];
+
     [self setBackgroundColor: _savedBackgroundColor];
 #if !TARGET_OS_OSX
     _webView.menuItems = _menuItems;
@@ -1615,11 +1629,12 @@ RCTAutoInsetsProtocol>
                  * you need insert code that run after onShouldStartLoadWithRequest in this callback
                  */
                 // Lunascape logic
-                [self applyAdblockLogic:webView request:request];
+                [self applyAdblockLogic:webView navigationAction:navigationAction];
                 [self injectYoutubePictureInPictureJS:webView request:request];
-
+                
                 // Allow all navigation by default
                 decisionHandler(WKNavigationActionPolicyAllow);
+                
             });
 
         }];
@@ -1655,11 +1670,12 @@ RCTAutoInsetsProtocol>
     }
 
     // Lunascape logic
-    [self applyAdblockLogic:webView request:request];
+    [self applyAdblockLogic:webView navigationAction:navigationAction];
     [self injectYoutubePictureInPictureJS:webView request:request];
-
+    
     // Allow all navigation by default
     decisionHandler(WKNavigationActionPolicyAllow);
+    
 }
 
 /**
@@ -2282,14 +2298,18 @@ didFinishNavigation:(WKNavigation *)navigation
   // Lunascape
   // override window.print script
   [wkWebViewConfig.userContentController addScriptMessageHandler:self name:PrintScriptHandler];
-  NSString *sourcePrintScript = [NSString stringWithFormat:
-    @"window.print = function () {"
-      "    window.webkit.messageHandlers.%@.postMessage(String());"
-      "};", PrintScriptHandler
-  ];
+    
+  if(scriptPrinting == nil) {
+    NSString *sourcePrintScript = [NSString stringWithFormat:
+      @"window.print = function () {"
+        "    window.webkit.messageHandlers.%@.postMessage(String());"
+        "};", PrintScriptHandler
+    ];
 
-  WKUserScript *scriptPrint = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
-  [wkWebViewConfig.userContentController addUserScript:scriptPrint];
+    scriptPrinting = [[WKUserScript alloc] initWithSource:sourcePrintScript injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:NO];
+  }
+  [wkWebViewConfig.userContentController addUserScript:scriptPrinting];
+  
   // default js, inject for all
   [self injectCommonFirefoxJS:wkWebViewConfig];
   [self injectNightModeJS:wkWebViewConfig];
@@ -2355,10 +2375,11 @@ didFinishNavigation:(WKNavigation *)navigation
 }
 
 -(void)applyAdblockLogic:(WKWebView *)webView
-                 request:(NSURLRequest *)request
+        navigationAction:(WKNavigationAction *)navigationAction
 {
     if (@available(iOS 11.0, *)) {
         BOOL isAllowWebsite = false;
+        NSURLRequest *request = navigationAction.request;
         if(scriptYoutubeAdblock == nil) {
             NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
             NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
@@ -2373,6 +2394,7 @@ didFinishNavigation:(WKNavigation *)navigation
         }
         
         bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
+
         
         if (_adblockRuleList != nil && _adblockRuleList.count > 0 && isAllowWebsite == false) {
             [self applyAdblockRuleList:webView.configuration];
@@ -2381,11 +2403,24 @@ didFinishNavigation:(WKNavigation *)navigation
             if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false) {
                 [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
             }
+            
+            // add requestBlockingScript
+            if(tabAdblock != nil) {
+              [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
+            }
         } else {
             [webView.configuration.userContentController removeAllContentRuleLists];
             
-            // remove youtubeAdblock --> remove all userScripts and then add common scripts
-            if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true) {
+            bool isExistedRequestBlockingScript = false;
+            if(tabAdblock != nil) {
+                isExistedRequestBlockingScript = [tabAdblock isExistedRequestBlockingScriptWithWebview:_webView];
+            }
+            
+            // remove youtubeAdblock and requestBlockingScript --> remove all userScripts and then add common scripts
+            if(
+               (request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true) ||
+               (isExistedRequestBlockingScript == true)
+               ) {
                 [self resetupScripts:_webView.configuration];
             }
         }
@@ -2644,8 +2679,27 @@ didFinishNavigation:(WKNavigation *)navigation
     if (parentView.userAgent) {
       _webView.customUserAgent = parentView.userAgent;
     }
+
+    [self setupAdblocker:_webView];
   }
   return self;
+}
+
+// init Adblocker object for a tab - webview
+- (void)setupAdblocker:(WKWebView*)webView {
+  if (@available(iOS 14.0, *)) {
+    if (tabAdblock == nil && webView != nil) {
+      tabAdblock = [[EngineHandler alloc] init];
+      [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
+    }
+  }
+}
+
+// Lunascape custom
+- (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
+  if(tabAdblock != nil) {
+    [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
+  }
 }
 
 // copy sender configuration to configuration parameter. Similar to setUpWkWebViewConfig
