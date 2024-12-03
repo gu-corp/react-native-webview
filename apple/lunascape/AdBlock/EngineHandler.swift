@@ -113,4 +113,8 @@ public class EngineHandler: NSObject {
         }
     }
     
+    @objc
+    public func setAdblockDebuggingEnabled(value: Bool) {
+        requestBlockingContentHelper?.setAdblockDebuggingEnabled(value: value)
+    }
 }

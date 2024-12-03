@@ -82,6 +82,9 @@ public class RNCWebViewClient extends WebViewClient {
     protected @Nullable String ignoreErrFailedForThisURL = null;
     protected @Nullable RNCBasicAuthCredential basicAuthCredential = null;
 
+    // debug adblock engine
+    protected boolean adblockDebuggingEnabled = false;
+
     public RNCWebViewClient(ReactContext reactContext) {
         mReactContext = reactContext;
         httpClient = new okhttp3.OkHttpClient.Builder()
@@ -97,6 +100,10 @@ public class RNCWebViewClient extends WebViewClient {
 
     public void setBasicAuthCredential(@Nullable RNCBasicAuthCredential credential) {
         basicAuthCredential = credential;
+    }
+
+    public void setAdblockDebuggingEnabled(boolean value) {
+        adblockDebuggingEnabled = value;
     }
 
     @Override
@@ -267,6 +274,12 @@ public class RNCWebViewClient extends WebViewClient {
                     this.isMainDocumentException = true;
                 } else {
                     if (matched && !exception) {
+
+                        if (adblockDebuggingEnabled) {
+                            String sourceUrlString = mainUrl.toString();
+                            Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
+                        }
+
                         return new WebResourceResponse(
                           "text/plain",
                           "utf-8",

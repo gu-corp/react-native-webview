@@ -352,6 +352,7 @@ export interface CommonNativeWebViewProps extends ViewProps {
    * Lunascape props
    */
   adblockRuleList?: string[];
+  adblockDebuggingEnabled?: boolean;
   openNewWindowInWebView?: boolean;
   onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow?: OnShouldCreateNewWindow;
@@ -1417,6 +1418,12 @@ export interface WebViewSharedProps extends ViewProps {
    * Set this to provide Adblock Rules that will be used in AdblockEngine
    */
   adblockRuleList?: string[];
+
+  /**
+   * Enables Adblock debugging.
+   */
+  adblockDebuggingEnabled?: boolean;
+
   openNewWindowInWebView?: boolean;
 
   /**

@@ -860,6 +860,12 @@ class RNCWebViewManagerImpl {
         }
     }
 
+    fun setAdblockDebuggingEnabled(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
+        viewWrapper.webView.mRNCWebViewClient?.apply {
+          setAdblockDebuggingEnabled(enabled)
+        }
+    }
+
     fun setAdditionalUserAgent(viewWrapper: RNCWebViewWrapper, additionalUserAgent: ReadableArray?){
         val client = viewWrapper.webView.mRNCWebViewClient
         if (client != null && additionalUserAgent != null) {

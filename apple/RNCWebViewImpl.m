@@ -2693,6 +2693,7 @@ didFinishNavigation:(WKNavigation *)navigation
       tabAdblock = [[EngineHandler alloc] init];
       [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
     }
+    [tabAdblock setAdblockDebuggingEnabledWithValue:_adblockDebuggingEnabled];
   }
 }
 
@@ -2818,6 +2819,13 @@ didFinishNavigation:(WKNavigation *)navigation
   }
   [self applyAdblockRuleList:wkWebViewConfig];
 
+}
+
+- (void)setAdblockDebuggingEnabled:(BOOL)adblockDebuggingEnabled {
+    _adblockDebuggingEnabled = adblockDebuggingEnabled;
+    if (tabAdblock != nil) {
+      [tabAdblock setAdblockDebuggingEnabledWithValue:adblockDebuggingEnabled];
+    }
 }
 
 - (void)setDownloadConfig:(NSDictionary *)downloadConfig {
