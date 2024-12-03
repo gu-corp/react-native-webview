@@ -290,6 +290,10 @@ export interface NativeProps extends ViewProps {
   userAgent?: string;
   injectedJavaScriptObject?: string;
   contentType?: string;
+  /**
+   * Enables Adblock debugging. Only available on iOS and Android.
+   */
+  adblockDebuggingEnabled?: boolean;
 }
 
 export interface NativeCommands {

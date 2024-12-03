@@ -278,6 +278,7 @@ RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteg
 
 // Adblock
 RCT_EXPORT_VIEW_PROPERTY(adblockRuleList, NSArray<NSString>)
+RCT_EXPORT_VIEW_PROPERTY(adblockDebuggingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)
 RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)

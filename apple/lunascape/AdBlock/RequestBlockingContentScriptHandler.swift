@@ -33,6 +33,8 @@ class RequestBlockingContentScriptHandler: TabContentScript {
   }()
   
   private weak var webView: WKWebView?
+    
+  private var adblockDebuggingEnabled: Bool = false
   
   init(webView: WKWebView) {
     self.webView = webView
@@ -64,10 +66,9 @@ class RequestBlockingContentScriptHandler: TabContentScript {
           requestURL: requestURL, sourceURL: sourceURL, resourceType: dto.data.resourceType
         )
         
-        // TODO: debugging
-        // if(shouldBlock == true) {
-        //   NSLog("-- Log -- 🔴 RequestBlockingScript blocks 🔴 --  \n requestURL = %@ \n sourceURL = %@ \n resourceType = %@", requestURL.absoluteString, sourceURL.absoluteString, String(describing: dto.data.resourceType.rawValue))
-        // }
+        if(adblockDebuggingEnabled && shouldBlock == true) {
+          NSLog("-- Adblock Log -- \n Adblock blocks the request \n requestURL = %@ \n sourceURL = %@ \n resourceType = %@", requestURL.absoluteString, sourceURL.absoluteString, String(describing: dto.data.resourceType.rawValue))
+        }
            
         replyHandler(shouldBlock, nil)
       }
@@ -75,5 +76,9 @@ class RequestBlockingContentScriptHandler: TabContentScript {
       assertionFailure("Invalid type of message. Fix the `RequestBlocking.js` script")
       replyHandler(false, nil)
     }
+  }
+
+  func setAdblockDebuggingEnabled(value: Bool) {
+    self.adblockDebuggingEnabled = value
   }
 }

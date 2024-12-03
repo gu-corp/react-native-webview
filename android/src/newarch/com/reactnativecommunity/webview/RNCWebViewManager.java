@@ -339,6 +339,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         mRNCWebViewManagerImpl.setWebviewDebuggingEnabled(view, value);
     }
 
+    @Override
+    @ReactProp(name = "adblockDebuggingEnabled")
+    public void setAdblockDebuggingEnabled(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setAdblockDebuggingEnabled(view, value);
+    }
+
     /* iOS PROPS - no implemented here */
     @Override
     public void setAllowingReadAccessToURL(RNCWebViewWrapper view, @Nullable String value) {}
