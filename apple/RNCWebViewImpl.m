@@ -824,6 +824,15 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
           }
         }
       }
+      
+      [_webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
+        if (self->_onChangeContentType && result != nil) {
+          NSDictionary *event = @{
+            @"contentType": result
+          };
+          self->_onChangeContentType(event);
+        }
+      }];
   }
   // #endregion Lunascape
   else {
@@ -1612,14 +1621,14 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                     decisionHandler(WKNavigationActionPolicyCancel);
                     return;
                 }
-                if (self->_onLoadingStart && !hasTargetFrame) {
+                if (self->_onLoadingStart) {
                     // We have this check to filter out iframe requests and whatnot
                     if (isTopFrame) {
                         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
                         [event addEntriesFromDictionary: @{
                             @"url": (request.URL).absoluteString,
                             @"navigationType": navigationTypes[@(navigationType)],
-                            @"hasTargetFrame": @(!hasTargetFrame)
+                            @"hasTargetFrame": @(hasTargetFrame)
                         }];
                         self->_onLoadingStart(event);
                     }
