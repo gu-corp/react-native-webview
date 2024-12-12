@@ -1598,20 +1598,22 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
             }
         }
     }
-
-    if (_onOpenWindow && !hasTargetFrame) {
-      // When OnOpenWindow should be called, we want to prevent the navigation
-      // If not prevented, the `decisionHandler` is called first and after that `createWebViewWithConfiguration` is called
-      // In that order the WebView's ref would be updated with the target URL even if `createWebViewWithConfiguration` does not call `loadRequest`
-      // So the WebView's document stays on the current URL, but the WebView's ref is replaced by the target URL
-      // By preventing the navigation here, we also prevent the WebView's ref mutation
-      // The counterpart is that we have to manually call `_onOpenWindow` here, because no navigation means no call to `createWebViewWithConfiguration`
-      NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-      [event addEntriesFromDictionary: @{@"targetUrl": request.URL.absoluteString}];
-      decisionHandler(WKNavigationActionPolicyCancel);
-      _onOpenWindow(event);
-      return;
-    }
+  /**
+  * Note: We're using onShouldCreateNewWindow prop to handle new window requests so I'm commenting this out because it's not needed anymore
+  */  
+  //  if (_onOpenWindow && !hasTargetFrame) {
+  //    // When OnOpenWindow should be called, we want to prevent the navigation
+  //    // If not prevented, the `decisionHandler` is called first and after that `createWebViewWithConfiguration` is called
+  //    // In that order the WebView's ref would be updated with the target URL even if `createWebViewWithConfiguration` does not call `loadRequest`
+  //    // So the WebView's document stays on the current URL, but the WebView's ref is replaced by the target URL
+  //    // By preventing the navigation here, we also prevent the WebView's ref mutation
+  //    // The counterpart is that we have to manually call `_onOpenWindow` here, because no navigation means no call to `createWebViewWithConfiguration`
+  //    NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+  //    [event addEntriesFromDictionary: @{@"targetUrl": request.URL.absoluteString}];
+  //    decisionHandler(WKNavigationActionPolicyCancel);
+  //    _onOpenWindow(event);
+  //    return;
+  //  }
 
     if (_onShouldStartLoadWithRequest) {
         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
@@ -1622,13 +1624,14 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                     return;
                 }
                 if (self->_onLoadingStart) {
+                    // Do not notify event if the request is for new window
+                    BOOL isMainFrame = navigationAction.targetFrame.isMainFrame;
                     // We have this check to filter out iframe requests and whatnot
-                    if (isTopFrame) {
+                    if (isTopFrame && isMainFrame) {
                         NSMutableDictionary<NSString *, id> *event = [self baseEvent];
                         [event addEntriesFromDictionary: @{
                             @"url": (request.URL).absoluteString,
                             @"navigationType": navigationTypes[@(navigationType)],
-                            @"hasTargetFrame": @(hasTargetFrame)
                         }];
                         self->_onLoadingStart(event);
                     }
@@ -1666,9 +1669,9 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     }
 
     if (_onLoadingStart) {
-        // We have this check to filter out iframe requests and whatnot
-        BOOL isTopFrame = [request.URL isEqual:request.mainDocumentURL];
+        // Do not notify event if the request is for new window
         BOOL isMainFrame = navigationAction.targetFrame.isMainFrame;
+        // We have this check to filter out iframe requests and whatnot
         if (isTopFrame && isMainFrame) {
             NSMutableDictionary<NSString *, id> *event = [self baseEvent];
             [event addEntriesFromDictionary: @{

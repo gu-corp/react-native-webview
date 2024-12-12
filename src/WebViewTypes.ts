@@ -98,7 +98,6 @@ export interface WebViewNativeEvent {
   lockIdentifier: number;
   contentType?: string;
   progress?: number;
-  hasTargetFrame?: boolean;
 }
 
 export interface WebViewNativeProgressEvent extends WebViewNativeEvent {
