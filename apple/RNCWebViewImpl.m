@@ -814,13 +814,13 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 //      NSLog(@"-- debug -- observeValueForKeyPath -- title = %s -- loading = %s -- url = %@", _webView.title ?: @"" , _webView.loading ? "YES": "NO", _webView.URL.absoluteString ?: @"");
       
       if([keyPath isEqualToString:@"title"]) {
-          // handle `document.title = {new title}` javascript
+          // handle `document.title = {new title}` javascript inside web page
           if([_webView.URL isEqual:historyUrl]) {
             if(![_webView.title isEqual:historyTitle]) {
               if(_onUpdateHistory) {
                 NSMutableDictionary<NSString *, id> *event = [self baseEvent];
                 [event addEntriesFromDictionary: @{@"title": _webView.title}];
-                [event addEntriesFromDictionary: @{@"keyType": @"title"}];
+                [event addEntriesFromDictionary: @{@"type": keyPath}];
                 _onUpdateHistory(event);
               }
             }
@@ -836,6 +836,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
               if(_onUpdateHistory) {
                 NSMutableDictionary<NSString *, id> *event = [self baseEvent];
                 [event addEntriesFromDictionary: @{@"title": _webView.title}];
+                [event addEntriesFromDictionary: @{@"type": keyPath}];
                 _onUpdateHistory(event);
               }
             }
