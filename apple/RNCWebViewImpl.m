@@ -811,55 +811,43 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   }
   // #region Lunascape
   else if ([keyPath isEqualToString:@"title"] || [keyPath isEqualToString:@"loading"] || [keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"] || [keyPath isEqualToString:@"URL"]) {
-//      NSLog(@"-- debug -- observeValueForKeyPath -- title = %s -- loading = %s -- url = %@", _webView.title ?: @"" , _webView.loading ? "YES": "NO", _webView.URL.absoluteString ?: @"");
-      
-      if([keyPath isEqualToString:@"title"]) {
-          // handle `document.title = {new title}` javascript inside web page
-          if([_webView.URL isEqual:historyUrl]) {
-            if(![_webView.title isEqual:historyTitle]) {
-              if(_onUpdateHistory) {
-                NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-                [event addEntriesFromDictionary: @{@"title": _webView.title}];
-                [event addEntriesFromDictionary: @{@"type": keyPath}];
-                _onUpdateHistory(event);
-              }
-            }
+    if([keyPath isEqualToString:@"title"]) {
+      // handle `document.title = {new title}` javascript inside web page
+      if([_webView.URL isEqual:historyUrl]) {
+        if(![_webView.title isEqual:historyTitle]) {
+          if(_onUpdateHistory) {
+            NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+            [event addEntriesFromDictionary: @{@"title": _webView.title}];
+            [event addEntriesFromDictionary: @{@"type": keyPath}];
+            _onUpdateHistory(event);
           }
-      } else {
-          
-          if (_onNavigationStateChange) {
-            _onNavigationStateChange([self baseEvent]);
-          }
-          
-          if([_webView.URL isEqual:historyUrl]) {
-            if(![_webView.title isEqual:historyTitle]) {
-              if(_onUpdateHistory) {
-                NSMutableDictionary<NSString *, id> *event = [self baseEvent];
-                [event addEntriesFromDictionary: @{@"title": _webView.title}];
-                [event addEntriesFromDictionary: @{@"type": keyPath}];
-                _onUpdateHistory(event);
-              }
-            }
-          }
-          
-          [_webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
-            if (self->_onChangeContentType && result != nil) {
-              NSDictionary *event = @{
-                @"contentType": result
-              };
-              self->_onChangeContentType(event);
-            }
-          }];
+        }
       }
-
-//      [_webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
-//        if (self->_onChangeContentType && result != nil) {
-//          NSDictionary *event = @{
-//            @"contentType": result
-//          };
-//          self->_onChangeContentType(event);
-//        }
-//      }];
+    } else {
+      if (_onNavigationStateChange) {
+        _onNavigationStateChange([self baseEvent]);
+      }
+      
+      if([_webView.URL isEqual:historyUrl]) {
+        if(![_webView.title isEqual:historyTitle]) {
+          if(_onUpdateHistory) {
+            NSMutableDictionary<NSString *, id> *event = [self baseEvent];
+            [event addEntriesFromDictionary: @{@"title": _webView.title}];
+            [event addEntriesFromDictionary: @{@"type": keyPath}];
+            _onUpdateHistory(event);
+          }
+        }
+      }
+      
+      [_webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
+        if (self->_onChangeContentType && result != nil) {
+          NSDictionary *event = @{
+            @"contentType": result
+          };
+          self->_onChangeContentType(event);
+        }
+      }];
+    }
   }
   // #endregion Lunascape
   else {
