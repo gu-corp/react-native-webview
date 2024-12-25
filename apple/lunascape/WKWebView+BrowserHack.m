@@ -353,7 +353,13 @@
 - (void)setEnableNightMode:(NSString *)enable
 {
     NSString *jsFunction = [NSString stringWithFormat:@"window.__firefox__.NightMode.setEnabled(%@)", enable];
-    [self stringByEvaluatingJavaScriptFromString:jsFunction];
+    [self evaluateJavaScript:jsFunction completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+        if (error) {
+            NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
+        } else {
+            NSLog(@"JavaScript evaluated successfully with result: %@", result);
+        }
+    }];
 }
 
 @end
