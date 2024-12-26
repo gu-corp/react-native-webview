@@ -225,6 +225,7 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, enable);
         },
+        webViewRef: webViewRef.current,
         // #endregion Lunascape
       }),
       [setViewState, webViewRef]

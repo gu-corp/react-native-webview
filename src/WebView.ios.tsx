@@ -226,6 +226,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         getContentTypes: () => {
           return refValiable.current.contentType;
         },
+        webViewRef: webViewRef.current,
       }),
       [setViewState, webViewRef]
     );
