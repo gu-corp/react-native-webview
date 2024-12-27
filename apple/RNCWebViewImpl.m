@@ -196,7 +196,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
   NSURL *historyUrl;
-  NSURL *historyTitle;
+  NSString *historyTitle;
   NSString *historyBackTitle;
   NSString *historyForwardTitle;
 
@@ -1903,7 +1903,13 @@ didFinishNavigation:(WKNavigation *)navigation
     NSString *jsFilePath = [resourceBundle pathForResource:jsFile ofType:@"js"];
     NSURL *jsURL = [NSURL fileURLWithPath:jsFilePath];
     NSString *javascriptCode = [NSString stringWithContentsOfFile:jsURL.path encoding:NSUTF8StringEncoding error:nil];
-    [_webView stringByEvaluatingJavaScriptFromString:javascriptCode];
+    [_webView evaluateJavaScript:javascriptCode completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+      if (error) {
+        NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
+      } else {
+        NSLog(@"JavaScript evaluated successfully with _webview script");
+      }
+    }];
   }
     
   if (_ignoreSilentHardwareSwitch) {
@@ -1934,14 +1940,20 @@ didFinishNavigation:(WKNavigation *)navigation
     }
   }
     
-  NSString *favicon = [_webView stringByEvaluatingJavaScriptFromString: @"getFavicons();"];
-  NSDictionary *event = @{
-    @"data": favicon ? favicon : @""
-  };
-    
-  if (_onGetFavicon!= nil) {
-    _onGetFavicon(event);
-  }
+  [_webView evaluateJavaScript:@"getFavicons();" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+    if (error) {
+      NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
+    } else if (result != nil) {
+      NSString *favicon = [result copy];
+      NSDictionary *event = @{
+        @"data": favicon ? favicon : @""
+      };
+        
+      if (self->_onGetFavicon != nil) {
+          self->_onGetFavicon(event);
+      }
+    }
+  }];
 
   [_webView evaluateJavaScript: @"document.contentType" completionHandler: ^(id result, NSError *error) {
     if (self->_onChangeContentType && result != nil) {
