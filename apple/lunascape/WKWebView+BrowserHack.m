@@ -1,6 +1,8 @@
 #import "WKWebView+BrowserHack.h"
 
 @implementation WKWebView (BrowserHack)
+
+// TODO: this function should be replaced without using synchronous (while loop) method
 - (NSString *)stringByEvaluatingJavaScriptFromString:(NSString *)script
 {
     __block NSString *resultString = nil;
@@ -357,7 +359,7 @@
         if (error) {
             NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
         } else {
-            NSLog(@"JavaScript evaluated successfully with result: %@", result);
+            NSLog(@"JavaScript evaluated successfully with Night mode");
         }
     }];
 }
