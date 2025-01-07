@@ -100,6 +100,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         super(reactContext);
         mMessagingJSModule = ((ThemedReactContext) this.getContext()).getReactApplicationContext().getJSModule(RNCWebViewMessagingModule.class);
         progressChangedFilter = new ProgressChangedFilter();
+        setFindListener(findListener);
     }
 
     public void setIgnoreErrFailedForThisURL(String url) {
@@ -671,21 +672,37 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         }
     }
 
+    /*
+    * Search in Page
+    * */
+    private final FindListener findListener = (activeMatchOrdinal, numberOfMatches, isDoneCounting) -> {
+        if (isDoneCounting && this.messagingEnabled) {
+            this.onMessage(
+                "{" +
+                    "\"type\": \"findInPage\"," +
+                    "\"data\": {" +
+                        "\"totalResults\": " + numberOfMatches + "," +
+                        "\"currentResult\": " + (activeMatchOrdinal + 1) +
+                    "}" +
+                "}"
+            );
+        }
+    };
+
     public void searchInPage(String keyword) {
-        String jsSearch = "MyApp_HighlightAllOccurencesOfString('" + keyword + "');";
-    this.loadUrl("javascript:" + jsSearch);
+        findAllAsync(keyword);
     }
 
     public void searchNext() {
-        this.loadUrl("javascript:myAppSearchNextInThePage()");
+        findNext(true);
     }
 
     public void searchPrevious() {
-        this.loadUrl("javascript:myAppSearchPreviousInThePage()");
+        findNext(false);
     }
 
     public void removeAllHighlights() {
-        this.loadUrl("javascript:myAppSearchDoneInThePage()");
+        clearMatches();
     }
 
     public void printContent() {
