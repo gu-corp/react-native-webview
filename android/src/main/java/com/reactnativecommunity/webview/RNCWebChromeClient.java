@@ -113,7 +113,6 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
                 eventData.putDouble("target", webView.getId());
                 eventData.putString("url", url);
                 eventData.putBoolean("loading", false);
-                eventData.putDouble("progress", webView.getProgress());
                 eventData.putString("title", webView.getTitle());
                 eventData.putBoolean("canGoBack", webView.canGoBack());
                 eventData.putBoolean("canGoForward", webView.canGoForward());
@@ -174,7 +173,10 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
 
         RNCWebView rncWebView = (RNCWebView) webView;
         if (rncWebView.getRNCWebViewClient() != null) {
-          rncWebView.getRNCWebViewClient().setLoadingProgress(newProgress);
+            rncWebView.getRNCWebViewClient().setLoadingProgress(newProgress);
+        }
+        if (newProgress == 100 && mWebView != null && mWebView.mRNCWebViewClient != null) {
+            mWebView.mRNCWebViewClient.emitFinishEvent(webView, url);
         }
 
         if (progressChangedFilter.isWaitingForCommandLoadUrl()) {

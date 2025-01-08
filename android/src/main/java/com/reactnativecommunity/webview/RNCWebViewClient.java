@@ -516,7 +516,10 @@ public class RNCWebViewClient extends WebViewClient {
 
     protected void emitFinishEvent(WebView webView, String url) {
         int reactTag = RNCWebViewWrapper.getReactTagFromWebView(webView);
-        UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingFinishEvent(reactTag, createWebViewEvent(webView, url)));
+        WritableMap data = createWebViewEvent(webView, url);
+        data.putBoolean("loading", false);
+        data.putDouble("progress", 1);
+        UIManagerHelper.getEventDispatcherForReactTag((ReactContext) webView.getContext(), reactTag).dispatchEvent(new TopLoadingFinishEvent(reactTag, data));
     }
 
     protected void emitUpdateHistoryEvent(WebView webView, String url) {
@@ -530,7 +533,7 @@ public class RNCWebViewClient extends WebViewClient {
         // Don't use webView.getUrl() here, the URL isn't updated to the new value yet in callbacks
         // like onPageFinished
         event.putString("url", url);
-        event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100);
+        event.putBoolean("loading", !mLastLoadFailed && webView.getProgress() != 100 && mLoadingProgress != 100);
         event.putString("title", webView.getTitle());
         event.putBoolean("canGoBack", webView.canGoBack());
         event.putBoolean("canGoForward", webView.canGoForward());
