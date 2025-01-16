@@ -1749,7 +1749,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   NSURLResponse *response = navigationResponse.response;
   NSURL *responseURL = [response URL];
         
-  BOOL canShowInWebView = navigationResponse.canShowMIMEType;
+  BOOL canShowInWebView = navigationResponse.canShowMIMEType && !shouldDownloadNavigationResponse;
   WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
   WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
     
