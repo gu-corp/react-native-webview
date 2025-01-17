@@ -62,4 +62,20 @@ extension URL {
       guard let scheme = self.scheme else { return absoluteString }
       return absoluteString.replacingOccurrences(of: "\(scheme)://", with: "")
     }
+
+    public func getQuery() -> [String: String] {
+      var results = [String: String]()
+      let keyValues = self.query?.components(separatedBy: "&")
+
+      if keyValues?.count ?? 0 > 0 {
+        for pair in keyValues! {
+          let kv = pair.components(separatedBy: "=")
+          if kv.count > 1 {
+            results[kv[0]] = kv[1]
+          }
+        }
+      }
+
+      return results
+    }
 }
