@@ -181,7 +181,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
           webViewRef.current &&
           Commands.clearCache(webViewRef.current, includeDiskFiles),
         captureScreen: () => {
-          webViewRef.current && Commands.captureScreen(webViewRef.current);
+          webViewRef.current && Commands.captureScreeniOS(webViewRef.current);
         },
         findInPage: (searchString: string) => {
           webViewRef.current &&

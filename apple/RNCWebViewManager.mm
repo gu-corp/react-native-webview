@@ -354,7 +354,7 @@ RCT_EXPORT_METHOD(evaluateJavaScript:(nonnull NSNumber *)reactTag
     }];
 }
 
-RCT_EXPORT_METHOD(captureScreen:(nonnull NSNumber *)reactTag)
+RCT_EXPORT_METHOD(captureScreeniOS:(nonnull NSNumber *)reactTag)
 {
     [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
         RNCView *view = viewRegistry[reactTag];

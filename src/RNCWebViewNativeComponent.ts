@@ -340,6 +340,9 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     type?: string
   ) => void;
+  captureScreeniOS: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>
+  ) => void;
   findInPage: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     data: string
@@ -384,6 +387,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'requestWebViewStatus',
     'requestWebFavicon',
     'captureScreen',
+    'captureScreeniOS',
     'findInPage',
     'findNext',
     'findPrevious',
