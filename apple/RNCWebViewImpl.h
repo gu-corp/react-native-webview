@@ -16,6 +16,9 @@
 
 #import "RNCWebViewDecisionManager.h"
 
+// Lunascape
+static NSString * const INTERNAL_URL_SCHEME = @"internal";
+
 typedef enum RNCWebViewPermissionGrantType : NSUInteger {
   RNCWebViewPermissionGrantType_GrantIfSameHost_ElsePrompt,
   RNCWebViewPermissionGrantType_GrantIfSameHost_ElseDeny,

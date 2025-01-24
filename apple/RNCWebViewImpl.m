@@ -593,6 +593,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
 
   // Lunascape logic
   [self applyAdblockRuleList:wkWebViewConfig];
+  if ([wkWebViewConfig urlSchemeHandlerForURLScheme:INTERNAL_URL_SCHEME] == nil) {
+    InternalSchemeHandler *handler = [[InternalSchemeHandler alloc] init];
+    [wkWebViewConfig setURLSchemeHandler:handler forURLScheme:INTERNAL_URL_SCHEME];
+  }
 
   return wkWebViewConfig;
 }
@@ -1591,7 +1595,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
             [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
         }
         
-        NSArray *allowSchemes = @[@"data", @"blob"];
+        NSArray *allowSchemes = @[@"data", @"blob", INTERNAL_URL_SCHEME];
         if ([allowSchemes containsObject:requestURL.scheme]) {
             decisionHandler(WKNavigationActionPolicyAllow);
             return;
@@ -1838,7 +1842,14 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
       @"code": @(error.code),
       @"description": error.localizedDescription,
     }];
-    _onLoadingError(event);
+    // Lunascape
+    ErrorPageHelper *helper = [[ErrorPageHelper alloc] init];
+    NSURL *url = error.userInfo[NSURLErrorFailingURLErrorKey];
+    if ([helper canHandleErrorWithError:error] && url) {
+      [helper loadPage:error forUrl:url inWebView:webView];
+    } else {
+      _onLoadingError(event);
+    }
   }
 }
 
@@ -2360,6 +2371,10 @@ didFinishNavigation:(WKNavigation *)navigation
   }
   if (self.injectedObjectJsonScript) {
     [wkWebViewConfig.userContentController addUserScript:self.injectedObjectJsonScript];
+  }
+  if ([wkWebViewConfig urlSchemeHandlerForURLScheme:INTERNAL_URL_SCHEME] == nil) {
+    InternalSchemeHandler *handler = [[InternalSchemeHandler alloc] init];
+    [wkWebViewConfig setURLSchemeHandler:handler forURLScheme:INTERNAL_URL_SCHEME];
   }
 }
 
