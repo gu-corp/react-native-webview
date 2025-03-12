@@ -1595,7 +1595,29 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
             [[DownloadHelper pendingRequests] setObject:navigationAction.request forKey:requestURL.absoluteString];
         }
         
-        NSArray *allowSchemes = @[@"data", @"blob", INTERNAL_URL_SCHEME];
+        // reference: https://github.com/brave/brave-ios/blob/v1.62.1/Sources/Brave/Frontend/Browser/BrowserViewController/BVC%2BWKNavigationDelegate.swift#L147
+        // block the navigation if the request is from end-user
+        if([InternalUtils isValidWithUrl:requestURL]) {
+            BOOL isBackForward = (navigationAction.navigationType == WKNavigationTypeBackForward);
+            BOOL isUnprivileged = [InternalUtils isInternalUnprivilegedWithUrl:requestURL];
+            
+            BOOL hasNoSourceFrame = (navigationAction.sourceFrame == nil);
+            BOOL isNotMainFrame   = !navigationAction.targetFrame.isMainFrame;
+            BOOL useDefaultCache  = (navigationAction.request.cachePolicy == NSURLRequestUseProtocolCachePolicy);
+            if (!isBackForward && isUnprivileged && (hasNoSourceFrame || isNotMainFrame || useDefaultCache)) {
+                NSLog(@"Denying unprivileged request: %@", navigationAction.request);
+                decisionHandler(WKNavigationActionPolicyCancel);
+                return;
+            }
+        }
+        
+        // allow navigation if the request is from internal request. internal://local/errorpage?url=...
+        if([InternalUtils isValidWithUrl:requestURL]) {
+            decisionHandler(WKNavigationActionPolicyAllow);
+            return;
+        }
+        
+        NSArray *allowSchemes = @[@"data", @"blob"];
         if ([allowSchemes containsObject:requestURL.scheme]) {
             decisionHandler(WKNavigationActionPolicyAllow);
             return;
