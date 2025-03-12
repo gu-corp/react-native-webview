@@ -107,3 +107,26 @@ extension String {
         return self.removingPercentEncoding
     }
 }
+
+// https://stackoverflow.com/a/28567439/28985774
+// we can not call a struct object (swift) in objective-c so I create this class to wrap it
+@objc(InternalUtils)
+public class InternalUtils: NSObject {
+    @objc
+    public static func isValid(url: URL) -> Bool {
+        return InternalURL.isValid(url: url)
+    }
+    
+    @objc
+    public static func isInternalUnprivileged(url: URL?) -> Bool {
+        if (url == nil) {
+            return true
+        }
+        
+        if let internalUrl = InternalURL(url!) {
+            return !internalUrl.isAuthorized
+        } else {
+            return false
+        }
+    }
+}
