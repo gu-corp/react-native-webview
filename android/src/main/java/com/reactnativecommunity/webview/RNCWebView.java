@@ -290,8 +290,6 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     public void callInjectedJavaScript(boolean enableYoutubeAdblocker) {
         if(getSettings().getJavaScriptEnabled()){
-            String jsNightMode = loadNightModeScriptFile();
-            if(jsNightMode != null) this.evaluateJavascriptWithFallback(jsNightMode);
 
             String jsSearch = loadSearchWebviewFile();
             if(jsSearch != null) this.evaluateJavascriptWithFallback(jsSearch);
@@ -314,6 +312,14 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
                 injectedJSBeforeContentLoaded != null &&
                 !TextUtils.isEmpty(injectedJSBeforeContentLoaded)) {
             evaluateJavascriptWithFallback("(function() {\n" + injectedJSBeforeContentLoaded + ";\n})();");
+        }
+        // Lunascape custom 
+        // Inject night mode script
+        if (getSettings().getJavaScriptEnabled()) {
+            String jsNightMode = loadNightModeScriptFile();
+            if (jsNightMode != null) {
+                this.evaluateJavascriptWithFallback(jsNightMode);
+            }
         }
     }
 
@@ -494,6 +500,8 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     protected String activeUrl;
     protected String DOWNLOAD_FOLDER = "";
+
+    private boolean initNightModeValue = false;
     
     // this is a static variable to store the new window instance then we can keep it alive until the new window is added to the parent view
     private static RNCWebView newWindow;
@@ -564,6 +572,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
+    public void setInitNightModeValue(boolean value) {
+        this.initNightModeValue = value;
+    }
+
     public void requestWebViewStatus() {
       if (mRNCWebViewClient != null) {
         WritableMap eventData = mRNCWebViewClient.createWebViewEvent(this, this.getUrl());
@@ -621,6 +633,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             byte[] readBytes = new byte[fileInputStream.available()];
             fileInputStream.read(readBytes);
             jsString = new String(readBytes);
+            jsString = jsString.replace("$<night_mode_init_value>", initNightModeValue ? "true" : "false" );
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

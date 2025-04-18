@@ -159,3 +159,5 @@
     setJS('playerResponse.adSlots', 'undefined');
   })();
   
+  // add sourceURL for debugging on chrome devtools
+  //# sourceURL=Lunascape_mobile_youtubeAdblock.js

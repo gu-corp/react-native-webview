@@ -353,6 +353,12 @@ export interface CommonNativeWebViewProps extends ViewProps {
    */
   adblockRuleList?: string[];
   adblockDebuggingEnabled?: boolean;
+  /***
+   * initial value of night mode
+   * @platform android and ios
+   * @default false
+   */
+  initNightModeValue?: boolean;
   openNewWindowInWebView?: boolean;
   onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow?: OnShouldCreateNewWindow;
@@ -1423,6 +1429,13 @@ export interface WebViewSharedProps extends ViewProps {
    * Enables Adblock debugging.
    */
   adblockDebuggingEnabled?: boolean;
+
+  /***
+   * initial value of night mode
+   * @platform android and ios
+   * @default false
+   */
+  initNightModeValue?: boolean;
 
   openNewWindowInWebView?: boolean;
 

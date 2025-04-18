@@ -866,6 +866,10 @@ class RNCWebViewManagerImpl {
         }
     }
 
+    fun setInitNightModeValue(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
+        viewWrapper.webView.setInitNightModeValue(enabled)
+    }
+
     fun setAdditionalUserAgent(viewWrapper: RNCWebViewWrapper, additionalUserAgent: ReadableArray?){
         val client = viewWrapper.webView.mRNCWebViewClient
         if (client != null && additionalUserAgent != null) {

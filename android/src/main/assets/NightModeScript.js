@@ -2,7 +2,10 @@ Object.defineProperty(window, "NightMode", {
   enumerable: false,
   configurable: false,
   writable: false,
-  value: { enabled: false }
+  value: {
+       enabled: $<night_mode_init_value>,
+       calledInFirstTime: false,
+   }
 });
 
 const NIGHT_MODE_INVERT_FILTER_CSS = 'brightness(80%) invert(100%) hue-rotate(180deg)';
@@ -82,11 +85,13 @@ Object.defineProperty(window.NightMode, "setEnabled", {
   configurable: false,
   writable: false,
   value: function(enabled) {
-    if (enabled === window.NightMode.enabled) {
+    var isSampleValue = enabled === window.NightMode.enabled;
+    if (isSampleValue === true && window.NightMode.calledInFirstTime === true) {
       return;
     }
 
     window.NightMode.enabled = enabled;
+    window.NightMode.calledInFirstTime = true;
 
     var styleElement = getStyleElement();
 
@@ -135,3 +140,11 @@ Object.defineProperty(window.NightMode, "setEnabled", {
     }
   }
 });
+
+
+window.addEventListener("DOMContentLoaded", function() {
+  window.NightMode.setEnabled(window.NightMode.enabled);
+});
+window.NightMode.setEnabled(window.NightMode.enabled);
+// add sourceURL for debugging on chrome devtools
+//# sourceURL=Lunascape_mobile_NightModeScript.js

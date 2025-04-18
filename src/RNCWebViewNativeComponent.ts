@@ -294,6 +294,12 @@ export interface NativeProps extends ViewProps {
    * Enables Adblock debugging. Only available on iOS and Android.
    */
   adblockDebuggingEnabled?: boolean;
+  /***
+   * initial value of night mode
+   * @platform android and ios
+   * @default false
+   */
+  initNightModeValue?: boolean;
 }
 
 export interface NativeCommands {

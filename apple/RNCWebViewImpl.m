@@ -181,7 +181,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
+  
   WKUserScript *scriptNightMode;
+  // to re-init scriptNightMode if the user changes the night mode value
+  BOOL prevInitNightModeValue;
   // override window.print method
   WKUserScript *scriptPrinting;
 
@@ -2632,16 +2635,20 @@ didFinishNavigation:(WKNavigation *)navigation
 -(void)injectNightModeJS:(WKWebViewConfiguration *)configuration
 {
     if (@available(iOS 13.0, *)) {
-        if(scriptNightMode == nil) {
+        if(scriptNightMode == nil || prevInitNightModeValue != _initNightModeValue) {
             NSString *jsFileNightMode = @"__NightModeScript__";
             NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
             NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
             NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path
                                                                           encoding:NSUTF8StringEncoding error:nil];
+            
+            prevInitNightModeValue = _initNightModeValue;
+            javascriptCodeNightMode = [javascriptCodeNightMode stringByReplacingOccurrencesOfString:@"$<night_mode_init_value>" withString: _initNightModeValue ? @"true": @"false"];
             scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode
                                                      injectionTime:WKUserScriptInjectionTimeAtDocumentStart
                                                   forMainFrameOnly:YES];
         }
+        
         if([configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
             [configuration.userContentController addUserScript:scriptNightMode];
         }
@@ -2902,6 +2909,16 @@ didFinishNavigation:(WKNavigation *)navigation
     _adblockDebuggingEnabled = adblockDebuggingEnabled;
     if (tabAdblock != nil) {
       [tabAdblock setAdblockDebuggingEnabledWithValue:adblockDebuggingEnabled];
+    }
+}
+
+- (void)setInitNightModeValue:(BOOL)initNightModeValue {
+    if (initNightModeValue == _initNightModeValue) {
+        return;
+    }
+    _initNightModeValue = initNightModeValue;
+    if(_webView != nil ) { // only update if get different value
+      [self resetupScripts:_webView.configuration];
     }
 }
 

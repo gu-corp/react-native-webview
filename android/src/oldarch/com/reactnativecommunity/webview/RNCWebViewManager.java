@@ -358,6 +358,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         mRNCWebViewManagerImpl.setAdblockDebuggingEnabled(view, value);
     }
 
+    @ReactProp(name = "initNightModeValue")
+    public void setInitNightModeValue(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setInitNightModeValue(view, value);
+    }
+
     @ReactProp(name = "additionalUserAgent")
     public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
         mRNCWebViewManagerImpl.setAdditionalUserAgent(view ,additionalUserAgent);
