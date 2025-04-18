@@ -10,8 +10,12 @@ Object.defineProperty(window.__firefox__, "NightMode", {
   enumerable: false,
   configurable: false,
   writable: false,
-  value: { enabled: false }
+  value: {
+      enabled: $<night_mode_init_value>,
+      calledInFirstTime: false,
+  }
 });
+
 
 const NIGHT_MODE_INVERT_FILTER_CSS = "brightness(80%) invert(100%) hue-rotate(180deg)";
 
@@ -89,11 +93,13 @@ Object.defineProperty(window.__firefox__.NightMode, "setEnabled", {
   configurable: false,
   writable: false,
   value: function(enabled) {
-    if (enabled === window.__firefox__.NightMode.enabled) {
+    var isSampleValue = enabled === window.__firefox__.NightMode.enabled;
+    if (isSampleValue === true && window.__firefox__.NightMode.calledInFirstTime === true) {
       return;
     }
 
     window.__firefox__.NightMode.enabled = enabled;
+    window.__firefox__.NightMode.calledInFirstTime = true;
 
     var styleElement = getStyleElement();
 
@@ -146,3 +152,4 @@ Object.defineProperty(window.__firefox__.NightMode, "setEnabled", {
 window.addEventListener("DOMContentLoaded", function() {
   window.__firefox__.NightMode.setEnabled(window.__firefox__.NightMode.enabled);
 });
+window.__firefox__.NightMode.setEnabled(window.__firefox__.NightMode.enabled);

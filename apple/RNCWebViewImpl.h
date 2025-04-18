@@ -166,6 +166,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockRuleList;
 @property (nonatomic, assign) BOOL adblockDebuggingEnabled;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockAllowList;
+@property (nonatomic, assign) BOOL initNightModeValue;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;

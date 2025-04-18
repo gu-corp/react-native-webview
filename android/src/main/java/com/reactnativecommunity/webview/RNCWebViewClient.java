@@ -132,9 +132,6 @@ public class RNCWebViewClient extends WebViewClient {
             emitFinishEvent(webView, url);
 
             reactWebView.getFaviconUrl();
-
-            String jsNightMode = "window.NightMode.setEnabled(" + mEnableNightMode + ");";
-            reactWebView.loadUrl("javascript:" + jsNightMode);
         }
     }
 

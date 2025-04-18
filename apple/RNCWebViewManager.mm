@@ -280,6 +280,7 @@ RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteg
 RCT_EXPORT_VIEW_PROPERTY(adblockRuleList, NSArray<NSString>)
 RCT_EXPORT_VIEW_PROPERTY(adblockDebuggingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)
+RCT_EXPORT_VIEW_PROPERTY(initNightModeValue, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adjustOffset, CGPoint)

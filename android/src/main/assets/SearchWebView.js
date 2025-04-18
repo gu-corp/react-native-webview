@@ -100,3 +100,5 @@ function convertBlobToBase64(blobArray, fileReaderInstance) {
     nativeScriptHandler.notifyConvertBlobToBase64Completed();
   }
 }
+// add sourceURL for debugging on chrome devtools
+//# sourceURL=Lunascape_mobile_SearchWebView.js
