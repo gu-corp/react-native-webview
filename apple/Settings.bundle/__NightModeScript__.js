@@ -98,6 +98,10 @@ Object.defineProperty(window.__firefox__.NightMode, "setEnabled", {
       return;
     }
 
+    if(document.documentElement === null) {
+      return;
+    }
+
     window.__firefox__.NightMode.enabled = enabled;
     window.__firefox__.NightMode.calledInFirstTime = true;
 

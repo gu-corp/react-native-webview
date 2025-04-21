@@ -90,6 +90,10 @@ Object.defineProperty(window.NightMode, "setEnabled", {
       return;
     }
 
+    if(document.documentElement === null) {
+        return;
+    }
+
     window.NightMode.enabled = enabled;
     window.NightMode.calledInFirstTime = true;
 
