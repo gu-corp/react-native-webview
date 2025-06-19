@@ -138,4 +138,9 @@ public class ErrorPageHelper: NSObject {
         let genericErrorHandler = GenericErrorPageHandler()
         return genericErrorHandler.canHandle(error: error)
     }
+
+    @objc
+    public func replaceLocation(withUrl url: URL, inWebView webView: WKWebView) {
+        webView.replaceLocation(with: url)
+    }
 }
