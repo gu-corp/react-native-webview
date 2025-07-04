@@ -129,4 +129,19 @@ public class InternalUtils: NSObject {
             return false
         }
     }
+
+    @objc
+    public static func originalURLFromErrorPage(url: URL?) -> URL? {
+        if (url == nil) {
+            return nil
+        }
+        
+        if (isValid(url: url!)) {
+            if let internalUrl = InternalURL(url!) {
+                return internalUrl.originalURLFromErrorPage
+            }
+        }
+        
+        return nil
+    }
 }

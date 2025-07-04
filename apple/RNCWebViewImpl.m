@@ -2052,7 +2052,19 @@ didFinishNavigation:(WKNavigation *)navigation
   if (request.URL && !_webView.URL.absoluteString.length) {
     [_webView loadRequest:request];
   } else {
-    [_webView reload];
+    // If the current page is an error page, and the reload button is tapped, load the original URL
+    if (@available(iOS 14.0, *)) {
+      NSURL *url = [_webView URL];
+      NSURL *originUrl = [InternalUtils originalURLFromErrorPageWithUrl:url];
+      if (originUrl) {
+        ErrorPageHelper *helper = [[ErrorPageHelper alloc] init];
+        [helper replaceLocationWithUrl:originUrl inWebView:_webView];
+      } else {
+        [_webView reload];
+      }
+    } else {
+      [_webView reload];
+    }
   }
 }
 #if !TARGET_OS_OSX
