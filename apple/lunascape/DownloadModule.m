@@ -7,7 +7,7 @@
 RCT_EXPORT_MODULE(DownloadModule);
 
 - (NSArray<NSString *> *)supportedEvents {
-    return @[@"DownloadCanceled", @"PassBookError", @"DownloadingFileDidUpdate", @"DownloadingFileItemDidSuccess", @"DownloadingFileItemDidChangeStatus"];
+    return @[@"DownloadCanceled", @"PassBookError", @"DownloadingFileDidUpdate", @"DownloadingFileItemDidSuccess", @"DownloadingFileItemDidChangeStatus", @"Base64FileSaved"];
 }
 
 static DownloadModule *sharedInstance = nil;
