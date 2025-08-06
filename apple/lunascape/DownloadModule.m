@@ -89,4 +89,37 @@ RCT_EXPORT_METHOD(getListDowloading:(RCTResponseSenderBlock)callback) {
     callback(@[resultArray]);
 }
 
+RCT_EXPORT_METHOD(saveBase64File:(NSString *)dataUrl filename:(NSString *)filename)
+{
+    // Parse dataUrl: "data:image/png;base64,...."
+    NSArray *parts = [dataUrl componentsSeparatedByString:@","];
+    if (parts.count != 2) {
+        NSLog(@"Invalid data URL format");
+        return;
+    }
+    
+    NSString *base64String = parts[1];
+    NSData *fileData = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
+    
+    if (!fileData) {
+        NSLog(@"Failed to decode base64 data");
+        return;
+    }
+    
+    // Lưu file vào Documents directory
+    NSString *docsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+    NSString *filePath = [docsDir stringByAppendingPathComponent:filename];
+    
+    NSError *error;
+    BOOL success = [fileData writeToFile:filePath options:NSDataWritingAtomic error:&error];
+    
+    if (success) {
+        NSLog(@"File saved successfully: %@", filePath);
+        // Có thể gửi event về JS nếu muốn
+        [self sendEventWithName:@"Base64FileSaved" body:@{@"filename": filename, @"path": filePath}];
+    } else {
+        NSLog(@"Failed to save file: %@", error.localizedDescription);
+    }
+}
+
 @end
