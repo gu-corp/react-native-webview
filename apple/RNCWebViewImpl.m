@@ -25,6 +25,8 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
+#import "BlobDownloadHandler.h" // NEW
+#import "Base64DownloadHandler.h" // NEW base64
 // Note: call swift function from objective-c https://developer.apple.com/documentation/swift/importing-swift-into-objective-c
 // https://stackoverflow.com/a/26756530
 // <ProductModuleName>-Swift.h
@@ -198,6 +200,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   NSBundle* resourceBundle;
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
+  NSMutableSet<BlobDownloadHandler *> *activeBlobHandlers;// NEW
+  NSMutableSet<Base64DownloadHandler *> *activeBase64Handlers; // NEW base64
   NSURL *historyUrl;
   NSString *historyTitle;
   NSString *historyBackTitle;
@@ -296,6 +300,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
     resourceBundle = [NSBundle bundleWithPath:bundlePath];
     initiated = NO;
+    activeBlobHandlers = [NSMutableSet set]; // NEW
+    activeBase64Handlers = [NSMutableSet set]; // NEW base64
     
 #endif // TARGET_OS_IOS
   return self;
@@ -1584,6 +1590,42 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     BOOL hasTargetFrame = navigationAction.targetFrame != nil;
 
     NSURL *requestURL = request.URL;
+
+    // NEW base64
+    // This avoids WK trying to "download" a data: URL (causing the URLSession errors).
+    if (requestURL && [[requestURL.scheme lowercaseString] isEqualToString:@"data"]) {
+        NSString *abs = requestURL.absoluteString ?: @"";
+        NSRange comma = [abs rangeOfString:@","];
+        NSString *meta = (comma.location != NSNotFound) ? [abs substringWithRange:NSMakeRange(5, comma.location - 5)] : @"";
+        BOOL isBase64 = [[meta lowercaseString] containsString:@";base64"];
+        if (isBase64) {
+#if !TARGET_OS_OSX
+            if (!activeBase64Handlers) { activeBase64Handlers = [NSMutableSet new]; }
+            __weak typeof(self) weakSelf = self;
+            Base64DownloadHandler *handler =
+            [[Base64DownloadHandler alloc] initWithPresenter:[self topViewController]
+                                                  onComplete:^(Base64DownloadHandler *h) {
+                __strong typeof(self) strongSelf = weakSelf;
+                if (!strongSelf) return;
+                [strongSelf->activeBase64Handlers removeObject:h];
+            }];
+            [activeBase64Handlers addObject:handler];
+            [handler presentForDataURL:requestURL
+                              fromView:self
+                             onProceed:^{
+                // User chose "Download" -> prevent navigation
+                decisionHandler(WKNavigationActionPolicyCancel);
+            }
+                              onCancel:^{
+                // User cancelled/dismissed -> allow navigation
+                decisionHandler(WKNavigationActionPolicyAllow);
+            }];
+            return; // important: don't fall through to download logic
+#else
+#endif
+        }
+    }
+
     if (request && requestURL) {
         NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
         if ([downloadSchemes containsObject:requestURL.scheme]) {
@@ -1777,6 +1819,57 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   // Lunascape
   NSURLResponse *response = navigationResponse.response;
   NSURL *responseURL = [response URL];
+
+    // NEW: blob use existing action sheet + i18n, OK => .Download
+    NSString *scheme = responseURL.scheme.lowercaseString ?: @"";
+    if ([scheme isEqualToString:@"blob"]) {
+
+      // get cookieStore as existing flow
+      WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
+      WKHTTPCookieStore *cookieStore = dataStore.httpCookieStore;
+
+      // Get the request saved in the action phase
+      NSURLRequest *request = nil;
+      if (responseURL) {
+        request = [[DownloadHelper pendingRequests] objectForKey:responseURL.absoluteString];
+        [[DownloadHelper pendingRequests] removeObjectForKey:responseURL.absoluteString];
+      }
+
+      // Set canShowInWebView = NO to let DownloadHelper create the sheet
+      DownloadHelper *helper =
+        [[DownloadHelper alloc] initWithRequest:request
+                                       response:response
+                                    cookieStore:cookieStore
+                               canShowInWebView:NO];
+
+      if (helper) {
+        UIViewController *rootVC = [self topViewController];
+          UIAlertController *alert =
+            [helper downloadAlertFromView:rootVC.view
+                                  okAction:^(__unused id download) {
+              if (@available(iOS 14.5, *)) {
+                decisionHandler(WKNavigationResponsePolicyDownload);
+              } else {
+                decisionHandler(WKNavigationResponsePolicyCancel);
+              }
+            }
+                              cancelAction:^{
+              decisionHandler(WKNavigationResponsePolicyCancel);
+          }];
+        if (alert) {
+          [rootVC presentViewController:alert animated:YES completion:nil];
+          return; // IMPORTANT: end of blob branch here
+        }
+      }
+
+      // Fallback if any reason can not create the alert
+      if (@available(iOS 14.5, *)) {
+        decisionHandler(WKNavigationResponsePolicyDownload);
+      } else {
+        decisionHandler(WKNavigationResponsePolicyCancel);
+      }
+      return;
+    }
         
   BOOL canShowInWebView = navigationResponse.canShowMIMEType && !shouldDownloadNavigationResponse;
   WKWebsiteDataStore *dataStore = webView.configuration.websiteDataStore;
@@ -2946,6 +3039,23 @@ didFinishNavigation:(WKNavigation *)navigation
  navigationResponse:(nonnull WKNavigationResponse *)navigationResponse 
   didBecomeDownload:(nonnull WKDownload *)download API_AVAILABLE(ios(14.5))
 {
+    // NEW
+    NSURL *u = navigationResponse.response.URL;
+        NSString *scheme = u.scheme.lowercaseString ?: @"";
+        if ([scheme isEqualToString:@"blob"]) {
+            __weak typeof(self) weakSelf = self;
+            BlobDownloadHandler *handler =
+              [[BlobDownloadHandler alloc] initWithPresenter:[self topViewController]
+                                                  onComplete:^(__unused BlobDownloadHandler *h) {
+                __strong typeof(weakSelf) self = weakSelf;
+                if (!self) return;
+                [self->activeBlobHandlers removeObject:h];
+              }];
+            download.delegate = handler;
+            [activeBlobHandlers addObject:handler];
+            return;
+        }
+    // non-blob
     download.delegate = self;
 }
 
