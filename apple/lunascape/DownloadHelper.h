@@ -4,7 +4,7 @@
 #import <Foundation/Foundation.h>
 #import <WebKit/WebKit.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-#import "DownloadQueue.h"
+#import <UIKit/UIKit.h>
 
 // -MARK key helper
 static NSString * const kSessionIdKey = @"sessionId";
@@ -53,7 +53,7 @@ extern NSString * const DownloadStatusNone;
 @end
 
 API_AVAILABLE(ios(11.0))
-@interface DownloadHelper : NSObject
+@interface DownloadHelper : NSObject <UIPopoverPresentationControllerDelegate, UIAdaptivePresentationControllerDelegate>
 
 @property (class, nonatomic, strong) NSMutableDictionary<NSString *, NSURLRequest *> *pendingRequests;
 @property (class, nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray *> *blobData;
@@ -63,9 +63,13 @@ API_AVAILABLE(ios(11.0))
 @property (nonatomic, strong, readonly) WKHTTPCookieStore *cookieStore;
 
 - (instancetype)initWithRequest:(NSURLRequest *)request response:(NSURLResponse *)response cookieStore:(WKHTTPCookieStore *)cookieStore canShowInWebView:(BOOL)canShowInWebView;
-
+// Old API (no cancel callback) – still for compatibility
 - (UIAlertController *)downloadAlertFromView:(UIView *)view okAction:(void (^)(id download))okAction;
 
+// New API: has cancel callback – used to always call decisionHandler when Cancel/dismiss
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id download))okAction
+                                cancelAction:(void (^_Nullable)(void))cancelAction;
 @end
 
 @interface PendingDownload : NSObject
