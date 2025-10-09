@@ -20,7 +20,7 @@ Pod::Spec.new do |s|
   s.source_files    = "apple/**/*.{h,m,mm,swift}"
   s.resource     = "apple/Settings.bundle"
   s.pod_target_xcconfig = { "DEFINES_MODULE" => "YES" } # needed for swift to call methods from objc files
-  s.ios.vendored_library = 'apple/libs/libadblock.a'
+  s.ios.vendored_frameworks = 'apple/libs/libadblock.xcframework'
   s.public_header_files = 'apple/libs/*.h'
 
   if defined?(install_modules_dependencies()) != nil
