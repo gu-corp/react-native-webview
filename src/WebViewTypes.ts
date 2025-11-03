@@ -1231,6 +1231,46 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * Lunascape: this prop already in iOS, also add on Android
    */
   onFileDownload?: (event: FileDownloadEvent) => void;
+
+  /**
+   * Lunascape: Android webview not support incognito mode, but needs to be added in props to prevent unexpected bug
+   */
+  incognito?: boolean;
+
+  /**
+   * Lunascape: Android webview not support pullToRefreshEnabled, but needs to be added in props to prevent unexpected bug
+   */
+  pullToRefreshEnabled?: boolean;
+
+  /**
+   * Lunascape: Android webview not support scrollToTop, but needs to be added in props to prevent unexpected bug
+   */
+  scrollToTop?: boolean;
+
+  /**
+   * Lunascape: Android webview not support allowsLinkPreview, but needs to be added in props to prevent unexpected bug
+   */
+  allowsLinkPreview?: boolean;
+
+  /**
+   * Lunascape: Android webview not support allowingReadAccessToURL, but needs to be added in props to prevent unexpected bug
+   */
+  allowingReadAccessToURL?: string;
+
+  /**
+   * Lunascape: Android webview not support adblockAllowList, but needs to be added in props to prevent unexpected bug
+   */
+  adblockAllowList?: string[];
+
+  /**
+   * Lunascape: Android webview not support allowsInlineMediaPlayback, but needs to be added in props to prevent unexpected bug
+   */
+  allowsInlineMediaPlayback?: boolean;
+
+  /**
+   * Lunascape: Android webview not support onContentProcessDidTerminate, but needs to be added in props to prevent unexpected bug
+   */
+  onContentProcessDidTerminate?: (event: WebViewTerminatedEvent) => void;
 }
 
 export interface WebViewSharedProps extends ViewProps {
