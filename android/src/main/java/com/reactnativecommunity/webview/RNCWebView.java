@@ -307,18 +307,31 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         }
     }
 
-    public void callInjectedJavaScriptBeforeContentLoaded() {
+    public void callInjectedJavaScriptBeforeContentLoaded(Boolean isYoutube) {
         if (getSettings().getJavaScriptEnabled() &&
                 injectedJSBeforeContentLoaded != null &&
                 !TextUtils.isEmpty(injectedJSBeforeContentLoaded)) {
             evaluateJavascriptWithFallback("(function() {\n" + injectedJSBeforeContentLoaded + ";\n})();");
         }
-        // Lunascape custom 
-        // Inject night mode script
+        // Lunascape custom
         if (getSettings().getJavaScriptEnabled()) {
+            // Inject night mode script
             String jsNightMode = loadNightModeScriptFile();
             if (jsNightMode != null) {
                 this.evaluateJavascriptWithFallback(jsNightMode);
+            }
+
+            // Inject js for Youtube
+            if (isYoutube) {
+                String jsYoutubeBackgroundPlayback = loadYoutubeBackgroundPlaybackScriptFile();
+                if (jsYoutubeBackgroundPlayback != null) {
+                    this.evaluateJavascriptWithFallback(jsYoutubeBackgroundPlayback);
+                }
+
+                String jsYoutubePictureInPictureSupport = loadYoutubePictureInPictureSupportScriptFile();
+                if (jsYoutubePictureInPictureSupport != null) {
+                    this.evaluateJavascriptWithFallback(jsYoutubePictureInPictureSupport);
+                }
             }
         }
     }
@@ -634,6 +647,38 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             fileInputStream.read(readBytes);
             jsString = new String(readBytes);
             jsString = jsString.replace("$<night_mode_init_value>", initNightModeValue ? "true" : "false" );
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+    }
+
+    public String loadYoutubeBackgroundPlaybackScriptFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("YoutubeBackgroundPlayback.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+    }
+
+    public String loadYoutubePictureInPictureSupportScriptFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("YoutubePictureInPictureSupport.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

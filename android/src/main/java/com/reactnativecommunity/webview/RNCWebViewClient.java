@@ -159,7 +159,8 @@ public class RNCWebViewClient extends WebViewClient {
       mLastLoadFailed = false;
 
       RNCWebView reactWebView = (RNCWebView) webView;
-      reactWebView.callInjectedJavaScriptBeforeContentLoaded();
+      Boolean isYoutube = checkYoutubeDomain(url);
+      reactWebView.callInjectedJavaScriptBeforeContentLoaded(isYoutube);
     }
 
     public boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
