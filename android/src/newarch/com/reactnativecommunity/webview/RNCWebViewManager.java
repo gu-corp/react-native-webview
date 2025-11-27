@@ -587,10 +587,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
 
-    @ReactProp(name = "initNightModeValue")
-    public void setInitNightModeValue(RNCWebViewWrapper view, boolean value) {
-        mRNCWebViewManagerImpl.setInitNightModeValue(view, value);
-    }
+    // TODO: disable night mode for now because it is unnecessary
+    // @ReactProp(name = "initNightModeValue")
+    // public void setInitNightModeValue(RNCWebViewWrapper view, boolean value) {
+    //     mRNCWebViewManagerImpl.setInitNightModeValue(view, value);
+    // }
 
     @ReactProp(name = "additionalUserAgent")
     public void setAdditionalUserAgent(RNCWebViewWrapper view, @Nullable ReadableArray additionalUserAgent) {
@@ -629,8 +630,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     @Override
     public void setFontSize(RNCWebViewWrapper view, double size) {}
 
-    @Override
-    public void setEnableNightMode(RNCWebViewWrapper view, String enable) {}
+    // TODO: disable night mode for now because it is unnecessary
+    // @Override
+    // public void setEnableNightMode(RNCWebViewWrapper view, String enable) {}
 
     @Override
     public void proceedUnsafeSite(RNCWebViewWrapper view, String url) {}

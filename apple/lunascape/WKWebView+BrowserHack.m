@@ -352,16 +352,17 @@
     return result;
 }
 
-- (void)setEnableNightMode:(NSString *)enable
-{
-    NSString *jsFunction = [NSString stringWithFormat:@"window.__firefox__.NightMode.setEnabled(%@)", enable];
-    [self evaluateJavaScript:jsFunction completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-        if (error) {
-            NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
-        } else {
-            NSLog(@"JavaScript evaluated successfully with Night mode");
-        }
-    }];
-}
+// TODO: disable night mode for now because it is unnecessary
+// - (void)setEnableNightMode:(NSString *)enable
+// {
+//     NSString *jsFunction = [NSString stringWithFormat:@"window.__firefox__.NightMode.setEnabled(%@)", enable];
+//     [self evaluateJavaScript:jsFunction completionHandler:^(id _Nullable result, NSError * _Nullable error) {
+//         if (error) {
+//             NSLog(@"Error evaluating JavaScript: %@", error.localizedDescription);
+//         } else {
+//             NSLog(@"JavaScript evaluated successfully with Night mode");
+//         }
+//     }];
+// }
 
 @end

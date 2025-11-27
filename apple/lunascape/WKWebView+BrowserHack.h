@@ -4,6 +4,7 @@
 
 -(NSDictionary*)respondToTapAndHoldAtLocation:(CGPoint)location;
 - (NSString *)stringByEvaluatingJavaScriptFromString:(NSString *)script;
-- (void)setEnableNightMode:(NSString *)enable;
+// TODO: disable night mode for now because it is unnecessary
+// - (void)setEnableNightMode:(NSString *)enable;
 
 @end

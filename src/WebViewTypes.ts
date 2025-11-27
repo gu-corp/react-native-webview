@@ -26,7 +26,7 @@ type WebViewCommands =
   | 'captureScreen'
   | 'printContent'
   | 'setFontSize'
-  | 'setEnableNightMode'
+  // | 'setEnableNightMode'
   | 'proceedUnsafeSite';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
@@ -41,7 +41,7 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   capturePage: (viewTag: number) => Promise<string>;
   printContent: (viewTag: number) => void;
   setFontSize: (viewTag: number, size: number) => void;
-  setEnableNightMode: (viewTag: number, enable: string) => void;
+  // setEnableNightMode: (viewTag: number, enable: string) => void;
   proceedUnsafeSite: (viewTag: number, url: string) => void;
 }
 
@@ -277,7 +277,7 @@ export interface ViewManager {
   findPrevious: Function;
   removeAllHighlights: Function;
   setFontSize: Function;
-  setEnableNightMode: Function;
+  // setEnableNightMode: Function; // disable night mode for now because it is unnecessary
   proceedUnsafeSite: Function;
 }
 
@@ -353,12 +353,13 @@ export interface CommonNativeWebViewProps extends ViewProps {
    */
   adblockRuleList?: string[];
   adblockDebuggingEnabled?: boolean;
-  /***
-   * initial value of night mode
-   * @platform android and ios
-   * @default false
-   */
-  initNightModeValue?: boolean;
+  // TODO: disable night mode for now because it is unnecessary
+  // /***
+  //  * initial value of night mode
+  //  * @platform android and ios
+  //  * @default false
+  //  */
+  // initNightModeValue?: boolean;
   openNewWindowInWebView?: boolean;
   onNavigationStateChange?: (event: WebViewNavigationEvent) => void;
   onShouldCreateNewWindow?: OnShouldCreateNewWindow;
@@ -1430,12 +1431,13 @@ export interface WebViewSharedProps extends ViewProps {
    */
   adblockDebuggingEnabled?: boolean;
 
-  /***
-   * initial value of night mode
-   * @platform android and ios
-   * @default false
-   */
-  initNightModeValue?: boolean;
+  // TODO: disable night mode for now because it is unnecessary
+  // /***
+  //  * initial value of night mode
+  //  * @platform android and ios
+  //  * @default false
+  //  */
+  // initNightModeValue?: boolean;
 
   openNewWindowInWebView?: boolean;
 

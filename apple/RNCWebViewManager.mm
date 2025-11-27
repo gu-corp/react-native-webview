@@ -280,7 +280,8 @@ RCT_EXPORT_METHOD(createNewWindowWithResult:(BOOL)result lockIdentifier:(NSInteg
 RCT_EXPORT_VIEW_PROPERTY(adblockRuleList, NSArray<NSString>)
 RCT_EXPORT_VIEW_PROPERTY(adblockDebuggingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)
-RCT_EXPORT_VIEW_PROPERTY(initNightModeValue, BOOL)
+// TODO: disable night mode for now because it is unnecessary
+// RCT_EXPORT_VIEW_PROPERTY(initNightModeValue, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adjustOffset, CGPoint)
@@ -433,17 +434,18 @@ RCT_EXPORT_METHOD(setFontSize:(nonnull NSNumber *)reactTag size:(nonnull NSNumbe
     }];
 }
 
-RCT_EXPORT_METHOD(setEnableNightMode:(nonnull NSNumber *)reactTag enable:(nonnull NSString *)enable)
-{
-    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
-        RNCView *view = viewRegistry[reactTag];
-        if (![view isKindOfClass:[RNCWebViewImpl class]]) {
-            RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
-        } else {
-            [(RNCWebViewImpl *)view setEnableNightMode:enable];
-        }
-    }];
-}
+// TODO: disable night mode for now because it is unnecessary
+// RCT_EXPORT_METHOD(setEnableNightMode:(nonnull NSNumber *)reactTag enable:(nonnull NSString *)enable)
+// {
+//     [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
+//         RNCView *view = viewRegistry[reactTag];
+//         if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+//             RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+//         } else {
+//             [(RNCWebViewImpl *)view setEnableNightMode:enable];
+//         }
+//     }];
+// }
 
 RCT_EXPORT_METHOD(proceedUnsafeSite:(nonnull NSNumber *)reactTag url:(nonnull NSString *)url)
 {
