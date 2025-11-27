@@ -217,10 +217,11 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         setFontSize: (data: number) => {
           webViewRef.current && Commands.setFontSize(webViewRef.current, data);
         },
-        setEnableNightMode: (enable: string) => {
-          webViewRef.current &&
-            Commands.setEnableNightMode(webViewRef.current, enable);
-        },
+        // TODO: disable night mode for now because it is unnecessary
+        // setEnableNightMode: (enable: string) => {
+        //   webViewRef.current &&
+        //     Commands.setEnableNightMode(webViewRef.current, enable);
+        // },
         proceedUnsafeSite: (enable: string) => {
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, enable);

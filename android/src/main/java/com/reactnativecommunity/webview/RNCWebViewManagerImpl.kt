@@ -405,7 +405,8 @@ class RNCWebViewManagerImpl {
 
     val COMMAND_REQUEST_WEB_VIEW_STATUS = 16
     val COMMAND_REQUEST_WEB_FAVICON = 17
-    val COMMAND_SET_ENABLE_NIGHT_MODE = 18
+    // TODO: disable night mode for now because it is unnecessary
+    // val COMMAND_SET_ENABLE_NIGHT_MODE = 18 // should update value
     val COMMAND_PROCEED_UNSAFE_SITE = 18
     // endregion
 
@@ -431,7 +432,7 @@ class RNCWebViewManagerImpl {
         .put("removeAllHighlights", COMMAND_REMOVE_ALL_HIGHLIGHTS)
         .put("printContent", COMMAND_PRINT_CONTENT)
         .put("setFontSize", COMMAND_SET_FONT_SIZE)
-        .put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE)
+        // .put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE) // disable night mode for now because it is unnecessary
         .put("proceedUnsafeSite", COMMAND_PROCEED_UNSAFE_SITE)
         .build()
     }
@@ -487,7 +488,8 @@ class RNCWebViewManagerImpl {
         "removeAllHighlights" -> webView.removeAllHighlights()
         "printContent" -> webView.printContent()
         "setFontSize" -> webView.setFontSize(args.getInt(0))
-        "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0))
+        // TODO: disable night mode for now because it is unnecessary
+        // "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0)) 
         "proceedUnsafeSite" -> webView.proceedUnsafeSite(args.getString(0))
       }
     }
@@ -866,9 +868,10 @@ class RNCWebViewManagerImpl {
         }
     }
 
-    fun setInitNightModeValue(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
-        viewWrapper.webView.setInitNightModeValue(enabled)
-    }
+    // TODO: disable night mode for now because it is unnecessary 
+    // fun setInitNightModeValue(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
+    //     viewWrapper.webView.setInitNightModeValue(enabled)
+    // }
 
     fun setAdditionalUserAgent(viewWrapper: RNCWebViewWrapper, additionalUserAgent: ReadableArray?){
         val client = viewWrapper.webView.mRNCWebViewClient

@@ -182,9 +182,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   
-  WKUserScript *scriptNightMode;
-  // to re-init scriptNightMode if the user changes the night mode value
-  BOOL prevInitNightModeValue;
+  // TODO: disable night mode for now because it is unnecessary
+  // WKUserScript *scriptNightMode;
+  // // to re-init scriptNightMode if the user changes the night mode value
+  // BOOL prevInitNightModeValue;
   // override window.print method
   WKUserScript *scriptPrinting;
 
@@ -2400,7 +2401,8 @@ didFinishNavigation:(WKNavigation *)navigation
   
   // default js, inject for all
   [self injectCommonFirefoxJS:wkWebViewConfig];
-  [self injectNightModeJS:wkWebViewConfig];
+  // TODO: disable night mode for now because it is unnecessary
+  // [self injectNightModeJS:wkWebViewConfig];
 
   // Whether or not messaging is enabled, add the startup script if it exists.
   if (self.atStartScript) {
@@ -2644,28 +2646,30 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
--(void)injectNightModeJS:(WKWebViewConfiguration *)configuration
-{
-    if (@available(iOS 13.0, *)) {
-        if(scriptNightMode == nil || prevInitNightModeValue != _initNightModeValue) {
-            NSString *jsFileNightMode = @"__NightModeScript__";
-            NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
-            NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
-            NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path
-                                                                          encoding:NSUTF8StringEncoding error:nil];
+
+// TODO: disable night mode for now because it is unnecessary
+// -(void)injectNightModeJS:(WKWebViewConfiguration *)configuration
+// {
+//     if (@available(iOS 13.0, *)) {
+//         if(scriptNightMode == nil || prevInitNightModeValue != _initNightModeValue) {
+//             NSString *jsFileNightMode = @"__NightModeScript__";
+//             NSString *jsFilePathNightMode = [resourceBundle pathForResource:jsFileNightMode ofType:@"js"];
+//             NSURL *jsURLNightMode = [NSURL fileURLWithPath:jsFilePathNightMode];
+//             NSString *javascriptCodeNightMode = [NSString stringWithContentsOfFile:jsURLNightMode.path
+//                                                                           encoding:NSUTF8StringEncoding error:nil];
             
-            prevInitNightModeValue = _initNightModeValue;
-            javascriptCodeNightMode = [javascriptCodeNightMode stringByReplacingOccurrencesOfString:@"$<night_mode_init_value>" withString: _initNightModeValue ? @"true": @"false"];
-            scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode
-                                                     injectionTime:WKUserScriptInjectionTimeAtDocumentStart
-                                                  forMainFrameOnly:YES];
-        }
+//             prevInitNightModeValue = _initNightModeValue;
+//             javascriptCodeNightMode = [javascriptCodeNightMode stringByReplacingOccurrencesOfString:@"$<night_mode_init_value>" withString: _initNightModeValue ? @"true": @"false"];
+//             scriptNightMode = [[WKUserScript alloc] initWithSource:javascriptCodeNightMode
+//                                                      injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+//                                                   forMainFrameOnly:YES];
+//         }
         
-        if([configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
-            [configuration.userContentController addUserScript:scriptNightMode];
-        }
-    }
-}
+//         if([configuration.userContentController.userScripts containsObject:scriptNightMode] == false) {
+//             [configuration.userContentController addUserScript:scriptNightMode];
+//         }
+//     }
+// }
 
 // isExist default in new version webview
 //- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
@@ -2697,9 +2701,10 @@ didFinishNavigation:(WKNavigation *)navigation
     [_webView setValue:[NSNumber numberWithDouble:fontSize] forKey:@"viewScale"];
 }
 
-- (void)setEnableNightMode:(nonnull NSString *)enable {
-    [_webView setEnableNightMode:enable];
-}
+// TODO: disable night mode for now because it is unnecessary
+// - (void)setEnableNightMode:(nonnull NSString *)enable {
+//     [_webView setEnableNightMode:enable];
+// }
 
 
 - (NSDictionary*)onScrollEvent:(CGPoint)currentOffset 
@@ -2924,15 +2929,16 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
-- (void)setInitNightModeValue:(BOOL)initNightModeValue {
-    if (initNightModeValue == _initNightModeValue) {
-        return;
-    }
-    _initNightModeValue = initNightModeValue;
-    if(_webView != nil ) { // only update if get different value
-      [self resetupScripts:_webView.configuration];
-    }
-}
+// TODO: disable night mode for now because it is unnecessary
+// - (void)setInitNightModeValue:(BOOL)initNightModeValue {
+//     if (initNightModeValue == _initNightModeValue) {
+//         return;
+//     }
+//     _initNightModeValue = initNightModeValue;
+//     if(_webView != nil ) { // only update if get different value
+//       [self resetupScripts:_webView.configuration];
+//     }
+// }
 
 - (void)setDownloadConfig:(NSDictionary *)downloadConfig {
     _downloadConfig = downloadConfig;

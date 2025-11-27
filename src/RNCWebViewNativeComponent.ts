@@ -294,12 +294,13 @@ export interface NativeProps extends ViewProps {
    * Enables Adblock debugging. Only available on iOS and Android.
    */
   adblockDebuggingEnabled?: boolean;
-  /***
-   * initial value of night mode
-   * @platform android and ios
-   * @default false
-   */
-  initNightModeValue?: boolean;
+  // TODO: disable night mode for now because it is unnecessary
+  // /***
+  //  * initial value of night mode
+  //  * @platform android and ios
+  //  * @default false
+  //  */
+  // initNightModeValue?: boolean;
 }
 
 export interface NativeCommands {
@@ -357,10 +358,10 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     size: Double
   ) => void;
-  setEnableNightMode: (
-    viewRef: React.ElementRef<HostComponent<NativeProps>>,
-    enable: string
-  ) => void;
+  // setEnableNightMode: (
+  //   viewRef: React.ElementRef<HostComponent<NativeProps>>,
+  //   enable: string
+  // ) => void;
   proceedUnsafeSite: (
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     url: string
@@ -394,7 +395,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'removeAllHighlights',
     'printContent',
     'setFontSize',
-    'setEnableNightMode',
+    // 'setEnableNightMode',
     'proceedUnsafeSite',
     'evaluateJavaScript',
   ],
