@@ -213,7 +213,7 @@ char *engine_hidden_class_id_selectors(struct C_Engine *engine,
                                        const char *const *exceptions,
                                        size_t exceptions_size);
 
-#if defined(BUILDFLAG(IS_IOS))
+#if defined(IS_IOS)
 /**
  * Converts a list in adblock syntax to its corresponding iOS content-blocking
  * syntax. `truncated` will be set to indicate whether or not some rules had to
