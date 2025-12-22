@@ -4,7 +4,7 @@
 #import <Foundation/Foundation.h>
 #import <WebKit/WebKit.h>
 #import <MobileCoreServices/MobileCoreServices.h>
-#import <UIKit/UIKit.h>
+#import "DownloadQueue.h"
 
 // -MARK key helper
 static NSString * const kSessionIdKey = @"sessionId";
@@ -16,7 +16,12 @@ static NSString * const kTotalBytesKey = @"totalBytes";
 static NSString * const kBytesDownloadedKey = @"bytesDownloaded";
 static NSString * const kLastSessionIndexKey = @"kLastSessionIndex";
 static NSString * const kDownloadSessionInfoKey = @"kDownloadSessionInfo";
+
+// DownloadConfig keys
 static NSString * const kDownloadFolderKey = @"downloadFolder";
+static NSString * const kDownloadButtonKey = @"downloadButton";
+static NSString * const kDownloadCancelButtonKey = @"downloadCancelButton";
+
 static NSString * const kDownloadKey = @"downloads";
 static NSString * const kUnknownKey = @"unknown";
 
@@ -53,7 +58,7 @@ extern NSString * const DownloadStatusNone;
 @end
 
 API_AVAILABLE(ios(11.0))
-@interface DownloadHelper : NSObject <UIPopoverPresentationControllerDelegate, UIAdaptivePresentationControllerDelegate>
+@interface DownloadHelper : NSObject
 
 @property (class, nonatomic, strong) NSMutableDictionary<NSString *, NSURLRequest *> *pendingRequests;
 @property (class, nonatomic, strong) NSMutableDictionary<NSString *, NSMutableArray *> *blobData;
@@ -63,12 +68,12 @@ API_AVAILABLE(ios(11.0))
 @property (nonatomic, strong, readonly) WKHTTPCookieStore *cookieStore;
 
 - (instancetype)initWithRequest:(NSURLRequest *)request response:(NSURLResponse *)response cookieStore:(WKHTTPCookieStore *)cookieStore canShowInWebView:(BOOL)canShowInWebView;
-// Old API (no cancel callback) – still for compatibility
-- (UIAlertController *)downloadAlertFromView:(UIView *)view okAction:(void (^)(id download))okAction;
 
-// New API: has cancel callback – used to always call decisionHandler when Cancel/dismiss
 - (UIAlertController *)downloadAlertFromView:(UIView *)view
-                                    okAction:(void (^)(id download))okAction
+                                    okAction:(void (^)(id _Nullable download))okAction;
+
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id _Nullable download))okAction
                                 cancelAction:(void (^_Nullable)(void))cancelAction;
 @end
 

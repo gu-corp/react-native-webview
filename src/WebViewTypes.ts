@@ -1498,9 +1498,6 @@ export interface DownloadConfigProp {
   downloadFolder?: string;
   downloadButton?: string;
   downloadCancelButton?: string;
-  downloadCompletedTitle?: string;
-  downloadOkayButton?: string;
-  downloadFailedTitle?: string;
 }
 
 export interface TRefValiable {
