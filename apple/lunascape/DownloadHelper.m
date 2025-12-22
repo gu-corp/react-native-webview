@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #import "DownloadHelper.h"
 #import "Utility.h"
-#import "DownloadQueue.h"
 
 NSString * const DownloadStatusDownloading = @"downloading";
 NSString * const DownloadStatusPause = @"pause";
@@ -51,10 +50,7 @@ NSArray<NSString *> *webViewViewableTypes = nil;
 - (BOOL)isKindOfHTML {
     return [@[MIMETypeHTML, MIMETypeXHTML] containsObject:self];
 }
-@end
 
-@interface DownloadHelper ()
-@property (nonatomic, copy) void (^cancelCallback)(void);
 @end
 
 @implementation DownloadHelper
@@ -110,75 +106,70 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
     return self;
 }
 
-// Old API wrapper (not canceled)
 - (UIAlertController *)downloadAlertFromView:(UIView *)view
-                                    okAction:(void (^)(id download))okAction {
+                                    okAction:(void (^)(id _Nullable download))okAction {
     return [self downloadAlertFromView:view okAction:okAction cancelAction:nil];
 }
 
-// New API: has cancel callback – used to always call decisionHandler when Cancel/dismiss
 - (UIAlertController *)downloadAlertFromView:(UIView *)view
-                                    okAction:(void (^)(id download))okAction
+                                    okAction:(void (^)(id _Nullable download))okAction
                                 cancelAction:(void (^_Nullable)(void))cancelAction {
 
     NSURL *url = self.request.URL;
     NSString *scheme = url.scheme.lowercaseString ?: @"";
-    NSString *host = url.host ?: @"";
+    NSString *host = url.host ?: scheme;
     NSString *filename = url.lastPathComponent ?: @"";
-    if (filename.length == 0) { filename = self.preflightResponse.suggestedFilename ?: @"download"; }
-    if (host.length == 0) { host = [scheme isEqualToString:@"blob"] ? @"blob" : @"blob"; }
+    if (filename.length == 0) {
+        filename = self.preflightResponse.suggestedFilename ?: @"download";
+    }
+    BOOL isBlobFile = [scheme isEqualToString:@"blob"];
 
-    HTTPDownload *download = [[HTTPDownload alloc] initWithCookieStore:self.cookieStore preflightResponse:self.preflightResponse request:self.request];
-
-    NSString *expectedSize = download.totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:download.totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    HTTPDownload *download = nil;
+    NSString *expectedSize = nil;
+    if (!isBlobFile) {
+        download = [[HTTPDownload alloc] initWithCookieStore:self.cookieStore
+                                           preflightResponse:self.preflightResponse
+                                                     request:self.request];
+        expectedSize = download.totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:download.totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    }
 
     NSString *title = [NSString stringWithFormat:@"%@ - %@", filename, host];
 
-    UIAlertController *alert = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *downloadAlert = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 
-    NSString *downloadActionText = [[Utility downloadConfig] objectForKey:@"downloadButton"] ?: @"Download";
+    NSString *downloadActionText = [[Utility downloadConfig] objectForKey:kDownloadButtonKey] ?: @"Download";
     // The download can be of undetermined size, adding expected size only if it's available.
     if (expectedSize) {
         downloadActionText = [NSString stringWithFormat:@"%@ (%@)", downloadActionText, expectedSize];
     }
 
-    __weak typeof(self) weakSelf = self;
-    [alert addAction:[UIAlertAction actionWithTitle:downloadActionText style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *a) {
+    UIAlertAction *alertDoneAction = [UIAlertAction actionWithTitle:downloadActionText
+                                                              style:UIAlertActionStyleDefault
+                                                            handler:^(UIAlertAction * _Nonnull action) {
         if (okAction) {
             okAction(download);
         }
-        weakSelf.cancelCallback = nil; // avoid calling cancel later
-    }]];
+    }];
 
-    NSString *cancelTitle = [[Utility downloadConfig] objectForKey:@"downloadCancelButton"] ?: @"Cancel";
-    [alert addAction:[UIAlertAction actionWithTitle:cancelTitle
-                                              style:UIAlertActionStyleCancel
-                                            handler:^(__unused UIAlertAction *a) {
-        if (cancelAction) cancelAction();
-        weakSelf.cancelCallback = nil;
-    }]];
+    NSString *cancelButton = [[Utility downloadConfig] objectForKey:kDownloadCancelButtonKey] ?: @"Cancel";
+    UIAlertAction *alertCancelAction = [UIAlertAction actionWithTitle:cancelButton
+                                                                style:UIAlertActionStyleCancel
+                                                              handler:^(UIAlertAction * _Nonnull action) {
+        if (cancelAction) {
+            cancelAction();
+        }
+    }];
 
-    // Save cancel callback to fire when user taps outside/dismiss
-    self.cancelCallback = [cancelAction copy];
+    [downloadAlert addAction:alertDoneAction];
+    [downloadAlert addAction:alertCancelAction];
 
-    UIPopoverPresentationController *popover = alert.popoverPresentationController;
+    UIPopoverPresentationController *popover = downloadAlert.popoverPresentationController;
     if (popover) {
         popover.sourceView = view;
         popover.sourceRect = CGRectMake(CGRectGetMidX(view.bounds), CGRectGetMaxY(view.bounds) - 16, 0, 0);
         popover.permittedArrowDirections = UIPopoverArrowDirectionAny;
-        popover.delegate = self; // receive dismiss when tapping outside on iPad
     }
-    return alert;
-}
-
-#pragma mark - Dismiss callbacks
-
-- (void)popoverPresentationControllerDidDismissPopover:(UIPopoverPresentationController *)popoverPresentationController {
-    if (self.cancelCallback) { self.cancelCallback(); self.cancelCallback = nil; }
-}
-
-- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
-    if (self.cancelCallback) { self.cancelCallback(); self.cancelCallback = nil; }
+    return downloadAlert;
 }
 
 @end
