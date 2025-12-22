@@ -62,7 +62,12 @@ registerCallableModule('RNCWebViewMessagingModule', {
  */
 let uniqueRef = 0;
 
-const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
+const WebViewComponent = forwardRef<
+  {},
+  AndroidWebViewProps & {
+    incognito?: boolean; // custom prop for Lunascape
+  }
+>(
   (
     {
       overScrollMode = 'always',
@@ -102,6 +107,17 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
       onShouldCreateNewWindow,
       onFileDownload,
       onUpdateHistory,
+      collapsable,
+      additionalUserAgent,
+      adblockRuleList,
+      adblockDebuggingEnabled,
+      downloadConfig,
+      webviewDebuggingEnabled,
+      openNewWindowInWebView,
+      incognito = false,
+      // for testing ids
+      accessible,
+      accessibilityLabel,
       // #endregion Lunascape
       ...otherProps
     },
@@ -401,6 +417,17 @@ const WebViewComponent = forwardRef<{}, AndroidWebViewProps>(
         onCaptureScreen={onCaptureScreen}
         onFileDownload={onFileDownload}
         onUpdateHistory={onUpdateHistory}
+        collapsable={collapsable}
+        additionalUserAgent={additionalUserAgent}
+        adblockRuleList={adblockRuleList}
+        adblockDebuggingEnabled={adblockDebuggingEnabled}
+        downloadConfig={downloadConfig}
+        webviewDebuggingEnabled={webviewDebuggingEnabled}
+        openNewWindowInWebView={openNewWindowInWebView}
+        incognito={incognito}
+        // for testing ids
+        accessible={accessible}
+        accessibilityLabel={accessibilityLabel}
         // #endregion Lunascape
         {...nativeConfig?.props}
       />
