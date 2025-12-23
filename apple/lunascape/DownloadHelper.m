@@ -122,11 +122,14 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
     if (filename.length == 0) {
         filename = self.preflightResponse.suggestedFilename ?: @"download";
     }
-    BOOL isBlobFile = [scheme isEqualToString:@"blob"];
+    BOOL isNonHttpRequest = [scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"];
 
     HTTPDownload *download = nil;
     NSString *expectedSize = nil;
-    if (!isBlobFile) {
+    if (isNonHttpRequest) {
+        NSNumber *totalBytesExpected = self.preflightResponse.expectedContentLength > 0 ? @(self.preflightResponse.expectedContentLength) : nil;
+        expectedSize = totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    } else {
         download = [[HTTPDownload alloc] initWithCookieStore:self.cookieStore
                                            preflightResponse:self.preflightResponse
                                                      request:self.request];

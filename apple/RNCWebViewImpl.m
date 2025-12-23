@@ -25,7 +25,6 @@
 #import "DownloadQueue.h"
 #import "PassBookHelper.h"
 #import "DownloadModule.h"
-#import "Base64DownloadHandler.h" // NEW base64
 // Note: call swift function from objective-c https://developer.apple.com/documentation/swift/importing-swift-into-objective-c
 // https://stackoverflow.com/a/26756530
 // <ProductModuleName>-Swift.h
@@ -200,7 +199,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   NSBundle* resourceBundle;
   BOOL shouldDownloadNavigationResponse;
   NSMutableDictionary<NSURLRequest *, PendingDownload *> *pendingDownloads;
-  NSMutableSet<Base64DownloadHandler *> *activeBase64Handlers; // NEW base64
   NSURL *historyUrl;
   NSString *historyTitle;
   NSString *historyBackTitle;
@@ -299,7 +297,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     NSString* bundlePath = [[NSBundle mainBundle] pathForResource:@"Settings" ofType:@"bundle"];
     resourceBundle = [NSBundle bundleWithPath:bundlePath];
     initiated = NO;
-    activeBase64Handlers = [NSMutableSet set]; // NEW base64
     
 #endif // TARGET_OS_IOS
   return self;
@@ -1588,42 +1585,6 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     BOOL hasTargetFrame = navigationAction.targetFrame != nil;
 
     NSURL *requestURL = request.URL;
-
-    // NEW base64
-    // This avoids WK trying to "download" a data: URL (causing the URLSession errors).
-    if (requestURL && [[requestURL.scheme lowercaseString] isEqualToString:@"data"]) {
-        NSString *abs = requestURL.absoluteString ?: @"";
-        NSRange comma = [abs rangeOfString:@","];
-        NSString *meta = (comma.location != NSNotFound) ? [abs substringWithRange:NSMakeRange(5, comma.location - 5)] : @"";
-        BOOL isBase64 = [[meta lowercaseString] containsString:@";base64"];
-        if (isBase64) {
-#if !TARGET_OS_OSX
-            if (!activeBase64Handlers) { activeBase64Handlers = [NSMutableSet new]; }
-            __weak typeof(self) weakSelf = self;
-            Base64DownloadHandler *handler =
-            [[Base64DownloadHandler alloc] initWithPresenter:[self topViewController]
-                                                  onComplete:^(Base64DownloadHandler *h) {
-                __strong typeof(self) strongSelf = weakSelf;
-                if (!strongSelf) return;
-                [strongSelf->activeBase64Handlers removeObject:h];
-            }];
-            [activeBase64Handlers addObject:handler];
-            [handler presentForDataURL:requestURL
-                              fromView:self
-                             onProceed:^{
-                // User chose "Download" -> prevent navigation
-                decisionHandler(WKNavigationActionPolicyCancel);
-            }
-                              onCancel:^{
-                // User cancelled/dismissed -> allow navigation
-                decisionHandler(WKNavigationActionPolicyAllow);
-            }];
-            return; // important: don't fall through to download logic
-#else
-#endif
-        }
-    }
-
     if (request && requestURL) {
         NSArray *downloadSchemes = @[@"http", @"https", @"data", @"blob", @"file"];
         if ([downloadSchemes containsObject:requestURL.scheme]) {
@@ -1861,9 +1822,9 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   if (downloadHelper) {
     id downloadAlertAction = nil;
     id cancelAlertAction = nil;
-    NSString *scheme = responseURL.scheme.lowercaseString ?: @"";
-    BOOL isBlobFile = [scheme isEqualToString:@"blob"];
-    if (isBlobFile) {
+    NSString *scheme = responseURL.scheme ?: @"";
+    BOOL isNonHttpRequest = [scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"];
+    if (isNonHttpRequest) {
       downloadAlertAction = ^(__unused id download) {
         if (@available(iOS 14.5, *)) {
           decisionHandler(WKNavigationResponsePolicyDownload);
@@ -1890,8 +1851,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     if (alertView) {
       [rootVC presentViewController:alertView animated:YES completion:nil];
 
-      if (isBlobFile) {
-        return; // IMPORTANT: if isBlobFile, return without decision policy, decision policy in downloadAlertAction
+      if (isNonHttpRequest) {
+        return; // IMPORTANT: if blod/data(base64) file, return without decision policy, decision policy in downloadAlertAction
       }
     }
     policy = WKNavigationResponsePolicyCancel;
@@ -3029,8 +2990,8 @@ didFinishNavigation:(WKNavigation *)navigation
                completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler API_AVAILABLE(ios(14.5))
 {
     NSString *scheme = response.URL.scheme ?: @"";
-    if ([scheme isEqualToString:@"blob"]) {
-        // For download blob file, save file into Download folder
+    if ([scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"]) {
+        // For download blob/data(base64) file, save file into Download folder
         NSURL *destination = [Utility uniqueDownloadPathForFilename:(suggestedFilename ?: @"filename")];
         completionHandler(destination);
     } else {
