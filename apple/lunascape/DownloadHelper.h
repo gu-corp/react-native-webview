@@ -16,7 +16,12 @@ static NSString * const kTotalBytesKey = @"totalBytes";
 static NSString * const kBytesDownloadedKey = @"bytesDownloaded";
 static NSString * const kLastSessionIndexKey = @"kLastSessionIndex";
 static NSString * const kDownloadSessionInfoKey = @"kDownloadSessionInfo";
+
+// DownloadConfig keys
 static NSString * const kDownloadFolderKey = @"downloadFolder";
+static NSString * const kDownloadButtonKey = @"downloadButton";
+static NSString * const kDownloadCancelButtonKey = @"downloadCancelButton";
+
 static NSString * const kDownloadKey = @"downloads";
 static NSString * const kUnknownKey = @"unknown";
 
@@ -64,8 +69,12 @@ API_AVAILABLE(ios(11.0))
 
 - (instancetype)initWithRequest:(NSURLRequest *)request response:(NSURLResponse *)response cookieStore:(WKHTTPCookieStore *)cookieStore canShowInWebView:(BOOL)canShowInWebView;
 
-- (UIAlertController *)downloadAlertFromView:(UIView *)view okAction:(void (^)(id download))okAction;
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id _Nullable download))okAction;
 
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id _Nullable download))okAction
+                                cancelAction:(void (^_Nullable)(void))cancelAction;
 @end
 
 @interface PendingDownload : NSObject

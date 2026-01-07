@@ -1827,14 +1827,40 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                                                                cookieStore:cookieStore
                                                           canShowInWebView:canShowInWebView];
   if (downloadHelper) {
-    id downloadAlertAction = ^(HTTPDownload *download) {
-      [[DownloadQueue downloadQueue] appendSessionInfo];
-      [[DownloadQueue downloadQueue] enqueue: download];
-    };
+    id downloadAlertAction = nil;
+    id cancelAlertAction = nil;
+    NSString *scheme = responseURL.scheme ?: @"";
+    BOOL isNonHttpRequest = [scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"];
+    if (isNonHttpRequest) {
+      downloadAlertAction = ^(__unused id download) {
+        if (@available(iOS 14.5, *)) {
+          decisionHandler(WKNavigationResponsePolicyDownload);
+        } else {
+          decisionHandler(WKNavigationResponsePolicyCancel);
+        }
+      };
+      cancelAlertAction = ^{
+        decisionHandler(WKNavigationResponsePolicyCancel);
+      };
+    } else {
+      downloadAlertAction = ^(HTTPDownload *download) {
+        if (download) {
+          [[DownloadQueue downloadQueue] appendSessionInfo];
+          [[DownloadQueue downloadQueue] enqueue: download];
+        }
+      };
+    }
+
     UIViewController *rootVC = [[UIApplication sharedApplication].delegate window].rootViewController;
-    UIAlertController *alertView = [downloadHelper downloadAlertFromView:rootVC.view okAction:downloadAlertAction];
+    UIAlertController *alertView = [downloadHelper downloadAlertFromView:rootVC.view
+                                                                okAction:downloadAlertAction
+                                                            cancelAction:cancelAlertAction];
     if (alertView) {
       [rootVC presentViewController:alertView animated:YES completion:nil];
+
+      if (isNonHttpRequest) {
+        return; // IMPORTANT: if blod/data(base64) file, return without decision policy, decision policy in downloadAlertAction
+      }
     }
     policy = WKNavigationResponsePolicyCancel;
   }
@@ -2970,15 +2996,22 @@ didFinishNavigation:(WKNavigation *)navigation
                suggestedFilename:(nonnull NSString *)suggestedFilename
                completionHandler:(nonnull void (^)(NSURL * _Nullable))completionHandler API_AVAILABLE(ios(14.5))
 {
-    NSString *temporaryDir = NSTemporaryDirectory();
-    NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
-    NSURL *url = [NSURL fileURLWithPath:fileName];
-    PendingDownload *pendingDownload = [[PendingDownload alloc] initWithFileUrl:url response:response];
-    if (pendingDownloads == nil) {
-        pendingDownloads = [NSMutableDictionary dictionary];
+    NSString *scheme = response.URL.scheme ?: @"";
+    if ([scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"]) {
+        // For download blob/data(base64) file, save file into Download folder
+        NSURL *destination = [Utility uniqueDownloadPathForFilename:(suggestedFilename ?: @"filename")];
+        completionHandler(destination);
+    } else {
+        NSString *temporaryDir = NSTemporaryDirectory();
+        NSString *fileName = [temporaryDir stringByAppendingPathComponent:suggestedFilename];
+        NSURL *url = [NSURL fileURLWithPath:fileName];
+        PendingDownload *pendingDownload = [[PendingDownload alloc] initWithFileUrl:url response:response];
+        if (pendingDownloads == nil) {
+            pendingDownloads = [NSMutableDictionary dictionary];
+        }
+        pendingDownloads[download.originalRequest] = pendingDownload;
+        completionHandler(url);
     }
-    pendingDownloads[download.originalRequest] = pendingDownload;
-    completionHandler(url);
 }
 
 - (void)            download:(WKDownload *) download

@@ -106,41 +106,65 @@ static NSMutableDictionary<NSString *, NSMutableArray *> *_blobData = nil;
     return self;
 }
 
-- (UIAlertController *)downloadAlertFromView:(UIView *)view okAction:(void (^)(id download))okAction {
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id _Nullable download))okAction {
+    return [self downloadAlertFromView:view okAction:okAction cancelAction:nil];
+}
+
+- (UIAlertController *)downloadAlertFromView:(UIView *)view
+                                    okAction:(void (^)(id _Nullable download))okAction
+                                cancelAction:(void (^_Nullable)(void))cancelAction {
+
     NSURL *url = self.request.URL;
-    
-    NSString *host = url.host;
-    NSString *filename = url.lastPathComponent;
-
-    if (!host || !filename) {
-        return nil;
+    NSString *scheme = url.scheme.lowercaseString ?: @"";
+    NSString *host = url.host ?: scheme;
+    NSString *filename = url.lastPathComponent ?: @"";
+    if (filename.length == 0) {
+        filename = self.preflightResponse.suggestedFilename ?: @"download";
     }
+    BOOL isNonHttpRequest = [scheme isEqualToString:@"blob"] || [scheme isEqualToString:@"data"];
 
-    HTTPDownload *download = [[HTTPDownload alloc] initWithCookieStore:self.cookieStore preflightResponse:self.preflightResponse request:self.request];
-
-    NSString *expectedSize = download.totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:download.totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    HTTPDownload *download = nil;
+    NSString *expectedSize = nil;
+    if (isNonHttpRequest) {
+        NSNumber *totalBytesExpected = self.preflightResponse.expectedContentLength > 0 ? @(self.preflightResponse.expectedContentLength) : nil;
+        expectedSize = totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    } else {
+        download = [[HTTPDownload alloc] initWithCookieStore:self.cookieStore
+                                           preflightResponse:self.preflightResponse
+                                                     request:self.request];
+        expectedSize = download.totalBytesExpected ? [NSByteCountFormatter stringFromByteCount:download.totalBytesExpected.longLongValue countStyle:NSByteCountFormatterCountStyleFile] : nil;
+    }
 
     NSString *title = [NSString stringWithFormat:@"%@ - %@", filename, host];
 
     UIAlertController *downloadAlert = [UIAlertController alertControllerWithTitle:title message:nil preferredStyle:UIAlertControllerStyleActionSheet];
 
-    NSString *downloadActionText = [[Utility downloadConfig] objectForKey:@"downloadButton"] ?: @"Download";
+    NSString *downloadActionText = [[Utility downloadConfig] objectForKey:kDownloadButtonKey] ?: @"Download";
     // The download can be of undetermined size, adding expected size only if it's available.
     if (expectedSize) {
         downloadActionText = [NSString stringWithFormat:@"%@ (%@)", downloadActionText, expectedSize];
     }
 
-    UIAlertAction *doneAction = [UIAlertAction actionWithTitle:downloadActionText style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertAction *alertDoneAction = [UIAlertAction actionWithTitle:downloadActionText
+                                                              style:UIAlertActionStyleDefault
+                                                            handler:^(UIAlertAction * _Nonnull action) {
         if (okAction) {
             okAction(download);
         }
     }];
 
-    NSString *cancelButton = [[Utility downloadConfig] objectForKey:@"downloadCancelButton"] ?: @"Cancel";
-    UIAlertAction *cancelAction = [UIAlertAction actionWithTitle: cancelButton style:UIAlertActionStyleCancel handler:nil];
+    NSString *cancelButton = [[Utility downloadConfig] objectForKey:kDownloadCancelButtonKey] ?: @"Cancel";
+    UIAlertAction *alertCancelAction = [UIAlertAction actionWithTitle:cancelButton
+                                                                style:UIAlertActionStyleCancel
+                                                              handler:^(UIAlertAction * _Nonnull action) {
+        if (cancelAction) {
+            cancelAction();
+        }
+    }];
 
-    [downloadAlert addAction:doneAction];
-    [downloadAlert addAction:cancelAction];
+    [downloadAlert addAction:alertDoneAction];
+    [downloadAlert addAction:alertCancelAction];
 
     UIPopoverPresentationController *popover = downloadAlert.popoverPresentationController;
     if (popover) {
