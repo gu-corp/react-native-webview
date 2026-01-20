@@ -99,6 +99,8 @@ export type ShouldStartLoadRequestEvent = Readonly<{
     | 'other';
   mainDocumentURL?: string;
   isTopFrame: boolean;
+  isMainFrame: boolean;
+  isSyntheticClick: boolean;
 }>;
 
 type ScrollEvent = Readonly<{
