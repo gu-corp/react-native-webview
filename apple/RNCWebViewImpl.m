@@ -740,6 +740,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     }
 #endif // !TARGET_OS_OSX
     _webView = nil;
+    initiated = NO;
+    wkWebViewConfig = nil;
     if (_onContentProcessDidTerminate) {
       NSMutableDictionary<NSString *, id> *event = [self baseEvent];
       _onContentProcessDidTerminate(event);

@@ -5,12 +5,18 @@ import com.facebook.react.uimanager.events.Event
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
 /**
+ * Note: In Fabric, codegen derives event names from the spec (onXxx → topXxx),
+ * So the native code must match with RNCWebViewNativeComponent.ts
+ * Prop: onUpdateHistory
+ * Event Name: topUpdateHistory
+ * */
+/**
  * Event emitted when loading has started
  */
 class TopUpdateHistoryEvent(viewId: Int, private val mEventData: WritableMap) :
   Event<TopUpdateHistoryEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "topUpdateHistoryEvent"
+    const val EVENT_NAME = "topUpdateHistory"
   }
 
   override fun getEventName(): String = EVENT_NAME
