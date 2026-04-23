@@ -8,6 +8,22 @@ export interface Spec extends TurboModule {
     shouldStart: boolean,
     lockIdentifier: Double
   ): void;
+
+  // #region Lunascape
+  // Adblock
+  addAdblockRulesFromAsset(name: string, assetPath: string): Promise<boolean>;
+  addAdblockRules(name: string, rules: string): Promise<boolean>;
+  removeAdblockRules(name: string, rules: string): Promise<boolean>;
+
+  // Download manager
+  getDownloadingFiles(): Promise<Object>;
+  deleteDownloadingFileById(downloadId: Double): Promise<boolean>;
+  pauseDownloadingFileById(downloadId: Double): void;
+  resumeDownloadingFileById(
+    downloadId: Double,
+    downloadFolderConfig: string
+  ): Promise<boolean>;
+  // #endregion Lunascape
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('RNCWebViewModule');

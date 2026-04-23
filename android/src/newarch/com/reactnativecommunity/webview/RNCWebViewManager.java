@@ -587,6 +587,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
 
+    @Override
+    @ReactProp(name = "adblockAllowList")
+    public void setAdblockAllowList(RNCWebViewWrapper view, @Nullable ReadableArray allowList) {
+        // iOS only - no-op on Android
+    }
+
     // TODO: disable night mode for now because it is unnecessary
     // @ReactProp(name = "initNightModeValue")
     // public void setInitNightModeValue(RNCWebViewWrapper view, boolean value) {
@@ -604,6 +610,14 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     }
 
     @Override
+    @ReactProp(name = "openNewWindowInWebView")
+    public void setOpenNewWindowInWebView(RNCWebViewWrapper view, boolean value) {}
+
+    @Override
+    @ReactProp(name = "contentType")
+    public void setContentType(RNCWebViewWrapper view, @Nullable String value) {}
+
+    @Override
     public void requestWebViewStatus(RNCWebViewWrapper view) {}
 
     @Override
@@ -611,6 +625,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void captureScreen(RNCWebViewWrapper view,String string) {}
+
+    @Override
+    public void captureScreeniOS(RNCWebViewWrapper view) {}
 
     @Override
     public void findInPage(RNCWebViewWrapper view, String string) {}
@@ -636,4 +653,9 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
 
     @Override
     public void proceedUnsafeSite(RNCWebViewWrapper view, String url) {}
+
+    @Override
+    public void evaluateJavaScript(RNCWebViewWrapper view, String js) {
+        view.getWebView().evaluateJavascriptWithFallback(js);
+    }
 }

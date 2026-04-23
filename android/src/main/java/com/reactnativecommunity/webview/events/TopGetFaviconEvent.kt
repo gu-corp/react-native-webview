@@ -5,11 +5,17 @@ import com.facebook.react.uimanager.events.Event
 import com.facebook.react.uimanager.events.RCTEventEmitter
 
 /**
+ * Note: In Fabric, codegen derives event names from the spec (onXxx → topXxx),
+ * So the native code must match with RNCWebViewNativeComponent.ts
+ * Prop: onGetFavicon
+ * Event Name: topGetFavicon
+ * */
+/**
  * Event emitted when favicon is loaded.
  */
 class TopGetFaviconEvent(viewId: Int, private val mEventData: WritableMap) : Event<TopGetFaviconEvent>(viewId) {
   companion object {
-    const val EVENT_NAME = "onGetFavicon"
+    const val EVENT_NAME = "topGetFavicon"
   }
 
   override fun getEventName(): String = EVENT_NAME
