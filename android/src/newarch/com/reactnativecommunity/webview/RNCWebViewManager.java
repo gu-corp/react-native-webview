@@ -587,6 +587,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
         mRNCWebViewManagerImpl.setAdblockRuleList(view, rules);
     }
 
+    @Override
+    @ReactProp(name = "adblockAllowList")
+    public void setAdblockAllowList(RNCWebViewWrapper view, @Nullable ReadableArray allowList) {
+        // iOS only - no-op on Android
+    }
+
     // TODO: disable night mode for now because it is unnecessary
     // @ReactProp(name = "initNightModeValue")
     // public void setInitNightModeValue(RNCWebViewWrapper view, boolean value) {

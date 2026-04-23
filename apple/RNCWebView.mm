@@ -456,6 +456,59 @@ auto stringToOnLoadingFinishNavigationTypeEnum(std::string value) {
     REMAP_WEBVIEW_PROP(keyboardDisplayRequiresUserAction)
     // Lunascape
     REMAP_WEBVIEW_PROP(adblockDebuggingEnabled)
+    REMAP_WEBVIEW_PROP(openNewWindowInWebView)
+    if (oldViewProps.adblockRuleList != newViewProps.adblockRuleList) {
+        NSMutableArray<NSString *> *ruleList = [NSMutableArray array];
+        for (const auto &item : newViewProps.adblockRuleList) {
+            [ruleList addObject:RCTNSStringFromString(item)];
+        }
+        [_view setAdblockRuleList:ruleList];
+    }
+    if (oldViewProps.adblockAllowList != newViewProps.adblockAllowList) {
+        NSMutableArray<NSString *> *allowList = [NSMutableArray array];
+        for (const auto &item : newViewProps.adblockAllowList) {
+            [allowList addObject:RCTNSStringFromString(item)];
+        }
+        [_view setAdblockAllowList:allowList];
+    }
+    {
+        // Compare additionalUserAgent by size + element fields (struct has no operator==)
+        bool additionalUserAgentChanged = oldViewProps.additionalUserAgent.size() != newViewProps.additionalUserAgent.size();
+        if (!additionalUserAgentChanged) {
+            for (size_t i = 0; i < newViewProps.additionalUserAgent.size(); i++) {
+                if (oldViewProps.additionalUserAgent[i].domain != newViewProps.additionalUserAgent[i].domain ||
+                    oldViewProps.additionalUserAgent[i].extendedUserAgent != newViewProps.additionalUserAgent[i].extendedUserAgent) {
+                    additionalUserAgentChanged = true;
+                    break;
+                }
+            }
+        }
+        if (additionalUserAgentChanged) {
+            NSMutableArray<NSDictionary *> *userAgents = [NSMutableArray array];
+            for (const auto &item : newViewProps.additionalUserAgent) {
+                [userAgents addObject:@{
+                    @"domain": RCTNSStringFromString(item.domain),
+                    @"extendedUserAgent": RCTNSStringFromString(item.extendedUserAgent),
+                }];
+            }
+            [_view setAdditionalUserAgent:userAgents];
+        }
+    }
+    if (oldViewProps.downloadConfig.downloadFolder != newViewProps.downloadConfig.downloadFolder ||
+        oldViewProps.downloadConfig.downloadButton != newViewProps.downloadConfig.downloadButton ||
+        oldViewProps.downloadConfig.downloadCancelButton != newViewProps.downloadConfig.downloadCancelButton) {
+        NSMutableDictionary *config = [NSMutableDictionary dictionary];
+        if (!newViewProps.downloadConfig.downloadFolder.empty()) {
+            [config setValue:RCTNSStringFromString(newViewProps.downloadConfig.downloadFolder) forKey:@"downloadFolder"];
+        }
+        if (!newViewProps.downloadConfig.downloadButton.empty()) {
+            [config setValue:RCTNSStringFromString(newViewProps.downloadConfig.downloadButton) forKey:@"downloadButton"];
+        }
+        if (!newViewProps.downloadConfig.downloadCancelButton.empty()) {
+            [config setValue:RCTNSStringFromString(newViewProps.downloadConfig.downloadCancelButton) forKey:@"downloadCancelButton"];
+        }
+        [_view setDownloadConfig:config];
+    }
     
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* __IPHONE_13_0 */
     REMAP_WEBVIEW_PROP(automaticallyAdjustContentInsets)

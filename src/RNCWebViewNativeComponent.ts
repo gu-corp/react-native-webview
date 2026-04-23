@@ -310,6 +310,10 @@ export interface NativeProps extends ViewProps {
    */
   adblockRuleList?: ReadonlyArray<string>;
   /**
+   * Adblock allow list for whitelisted domains
+   */
+  adblockAllowList?: ReadonlyArray<string>;
+  /**
    * Domain-specific user agent extensions
    */
   additionalUserAgent?: ReadonlyArray<
