@@ -30,7 +30,7 @@
 // <ProductModuleName>-Swift.h
 // The Product Module Name is "react_native_webview" if you install this library to react-native project.
 // The Product Module Name based on the name of the target in the project at Build Settings -> Product Module Name (Xcode)
-#import "react_native_webview-Swift.h" 
+#import "react_native_webview-Swift.h"
 
 #define LocalizeString(key) (NSLocalizedStringFromTableInBundle(key, @"Localizable", resourceBundle, nil))
 
@@ -178,7 +178,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   // common script for all webviews
   WKUserScript *scriptFirefoxObject;
   // Youtube Videos Without Ads
-  WKUserScript *scriptYoutubeAdblock;
+  // WKUserScript *scriptYoutubeAdblock;
   // Picture-in-picture feature on Youtube page
   WKUserScript *scriptYoutubePictureInPicture;
   
@@ -205,7 +205,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   NSString *historyForwardTitle;
 
   // Adblocker
-  EngineHandler *tabAdblock;
+  // EngineHandler *tabAdblock;
 }
 
 - (void)webViewDidClose:(WKWebView *)webView {
@@ -596,7 +596,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   }
 
   // Lunascape logic
-  [self applyAdblockRuleList:wkWebViewConfig];
+  // [self applyAdblockRuleList:wkWebViewConfig];
   if ([wkWebViewConfig urlSchemeHandlerForURLScheme:INTERNAL_URL_SCHEME] == nil) {
     InternalSchemeHandler *handler = [[InternalSchemeHandler alloc] init];
     [wkWebViewConfig setURLSchemeHandler:handler forURLScheme:INTERNAL_URL_SCHEME];
@@ -615,7 +615,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
       _webView = [[RNCWKWebView alloc] initWithFrame:self.bounds configuration: wkWebViewConfig];
     }
 
-    [self setupAdblocker:_webView];
+    // [self setupAdblocker:_webView];
 
     [self setBackgroundColor: _savedBackgroundColor];
 #if !TARGET_OS_OSX
@@ -1692,7 +1692,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                  * you need insert code that run after onShouldStartLoadWithRequest in this callback
                  */
                 // Lunascape logic
-                [self applyAdblockLogic:webView navigationAction:navigationAction];
+                // [self applyAdblockLogic:webView navigationAction:navigationAction];
                 [self injectYoutubePictureInPictureJS:webView request:request];
                 
                 // Allow all navigation by default
@@ -1735,12 +1735,12 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     }
 
     // Lunascape logic
-    [self applyAdblockLogic:webView navigationAction:navigationAction];
+    // [self applyAdblockLogic:webView navigationAction:navigationAction];
     [self injectYoutubePictureInPictureJS:webView request:request];
-    
+
     // Allow all navigation by default
     decisionHandler(WKNavigationActionPolicyAllow);
-    
+
 }
 
 /**
@@ -2482,76 +2482,75 @@ didFinishNavigation:(WKNavigation *)navigation
 
 -(void)applyAdblockRuleList:(WKWebViewConfiguration *)wkWebViewConfig
 {
-    if (_adblockRuleList) {
-        if (@available(iOS 11.0, *)) {
-            WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-            [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-                for (NSString *identifier in identifiers) {
-                    if ([self.adblockRuleList containsObject:identifier]) {
-                        [contentRuleListStore lookUpContentRuleListForIdentifier:identifier
-                                                               completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
-                            if (!error) {
-                                [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
-                            }
-                        }];
-                    }
-                }
-            }];
-        }
-    }
+    // if (_adblockRuleList) {
+    //     if (@available(iOS 11.0, *)) {
+    //         WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+    //         [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+    //             for (NSString *identifier in identifiers) {
+    //                 if ([self.adblockRuleList containsObject:identifier]) {
+    //                     [contentRuleListStore lookUpContentRuleListForIdentifier:identifier
+    //                                                            completionHandler:^(WKContentRuleList *contentRuleList, NSError *error) {
+    //                         if (!error) {
+    //                             [wkWebViewConfig.userContentController addContentRuleList:contentRuleList];
+    //                         }
+    //                     }];
+    //                 }
+    //             }
+    //         }];
+    //     }
+    // }
 }
 
 -(void)applyAdblockLogic:(WKWebView *)webView
         navigationAction:(WKNavigationAction *)navigationAction
 {
-    if (@available(iOS 11.0, *)) {
-        BOOL isAllowWebsite = false;
-        NSURLRequest *request = navigationAction.request;
-        if(scriptYoutubeAdblock == nil) {
-            NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
-            NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
-            NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
-            NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
-            scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock
-                                                          injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
-        }
-        
-        if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
-            isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
-        }
-        
-        bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
+  //  if (@available(iOS 11.0, *)) {
+  //      BOOL isAllowWebsite = false;
+  //      NSURLRequest *request = navigationAction.request;
+  //       if(scriptYoutubeAdblock == nil) {
+  //           NSString *jsFileYoutubeAdblock = @"__youtubeAdblock__";
+  //           NSString *jsFilePathYoutubeAdblock = [resourceBundle pathForResource:jsFileYoutubeAdblock ofType:@"js"];
+  //           NSURL *jsURLYoutubeAdblock = [NSURL fileURLWithPath:jsFilePathYoutubeAdblock];
+  //           NSString *javascriptCodeYoutubeAdblock = [NSString stringWithContentsOfFile:jsURLYoutubeAdblock.path encoding:NSUTF8StringEncoding error:nil];
+  //           scriptYoutubeAdblock = [[WKUserScript alloc] initWithSource:javascriptCodeYoutubeAdblock
+  //                                                         injectionTime:WKUserScriptInjectionTimeAtDocumentStart forMainFrameOnly:YES];
+  //       }
 
-        
-        if (_adblockRuleList != nil && _adblockRuleList.count > 0 && isAllowWebsite == false) {
-            [self applyAdblockRuleList:webView.configuration];
-            
-            // add youtubeAdblock
-            if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false) {
-                [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
-            }
-            
-            // add requestBlockingScript
-            if(tabAdblock != nil) {
-              [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
-            }
-        } else {
-            [webView.configuration.userContentController removeAllContentRuleLists];
-            
-            bool isExistedRequestBlockingScript = false;
-            if(tabAdblock != nil) {
-                isExistedRequestBlockingScript = [tabAdblock isExistedRequestBlockingScriptWithWebview:_webView];
-            }
-            
-            // remove youtubeAdblock and requestBlockingScript --> remove all userScripts and then add common scripts
-            if(
-               (request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true) ||
-               (isExistedRequestBlockingScript == true)
-               ) {
-                [self resetupScripts:_webView.configuration];
-            }
-        }
-    }
+  //       if (_adblockAllowList != nil && _adblockAllowList.count > 0) {
+  //           isAllowWebsite = [_adblockAllowList containsObject:request.mainDocumentURL.host];
+  //       }
+
+  //       bool isExistedScriptAdblock = [webView.configuration.userContentController.userScripts containsObject:scriptYoutubeAdblock];
+
+  //       if (_adblockRuleList != nil && _adblockRuleList.count > 0 && isAllowWebsite == false) {
+  //           // [self applyAdblockRuleList:webView.configuration];
+
+  //           // add youtubeAdblock
+  //           if(request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == false) {
+  //               [webView.configuration.userContentController addUserScript:scriptYoutubeAdblock];
+  //           }
+
+  //           // add requestBlockingScript
+  //           // if(tabAdblock != nil) {
+  //           //   [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
+  //           // }
+  //       } else {
+  //           [webView.configuration.userContentController removeAllContentRuleLists];
+
+  //           // bool isExistedRequestBlockingScript = false;
+  //           // if(tabAdblock != nil) {
+  //           //     isExistedRequestBlockingScript = [tabAdblock isExistedRequestBlockingScriptWithWebview:_webView];
+  //           // }
+
+  //           // remove youtubeAdblock and requestBlockingScript --> remove all userScripts and then add common scripts
+  //           if(
+  //              (request.mainDocumentURL.host != nil && [self isYoutubeWebsite:request.mainDocumentURL.host] && isExistedScriptAdblock == true)
+  //              // || (isExistedRequestBlockingScript == true)
+  //              ) {
+  //               [self resetupScripts:_webView.configuration];
+  //           }
+  //       }
+  //  }
 }
 
 - (bool)isYoutubeWebsite:(NSString *)domain
@@ -2822,20 +2821,20 @@ didFinishNavigation:(WKNavigation *)navigation
 
 // init Adblocker object for a tab - webview
 - (void)setupAdblocker:(WKWebView*)webView {
-  if (@available(iOS 14.0, *)) {
-    if (tabAdblock == nil && webView != nil) {
-      tabAdblock = [[EngineHandler alloc] init];
-      [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
-    }
-    [tabAdblock setAdblockDebuggingEnabledWithValue:_adblockDebuggingEnabled];
-  }
+//   if (@available(iOS 14.0, *)) {
+//     if (tabAdblock == nil && webView != nil) {
+//       tabAdblock = [[EngineHandler alloc] init];
+//       [tabAdblock setupContentScriptWithWebView:webView scriptMessageHandlerWithReply:self];
+//     }
+//     [tabAdblock setAdblockDebuggingEnabledWithValue:_adblockDebuggingEnabled];
+//   }
 }
 
 // Lunascape custom
 - (void)userContentController:(WKUserContentController *)userContentController didReceiveScriptMessage:(WKScriptMessage *)message replyHandler:(void (^)(id _Nullable, NSString * _Nullable))replyHandler {
-  if(tabAdblock != nil) {
-    [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
-  }
+//   if(tabAdblock != nil) {
+//     [tabAdblock userContentController:userContentController didReceive:message replyHandler:replyHandler];
+//   }
 }
 
 // copy sender configuration to configuration parameter. Similar to setUpWkWebViewConfig
@@ -2951,15 +2950,15 @@ didFinishNavigation:(WKNavigation *)navigation
   if (sender.adblockAllowList) {
     _adblockAllowList = [NSArray arrayWithArray:sender.adblockAllowList];
   }
-  [self applyAdblockRuleList:wkWebViewConfig];
+  // [self applyAdblockRuleList:wkWebViewConfig];
 
 }
 
 - (void)setAdblockDebuggingEnabled:(BOOL)adblockDebuggingEnabled {
     _adblockDebuggingEnabled = adblockDebuggingEnabled;
-    if (tabAdblock != nil) {
-      [tabAdblock setAdblockDebuggingEnabledWithValue:adblockDebuggingEnabled];
-    }
+//     if (tabAdblock != nil) {
+//       [tabAdblock setAdblockDebuggingEnabledWithValue:adblockDebuggingEnabled];
+//     }
 }
 
 // TODO: disable night mode for now because it is unnecessary

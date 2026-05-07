@@ -301,10 +301,10 @@ RCT_REMAP_METHOD(addContentRuleList,
                 if (error) {
                     reject(RCTErrorUnspecified, nil, error);
                 } else {
-                    [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
-                        resolve(nil);
-                    }];
-                    // resolve(nil);
+                    // [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
+                    //     resolve(nil);
+                    // }];
+                    resolve(nil);
                 }
             }];
         }
