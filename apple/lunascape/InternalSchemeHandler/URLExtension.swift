@@ -9,17 +9,17 @@ extension URL {
         return host?.contains(":") ?? false
     }
     
-    public var baseDomain: String? {
-        guard !isIPv6, let host = host else { return nil }
-        
-        // If this is just a hostname and not a FQDN, use the entire hostname.
-        if !host.contains(".") {
-            return host
-        }
-        
-        let domainParser = try? DomainParser()
-        return domainParser?.parse(host: host)?.domain
-    }
+//    public var baseDomain: String? {
+//        guard !isIPv6, let host = host else { return nil }
+//        
+//        // If this is just a hostname and not a FQDN, use the entire hostname.
+//        if !host.contains(".") {
+//            return host
+//        }
+//        
+//        let domainParser = try? DomainParser()
+//        return domainParser?.parse(host: host)?.domain
+//    }
     
     init?(idnString: String) {
         guard let encodedString = idnString.addingPercentEncoding(withAllowedCharacters: .urlFragmentAllowed) else {
