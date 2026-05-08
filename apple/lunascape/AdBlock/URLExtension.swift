@@ -17,8 +17,7 @@ extension URL {
             return host
         }
         
-        let domainParser = try? DomainParser()
-        return domainParser?.parse(host: host)?.domain
+        return DomainResolver.shared.baseDomain(for: host)
     }
     
     init?(idnString: String) {

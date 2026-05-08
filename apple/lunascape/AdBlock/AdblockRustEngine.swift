@@ -36,8 +36,7 @@ class AdblockRustEngine {
             let hostString = String(cString: host!)
 
             // Use DomainParser to get the domain
-            if let domainParser = try? DomainParser(),
-               let parsedDomain = domainParser.parse(host: hostString)?.domain {
+            if let parsedDomain = DomainResolver.shared.baseDomain(for: hostString) {
                 if let range = hostString.range(of: parsedDomain) {
                     let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
                     let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
@@ -59,8 +58,7 @@ class AdblockRustEngine {
         let hostString = String(cString: host)
 
         // Use DomainParser to get the domain
-        if let domainParser = try? DomainParser(),
-           let parsedDomain = domainParser.parse(host: hostString)?.domain {
+        if let parsedDomain = DomainResolver.shared.baseDomain(for: hostString) {
             if let range = hostString.range(of: parsedDomain) {
                 let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
                 let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
