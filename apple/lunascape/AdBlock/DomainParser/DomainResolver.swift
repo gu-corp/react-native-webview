@@ -7,14 +7,18 @@ import Foundation
 final class DomainResolver {
     static let shared = DomainResolver()
 
-    private let lock = NSLock()
-    private lazy var parser: DomainParser? = try? DomainParser()
+    private let parser: DomainParser?
 
-    private init() {}
+    private init() {
+        do {
+            self.parser = try DomainParser()
+        } catch {
+            NSLog("[DomainResolver] Failed to init DomainParser: \(error)")
+            self.parser = nil
+        }
+    }
 
     func baseDomain(for host: String) -> String? {
-        lock.lock()
-        defer { lock.unlock() }
         return parser?.parse(host: host)?.domain
     }
 }
