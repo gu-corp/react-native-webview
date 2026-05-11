@@ -247,7 +247,7 @@ ADBLOCK_SOURCES=(
   "$REPO_ROOT/apple/lunascape/AdBlock/DomainParser/RulesParser.swift"
   "$REPO_ROOT/apple/lunascape/AdBlock/DomainParser/BasicDomainParser.swift"
   "$REPO_ROOT/apple/lunascape/AdBlock/DomainParser/DomainParser.swift"
-  "$REPO_ROOT/apple/lunascape/AdBlock/DomainParser/DomainResolver.swift"
+  # "$REPO_ROOT/apple/lunascape/AdBlock/DomainParser/DomainResolver.swift"
 )
 
 echo "Compiling shouldBlock benchmark..."
