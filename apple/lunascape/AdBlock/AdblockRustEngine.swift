@@ -32,24 +32,23 @@ class AdblockRustEngine {
     
     private func setDomainResolver() {
         let resolver: C_DomainResolverCallback = { host, start, end in
-            //self.swiftDomainResolver(host: host!, start: start!, end: end!)
-            let hostString = String(cString: host!)
+            guard let host = host, let start = start, let end = end else { return }
+            let hostString = String(cString: host)
 
             // Use DomainParser to get the domain
-            if let domainParser = try? DomainParser(),
-               let parsedDomain = domainParser.parse(host: hostString)?.domain {
+            if let parsedDomain = DomainResolver.shared.baseDomain(for: hostString) {
                 if let range = hostString.range(of: parsedDomain) {
                     let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
                     let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
-                    start!.pointee = UInt32(startIndex)
-                    end!.pointee = UInt32(endIndex)
+                    start.pointee = UInt32(startIndex)
+                    end.pointee = UInt32(endIndex)
                 } else {
-                    start!.pointee = 0
-                    end!.pointee = UInt32(hostString.count)
+                    start.pointee = 0
+                    end.pointee = UInt32(hostString.count)
                 }
             } else {
-                start!.pointee = 0
-                end!.pointee = UInt32(hostString.count)
+                start.pointee = 0
+                end.pointee = UInt32(hostString.count)
             }
         }
         _ = set_domain_resolver(resolver)
@@ -59,8 +58,7 @@ class AdblockRustEngine {
         let hostString = String(cString: host)
 
         // Use DomainParser to get the domain
-        if let domainParser = try? DomainParser(),
-           let parsedDomain = domainParser.parse(host: hostString)?.domain {
+        if let parsedDomain = DomainResolver.shared.baseDomain(for: hostString) {
             if let range = hostString.range(of: parsedDomain) {
                 let startIndex = hostString.distance(from: hostString.startIndex, to: range.lowerBound)
                 let endIndex = hostString.distance(from: hostString.startIndex, to: range.upperBound)
