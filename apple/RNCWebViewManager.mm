@@ -301,11 +301,21 @@ RCT_REMAP_METHOD(addContentRuleList,
                 if (error) {
                     reject(RCTErrorUnspecified, nil, error);
                 } else {
-                    [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
-                        resolve(nil);
-                    }];
-                    // resolve(nil);
+                    resolve(nil);
                 }
+            }];
+        }
+    });
+}
+
+RCT_REMAP_METHOD(loadEasylistAndBlockList,
+                 loadEasylistAndBlockListWithResolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (@available(iOS 11.0, *)) {
+            [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
+                resolve(nil);
             }];
         }
     });
@@ -315,12 +325,15 @@ RCT_REMAP_METHOD(getContentRuleListNames,
                  getContentRuleListNamesWithResolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
 {
-    if (@available(iOS 11.0, *)) {
-        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-        [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
-            resolve(identifiers);
-        }];
-    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (@available(iOS 11.0, *)) {
+            WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+            [contentRuleListStore getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+                resolve(identifiers);
+            }];
+        }
+    });
 }
 
 RCT_REMAP_METHOD(removeContentRuleList,
@@ -328,17 +341,20 @@ RCT_REMAP_METHOD(removeContentRuleList,
                  resolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
 {
-    if (@available(iOS 11.0, *)) {
-        WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
-        [contentRuleListStore removeContentRuleListForIdentifier:name
-                                               completionHandler:^(NSError *error) {
-            if (error) {
-                reject(RCTErrorUnspecified, nil, error);
-            } else {
-                resolve(nil);
-            }
-        }];
-    }
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (@available(iOS 11.0, *)) {
+            WKContentRuleListStore *contentRuleListStore = WKContentRuleListStore.defaultStore;
+            [contentRuleListStore removeContentRuleListForIdentifier:name
+                                                completionHandler:^(NSError *error) {
+                if (error) {
+                    reject(RCTErrorUnspecified, nil, error);
+                } else {
+                    resolve(nil);
+                }
+            }];
+        }
+    });
 }
 // @end Adblock
 
