@@ -17,21 +17,30 @@
 }
 
 - (int)setDecisionHandler:(DecisionBlock)decisionHandler {
-    int lockIdentifier = self.nextLockIdentifier++;
-
-    [self.decisionHandlers setObject:decisionHandler forKey:@(lockIdentifier)];
-    return lockIdentifier;
+    // decisionHandlers and nextLockIdentifier are accessed from both the main
+    // thread (WKNavigationDelegate) and the JS bridge queue (setResult:...).
+    // NSMutableDictionary is not thread-safe; serialize access to avoid crashes.
+    @synchronized (self) {
+        int lockIdentifier = self.nextLockIdentifier++;
+        [self.decisionHandlers setObject:decisionHandler forKey:@(lockIdentifier)];
+        return lockIdentifier;
+    }
 }
 
 - (void) setResult:(BOOL)shouldStart
  forLockIdentifier:(int)lockIdentifier {
-    DecisionBlock handler = [self.decisionHandlers objectForKey:@(lockIdentifier)];
+    DecisionBlock handler = nil;
+    @synchronized (self) {
+        handler = [self.decisionHandlers objectForKey:@(lockIdentifier)];
+        if (handler != nil) {
+            [self.decisionHandlers removeObjectForKey:@(lockIdentifier)];
+        }
+    }
     if (handler == nil) {
         RCTLogWarn(@"Lock not found");
         return;
     }
     handler(shouldStart);
-    [self.decisionHandlers removeObjectForKey:@(lockIdentifier)];
 }
 
 - (id)init {
