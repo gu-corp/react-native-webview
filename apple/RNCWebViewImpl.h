@@ -188,6 +188,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 // TODO: disable night mode for now because it is unnecessary
 // - (void)setEnableNightMode:(nonnull NSString *)enable;
 - (void)proceedUnsafeSite:(nullable NSString*)url;
+- (void)setPageVisibility:(BOOL)visible;
 
 
 @property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;

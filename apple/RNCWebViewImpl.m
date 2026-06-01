@@ -2617,6 +2617,11 @@ didFinishNavigation:(WKNavigation *)navigation
     }];
 }
 
+- (void)setPageVisibility:(BOOL)visible {
+    NSLog(@"setPageVisibility: %d", visible);
+    
+}
+
 - (void)longPressed:(UILongPressGestureRecognizer*)sender {
     if (sender.state == UIGestureRecognizerStateBegan) {
         longPress = YES;

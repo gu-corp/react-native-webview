@@ -372,6 +372,10 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     js: string
   ) => void;
+  setPageVisibility: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>,
+    visible: boolean
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -400,6 +404,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     // 'setEnableNightMode',
     'proceedUnsafeSite',
     'evaluateJavaScript',
+    'setPageVisibility',
   ],
 });
 

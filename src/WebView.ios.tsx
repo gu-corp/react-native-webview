@@ -227,6 +227,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         getContentTypes: () => {
           return refValiable.current.contentType;
         },
+        setPageVisibility: (visible: boolean) => {
+          webViewRef.current &&
+            Commands.setPageVisibility(webViewRef.current, visible);
+        },
         webViewRef: webViewRef.current,
       }),
       [setViewState, webViewRef]
