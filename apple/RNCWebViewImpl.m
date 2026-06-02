@@ -2618,7 +2618,14 @@ didFinishNavigation:(WKNavigation *)navigation
 }
 
 - (void)setPageVisibility:(BOOL)visible {
-    NSLog(@"setPageVisibility: %d", visible);
+    if(visible == TRUE) {
+      // Only add _webView as a subview if it isn't already attached to self.
+      if (_webView != nil && _webView.superview != self) {
+          [self addSubview:_webView];
+      }
+    } else {
+      [_webView removeFromSuperview];
+    }
     
 }
 
