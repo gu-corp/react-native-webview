@@ -242,6 +242,10 @@ const WebViewComponent = forwardRef<
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, enable);
         },
+        setPageVisibility: (visible: boolean) => {
+          webViewRef.current &&
+            Commands.setPageVisibility(webViewRef.current, visible);
+        },
         webViewRef: webViewRef.current,
         // #endregion Lunascape
       }),

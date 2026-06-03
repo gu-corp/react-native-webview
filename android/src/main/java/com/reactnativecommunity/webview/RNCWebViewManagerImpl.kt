@@ -408,6 +408,7 @@ class RNCWebViewManagerImpl {
     // TODO: disable night mode for now because it is unnecessary
     // val COMMAND_SET_ENABLE_NIGHT_MODE = 18 // should update value
     val COMMAND_PROCEED_UNSAFE_SITE = 18
+    val COMMAND_SET_PAGE_VISIBILITY = 19
     // endregion
 
     fun getCommandsMap(): Map<String, Int>? {
@@ -434,6 +435,7 @@ class RNCWebViewManagerImpl {
         .put("setFontSize", COMMAND_SET_FONT_SIZE)
         // .put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE) // disable night mode for now because it is unnecessary
         .put("proceedUnsafeSite", COMMAND_PROCEED_UNSAFE_SITE)
+        .put("setPageVisibility", COMMAND_SET_PAGE_VISIBILITY)
         .build()
     }
 
@@ -491,6 +493,7 @@ class RNCWebViewManagerImpl {
         // TODO: disable night mode for now because it is unnecessary
         // "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0)) 
         "proceedUnsafeSite" -> webView.proceedUnsafeSite(args.getString(0))
+        "setPageVisibility" -> webView.setPageVisibility(args.getBoolean(0))
       }
     }
 
