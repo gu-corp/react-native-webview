@@ -534,6 +534,10 @@ Class<RCTComponentViewProtocol> RNCWebViewCls(void)
     [_view stopLoading];
 }
 
+- (void)setPageVisibility:(BOOL)visible {
+    [_view setPageVisibility:visible];
+}
+
 - (void)clearFormData {
     // android only
 }
