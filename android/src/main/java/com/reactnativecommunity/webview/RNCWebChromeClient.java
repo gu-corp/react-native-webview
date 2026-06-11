@@ -264,7 +264,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
             requestPermissions(Collections.singletonList(Manifest.permission.ACCESS_FINE_LOCATION));
 
         } else {
-            callback.invoke(origin, true, false);
+            callback.invoke(origin, true, true);
         }
     }
 
@@ -325,7 +325,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
                     && geolocationPermissionOrigin != null) {
 
                 if (granted) {
-                    geolocationPermissionCallback.invoke(geolocationPermissionOrigin, true, false);
+                    geolocationPermissionCallback.invoke(geolocationPermissionOrigin, true, true);
                 } else {
                     geolocationPermissionCallback.invoke(geolocationPermissionOrigin, false, false);
                 }
