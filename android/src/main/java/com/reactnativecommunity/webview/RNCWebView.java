@@ -807,30 +807,10 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         loadUrl(url);
     }
 
-    /**
-     * Drives the W3C Page Visibility API for the page, mirroring the iOS
-     * {@code setPageVisibility} (which detaches/attaches the WKWebView).
-     *
-     * Chromium's WebView derives {@code document.visibilityState} from the
-     * View's visibility, so toggling between VISIBLE and INVISIBLE makes the
-     * page fire a "visibilitychange" event (document.hidden true/false).
-     * We additionally call {@link #onPause()}/{@link #onResume()} so animations,
-     * plugins and geolocation stop while hidden.
-     *
-     * Note: we intentionally avoid {@code pauseTimers()}/{@code resumeTimers()}
-     * because those are global and would freeze every other WebView in the app.
-     */
-    public void setPageVisibility(boolean visible) {
-        if (visible) {
-            // Resume processing first, then mark the view visible so the page
-            // receives the "visible" event while the renderer is active.
-            onResume();
-            setVisibility(View.VISIBLE);
-        } else {
-            // Mark the view hidden first so the page receives the "hidden"
-            // event, then pause extra processing to free resources.
-            setVisibility(View.INVISIBLE);
-            onPause();
-        }
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        // Log.i("Debug",">>>> debug onWindowVisibilityChanged visibility= "+visibility);
+        // play video in background when app is in background, so we don't call super.onWindowVisibilityChanged(visibility) when visibility is GONE
+        if (visibility != View.GONE) super.onWindowVisibilityChanged(View.VISIBLE);
     }
 }

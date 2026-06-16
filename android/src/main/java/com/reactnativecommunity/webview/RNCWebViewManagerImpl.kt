@@ -493,7 +493,7 @@ class RNCWebViewManagerImpl {
         // TODO: disable night mode for now because it is unnecessary
         // "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0)) 
         "proceedUnsafeSite" -> webView.proceedUnsafeSite(args.getString(0))
-        "setPageVisibility" -> webView.setPageVisibility(args.getBoolean(0))
+        "setPageVisibility" -> viewWrapper.setPageVisibility(args.getBoolean(0))
       }
     }
 

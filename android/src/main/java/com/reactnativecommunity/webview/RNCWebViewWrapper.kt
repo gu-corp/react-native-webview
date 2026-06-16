@@ -22,6 +22,35 @@ class RNCWebViewWrapper(context: Context, webView: RNCWebView) : FrameLayout(con
 
   val webView: RNCWebView = getChildAt(0) as RNCWebView
 
+  /**
+   * Drives the W3C Page Visibility API for the page, mirroring the iOS
+   * [setPageVisibility] which detaches/attaches the WKWebView.
+   *
+   * On Android WebView, [View.setVisibility] does NOT update
+   * `document.visibilityState`, but detaching the WebView from its window does:
+   * [View.onDetachedFromWindow] flips the page to "hidden" and
+   * [View.onAttachedToWindow] back to "visible", firing "visibilitychange" each
+   * time. Detaching also suspends the renderer.
+   *
+   * We attach/detach the WebView to/from this wrapper (the library-owned parent),
+   * never the React-Native-managed view tree, so RN's view registry stays
+   * consistent. The WebView instance is preserved (WebContents is not destroyed),
+   * so JS state, scroll and media position survive the detach/re-attach. Because
+   * the wrapper holds the WebView via [webView], no back-reference is stored on
+   * the child and there is nothing extra to clean up.
+   */
+  fun setPageVisibility(visible: Boolean) {
+    if (visible) {
+      if (webView.parent == null) {
+        addView(webView)
+      }
+    } else {
+      if (webView.parent != null) {
+        removeView(webView)
+      }
+    }
+  }
+
   companion object {
     /**
      * A helper to get react tag id by given WebView
