@@ -169,6 +169,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 // TODO: disable night mode for now because it is unnecessary
 // @property (nonatomic, assign) BOOL initNightModeValue;
 @property (nonatomic, assign) BOOL scrollToTop;
+@property (nonatomic, assign) BOOL initPageVisibilityValue;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;

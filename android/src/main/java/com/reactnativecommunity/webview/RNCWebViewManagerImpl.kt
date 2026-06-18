@@ -626,6 +626,16 @@ class RNCWebViewManagerImpl {
         view.settings.saveFormData = false;
     }
 
+    fun setInitPageVisibilityValue(viewWrapper: RNCWebViewWrapper, visible: Boolean) {
+        if (!visible) {
+            // Set the WebView to INVISIBLE 
+            // and pause it to prevent it from loading content in the background and consuming CPU and battery 
+            val view = viewWrapper.webView
+            view.visibility = View.INVISIBLE
+            view.onPause()
+        }
+    }
+
     fun setInjectedJavaScript(viewWrapper: RNCWebViewWrapper, injectedJavaScript: String?) {
         val view = viewWrapper.webView
         view.injectedJS = injectedJavaScript

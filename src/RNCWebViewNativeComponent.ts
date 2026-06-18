@@ -296,6 +296,12 @@ export interface NativeProps extends ViewProps {
    * Enables Adblock debugging. Only available on iOS and Android.
    */
   adblockDebuggingEnabled?: boolean;
+  /**
+   * Initial page visibility state when the webview is created.
+   * When `false`, the webview still loads its source but is not attached/shown,
+   * helping reduce CPU/RAM usage when many webviews live on a single screen.
+   */
+  initPageVisibilityValue?: boolean;
   // TODO: disable night mode for now because it is unnecessary
   // /***
   //  * initial value of night mode

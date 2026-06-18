@@ -453,6 +453,15 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   incognito?: boolean;
 
   /**
+   * Initial page visibility state when the webview is created.
+   * When `false`, the webview still loads its source but is not attached/shown,
+   * helping reduce CPU/RAM usage when many webviews live on a single screen.
+   * @platform ios, android
+   * @default true
+   */
+  initPageVisibilityValue?: boolean;
+
+  /**
    * Boolean value that determines whether the web view bounces
    * when it reaches the edge of the content. The default value is `true`.
    * @platform ios
@@ -1004,6 +1013,15 @@ export interface MacOSWebViewProps extends WebViewSharedProps {
 export interface AndroidWebViewProps extends WebViewSharedProps {
   onNavigationStateChange?: (event: WebViewNavigation) => void;
   onContentSizeChange?: (event: WebViewEvent) => void;
+
+  /**
+   * Initial page visibility state when the webview is created.
+   * When `false`, the webview still loads its source but is not shown (INVISIBLE + onPause),
+   * helping reduce CPU/RAM usage when many webviews live on a single screen.
+   * @platform ios, android
+   * @default true
+   */
+  initPageVisibilityValue?: boolean;
 
   /**
    * Function that is invoked when the `WebView` process crashes or is killed by the OS.

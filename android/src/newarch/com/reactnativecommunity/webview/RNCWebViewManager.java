@@ -168,6 +168,12 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
     }
 
     @Override
+    @ReactProp(name = "initPageVisibilityValue")
+    public void setInitPageVisibilityValue(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setInitPageVisibilityValue(view, value);
+    }
+
+    @Override
     @ReactProp(name = "injectedJavaScript")
     public void setInjectedJavaScript(RNCWebViewWrapper view, @Nullable String value) {
         mRNCWebViewManagerImpl.setInjectedJavaScript(view, value);

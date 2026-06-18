@@ -115,6 +115,7 @@ const WebViewComponent = forwardRef<
       webviewDebuggingEnabled,
       openNewWindowInWebView,
       incognito = false,
+      initPageVisibilityValue = true,
       // for testing ids
       accessible,
       accessibilityLabel,
@@ -429,6 +430,7 @@ const WebViewComponent = forwardRef<
         webviewDebuggingEnabled={webviewDebuggingEnabled}
         openNewWindowInWebView={openNewWindowInWebView}
         incognito={incognito}
+        initPageVisibilityValue={initPageVisibilityValue}
         // for testing ids
         accessible={accessible}
         accessibilityLabel={accessibilityLabel}
