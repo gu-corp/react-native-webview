@@ -93,6 +93,7 @@ This document lays out the current public properties and methods for the React N
 - [`lackPermissionToDownloadMessage`](Reference.md#lackPermissionToDownloadMessage)
 - [`allowsProtectedMedia`](Reference.md#allowsProtectedMedia)
 - [`webviewDebuggingEnabled`](Reference.md#webviewDebuggingEnabled)
+- [`initPageVisibilityValue`](Reference.md#initPageVisibilityValue)
 
 ## Methods Index
 
@@ -106,6 +107,7 @@ This document lays out the current public properties and methods for the React N
 - [`clearHistory`](Reference.md#clearHistory)
 - [`requestFocus`](Reference.md#requestFocus)
 - [`postMessage`](Reference.md#postmessagestr)
+- [`setPageVisibility`](Reference.md#setpagevisibilityvisible)
 
 ---
 
@@ -1718,6 +1720,25 @@ Default is `false`. Supported on iOS as of 16.4, previous versions always allow 
 | ------- | -------- | -------- |
 | boolean | No       | iOS & Android  |
 
+### `initPageVisibilityValue`[⬆](#props-index)
+
+Sets the initial [page visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API) state of the web content when the `WebView` is created. The default value is `true`.
+
+When set to `false`, the `WebView` still loads its `source`, but its content is treated as hidden (`document.visibilityState` reports `hidden` and the `visibilitychange` event fires accordingly). This is useful when many `WebView` instances live on a single screen (e.g. a tabbed browser) and you want to avoid the CPU/RAM cost of off-screen pages running as if visible. The visibility state can be updated at runtime with the [`setPageVisibility`](Reference.md#setpagevisibilityvisible) method.
+
+| Type    | Required | Default | Platform      |
+| ------- | -------- | ------- | ------------- |
+| boolean | No       | true    | iOS, Android  |
+
+Example:
+
+```jsx
+<WebView
+  source={{ uri: 'https://reactnative.dev' }}
+  initPageVisibilityValue={false}
+/>
+```
+
 ## Methods
 
 ### `goForward()`[⬆](#methods-index)
@@ -1809,6 +1830,32 @@ clearHistory();
 ```
 
 Tells this WebView to clear its internal back/forward list. [developer.android.com reference](<https://developer.android.com/reference/android/webkit/WebView.html#clearHistory()>)
+
+### `setPageVisibility(visible)`[⬆](#methods-index)
+
+```javascript
+setPageVisibility(true);
+```
+
+Updates the [page visibility](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API) state of the web content at runtime. Pass `true` to mark the page as visible or `false` to mark it as hidden. This updates `document.visibilityState` inside the page and fires the `visibilitychange` event, allowing the web content to pause/resume work (animations, timers, media, etc.) when it is not on screen.
+
+Use this together with [`initPageVisibilityValue`](Reference.md#initPageVisibilityValue) to control whether off-screen `WebView` instances behave as visible or hidden.
+
+| Platform     |
+| ------------ |
+| iOS, Android |
+
+Example:
+
+```jsx
+const webviewRef = useRef(null);
+
+// Mark the page as hidden, e.g. when the tab is moved to the background
+webviewRef.current?.setPageVisibility(false);
+
+// Mark the page as visible again when the tab is brought to the foreground
+webviewRef.current?.setPageVisibility(true);
+```
 
 ## Other Docs
 

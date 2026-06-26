@@ -223,6 +223,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     super.backgroundColor = [RCTUIColor clearColor];
 #endif // !TARGET_OS_OSX
     _bounces = YES;
+    _initPageVisibilityValue = YES;
     _scrollEnabled = YES;
     _showsHorizontalScrollIndicator = YES;
     _showsVerticalScrollIndicator = YES;
@@ -673,7 +674,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
       longGesture.delegate = self;
       [_webView addGestureRecognizer:longGesture];
       
-    [self addSubview:_webView];
+    // init page visibility value, if the value is false, we will not attach the webview to view hierarchy 
+    if (_initPageVisibilityValue) {
+      [self addSubview:_webView];
+    }
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
     [self visitSource];
@@ -2615,6 +2619,18 @@ didFinishNavigation:(WKNavigation *)navigation
             NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
         }
     }];
+}
+
+- (void)setPageVisibility:(BOOL)visible {
+    if(visible == TRUE) {
+      // Only add _webView as a subview if it isn't already attached to self.
+      if (_webView != nil && _webView.superview != self) {
+          [self addSubview:_webView];
+      }
+    } else {
+      [_webView removeFromSuperview];
+    }
+    
 }
 
 - (void)longPressed:(UILongPressGestureRecognizer*)sender {
