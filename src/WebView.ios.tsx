@@ -98,6 +98,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
       decelerationRate: decelerationRateProp,
       onShouldStartLoadWithRequest: onShouldStartLoadWithRequestProp,
       // #region Lunascape
+      initPageVisibilityValue = true,
       onCaptureScreen,
       onGetFavicon: onGetFaviconProp,
       onShouldCreateNewWindow: onShouldCreateNewWindowProp,
@@ -226,6 +227,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         },
         getContentTypes: () => {
           return refValiable.current.contentType;
+        },
+        setPageVisibility: (visible: boolean) => {
+          webViewRef.current &&
+            Commands.setPageVisibility(webViewRef.current, visible);
         },
         webViewRef: webViewRef.current,
       }),
@@ -371,6 +376,7 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         // @ts-expect-error old arch only
         source={sourceResolved}
         // #region Lunascape
+        initPageVisibilityValue={initPageVisibilityValue}
         onGetFavicon={onGetFavicon}
         onCaptureScreen={onCaptureScreen}
         onShouldCreateNewWindow={onShouldCreateNewWindow}

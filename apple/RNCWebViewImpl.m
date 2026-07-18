@@ -157,6 +157,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   BOOL _savedHideKeyboardAccessoryView;
   BOOL _savedKeyboardDisplayRequiresUserAction;
 
+  // Tracks the last requested page visibility so async media-state checks can
+  // detect that the tab became active again before they resolved.
+  BOOL _pageVisible;
+
   // Workaround for StatusBar appearance bug for iOS 12
   // https://github.com/react-native-webview/react-native-webview/issues/62
   BOOL _isFullScreenVideoOpen;
@@ -223,6 +227,8 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     super.backgroundColor = [RCTUIColor clearColor];
 #endif // !TARGET_OS_OSX
     _bounces = YES;
+    _initPageVisibilityValue = YES;
+    _pageVisible = YES;
     _scrollEnabled = YES;
     _showsHorizontalScrollIndicator = YES;
     _showsVerticalScrollIndicator = YES;
@@ -673,7 +679,11 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
       longGesture.delegate = self;
       [_webView addGestureRecognizer:longGesture];
       
-    [self addSubview:_webView];
+    // init page visibility value, if the value is false, we will not attach the webview to view hierarchy
+    _pageVisible = _initPageVisibilityValue;
+    if (_initPageVisibilityValue) {
+      [self addSubview:_webView];
+    }
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
     [self visitSource];
@@ -2615,6 +2625,41 @@ didFinishNavigation:(WKNavigation *)navigation
             NSLog(@"Print FAILED! with error: %@", error.localizedDescription);
         }
     }];
+}
+
+- (void)setPageVisibility:(BOOL)visible {
+    _pageVisible = visible;
+    if(visible == TRUE) {
+      // Only add _webView as a subview if it isn't already attached to self.
+      if (_webView != nil && _webView.superview != self) {
+          [self addSubview:_webView];
+      }
+      return;
+    }
+#if !TARGET_OS_OSX
+    // Background media playback (YouTube audio, Picture in Picture) is a core
+    // product feature: detaching the WKWebView stops it. When media is playing,
+    // keep the webview attached so the page stays "visible" and playback continues.
+    if (@available(iOS 15.0, *)) {
+      __weak __typeof__(self) weakSelf = self;
+      [_webView requestMediaPlaybackStateWithCompletionHandler:^(WKMediaPlaybackState state) {
+        __typeof__(self) strongSelf = weakSelf;
+        if (strongSelf == nil) {
+          return;
+        }
+        // The tab may have become active again while the async query was in flight.
+        if (strongSelf->_pageVisible) {
+          return;
+        }
+        if (state == WKMediaPlaybackStatePlaying) {
+          return;
+        }
+        [strongSelf->_webView removeFromSuperview];
+      }];
+      return;
+    }
+#endif // !TARGET_OS_OSX
+    [_webView removeFromSuperview];
 }
 
 - (void)longPressed:(UILongPressGestureRecognizer*)sender {

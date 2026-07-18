@@ -115,6 +115,7 @@ const WebViewComponent = forwardRef<
       webviewDebuggingEnabled,
       openNewWindowInWebView,
       incognito = false,
+      initPageVisibilityValue = true,
       // for testing ids
       accessible,
       accessibilityLabel,
@@ -241,6 +242,10 @@ const WebViewComponent = forwardRef<
         proceedUnsafeSite: (enable: string) => {
           webViewRef.current &&
             Commands.proceedUnsafeSite(webViewRef.current, enable);
+        },
+        setPageVisibility: (visible: boolean) => {
+          webViewRef.current &&
+            Commands.setPageVisibility(webViewRef.current, visible);
         },
         webViewRef: webViewRef.current,
         // #endregion Lunascape
@@ -425,6 +430,7 @@ const WebViewComponent = forwardRef<
         webviewDebuggingEnabled={webviewDebuggingEnabled}
         openNewWindowInWebView={openNewWindowInWebView}
         incognito={incognito}
+        initPageVisibilityValue={initPageVisibilityValue}
         // for testing ids
         accessible={accessible}
         accessibilityLabel={accessibilityLabel}

@@ -806,4 +806,59 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         }
         loadUrl(url);
     }
+
+    /**
+     * Drives the W3C Page Visibility API for the page, mirroring the iOS
+     * {@code setPageVisibility} (which detaches/attaches the WKWebView).
+     *
+     * Chromium's WebView derives {@code document.visibilityState} from the
+     * View's visibility, so toggling between VISIBLE and INVISIBLE makes the
+     * page fire a "visibilitychange" event (document.hidden true/false).
+     * We additionally call {@link #onPause()}/{@link #onResume()} so animations,
+     * plugins and geolocation stop while hidden.
+     *
+     * Note: we intentionally avoid {@code pauseTimers()}/{@code resumeTimers()}
+     * because those are global and would freeze every other WebView in the app.
+     */
+    public void setPageVisibility(boolean visible) {
+        mPageVisible = visible;
+        if (visible) {
+            // Resume processing first, then mark the view visible so the page
+            // receives the "visible" event while the renderer is active.
+            onResume();
+            setVisibility(View.VISIBLE);
+        } else {
+            // Background media playback (YouTube audio, Picture in Picture) is a
+            // core product feature, and both the "hidden" event and onPause()
+            // stop it. Only hide the page when no media is playing.
+            evaluateJavascript(IS_MEDIA_PLAYING_SCRIPT, value -> {
+                // The tab may have become active again while the async check ran.
+                if (mPageVisible) {
+                    return;
+                }
+                if ("true".equals(value)) {
+                    return;
+                }
+                // Mark the view hidden first so the page receives the "hidden"
+                // event, then pause extra processing to free resources.
+                setVisibility(View.INVISIBLE);
+                onPause();
+            });
+        }
+    }
+
+    // Tracks the last requested page visibility so the async media-state check
+    // can detect that the tab became active again before it resolved.
+    private boolean mPageVisible = true;
+
+    // Main-frame check only: media inside cross-origin iframes is not visible to
+    // this script, which matches the main YouTube playback use case.
+    private static final String IS_MEDIA_PLAYING_SCRIPT =
+        "(function(){" +
+        "var media=document.querySelectorAll('video,audio');" +
+        "for(var i=0;i<media.length;i++){" +
+        "if(!media[i].paused&&!media[i].ended&&media[i].readyState>2){return true;}" +
+        "}" +
+        "return false;" +
+        "})()";
 }
