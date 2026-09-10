@@ -173,6 +173,12 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
 @property (nonatomic, copy) NSDictionary * _Nullable downloadConfig;
+/**
+ * Overrides the WKWebView's UIUserInterfaceStyle so web content resolves
+ * `prefers-color-scheme` from the app theme instead of the device Dark Mode.
+ * Mirrors UIUserInterfaceStyle: 0 = unspecified (follow OS), 1 = light, 2 = dark.
+ */
+@property (nonatomic, assign) NSInteger overrideUserInterfaceStyleValue;
 
 
 - (instancetype _Nonnull )initWithConfiguration:(WKWebViewConfiguration*_Nonnull)configuration from:(RNCWebViewImpl*_Nonnull)parentView;

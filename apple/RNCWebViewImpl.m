@@ -673,6 +673,10 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
       longGesture.delegate = self;
       [_webView addGestureRecognizer:longGesture];
       
+    // Apply the app-theme appearance before the first page load so the initial paint
+    // already matches the host app's theme (see #5268).
+    [self applyOverrideUserInterfaceStyle];
+
     [self addSubview:_webView];
     [self setHideKeyboardAccessoryView: _savedHideKeyboardAccessoryView];
     [self setKeyboardDisplayRequiresUserAction: _savedKeyboardDisplayRequiresUserAction];
@@ -1004,6 +1008,26 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
   _additionalUserAgent = additionalUserAgent;
 }
 #endif // !TARGET_OS_OSX
+
+// Force web content to resolve `prefers-color-scheme` from the host app's own theme
+// instead of the device Dark Mode setting.
+// See https://github.com/gu-corp/lunascape-mobile/issues/5268
+- (void)setOverrideUserInterfaceStyleValue:(NSInteger)overrideUserInterfaceStyleValue
+{
+  _overrideUserInterfaceStyleValue = overrideUserInterfaceStyleValue;
+  [self applyOverrideUserInterfaceStyle];
+}
+
+- (void)applyOverrideUserInterfaceStyle
+{
+#if !TARGET_OS_OSX
+  UIUserInterfaceStyle style = (UIUserInterfaceStyle)_overrideUserInterfaceStyleValue;
+  // Also set it on the container: a WKWebView inherits the trait collection from its
+  // superview, so this still applies when _webView has not been created yet.
+  self.overrideUserInterfaceStyle = style;
+  _webView.overrideUserInterfaceStyle = style;
+#endif // !TARGET_OS_OSX
+}
 
 - (void)visitSource
 {

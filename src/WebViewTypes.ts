@@ -832,6 +832,17 @@ export interface IOSWebViewProps extends WebViewSharedProps {
 
   scrollToTop?: boolean;
   adjustOffset?: object;
+
+  /**
+   * Overrides the underlying WKWebView's `overrideUserInterfaceStyle` so that web
+   * content resolves `prefers-color-scheme` from the host app's theme rather than the
+   * device Dark Mode setting.
+   *
+   * Mirrors iOS `UIUserInterfaceStyle`: 0 = unspecified (follow OS), 1 = light, 2 = dark.
+   * @platform ios
+   * @default 0
+   */
+  overrideUserInterfaceStyleValue?: number;
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
