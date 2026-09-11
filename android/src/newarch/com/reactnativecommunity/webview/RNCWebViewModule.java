@@ -70,17 +70,17 @@ public class RNCWebViewModule extends NativeRNCWebViewModuleSpec {
     /**
      * Adblock
      * */
-    @ReactMethod
+    @Override
     public void addAdblockRulesFromAsset(String name, String assetPath, final Promise promise) {
         mRNCWebViewModuleImpl.addAdblockRulesFromAsset(name, assetPath, promise);
     }
 
-    @ReactMethod
+    @Override
     public void addAdblockRules(String name, String rules, final Promise promise) {
         mRNCWebViewModuleImpl.addAdblockRules(name, rules, promise);
     }
 
-    @ReactMethod
+    @Override
     public void removeAdblockRules(String name, String rules, final Promise promise) {
         mRNCWebViewModuleImpl.removeAdblockRules(name, rules, promise);
     }
@@ -95,7 +95,7 @@ public class RNCWebViewModule extends NativeRNCWebViewModuleSpec {
     /**
      * Get list downloading files
      * */
-    @ReactMethod
+    @Override
     public void getDownloadingFiles(final Promise promise) {
         mRNCWebViewModuleImpl.getDownloadingFiles(promise);
     }
@@ -103,25 +103,25 @@ public class RNCWebViewModule extends NativeRNCWebViewModuleSpec {
     /**
      *  Delete downloading file by download id
      * */
-    @ReactMethod
-    public void deleteDownloadingFileById(int downloadId, final Promise promise) {
-        mRNCWebViewModuleImpl.deleteDownloadingFileById(downloadId, promise);
+    @Override
+    public void deleteDownloadingFileById(double downloadId, final Promise promise) {
+        mRNCWebViewModuleImpl.deleteDownloadingFileById((int) downloadId, promise);
     }
 
     /**
      * Pause downloading file by downloadId
      * */
-    @ReactMethod
-    public void pauseDownloadingFileById(int downloadId) {
-        mRNCWebViewModuleImpl.pauseDownloadingFileById(downloadId);
+    @Override
+    public void pauseDownloadingFileById(double downloadId) {
+        mRNCWebViewModuleImpl.pauseDownloadingFileById((int) downloadId);
     }
 
     /**
      * Resume downloading file by downloadId
      * */
-    @ReactMethod
-    public void resumeDownloadingFileById(int downloadId, String downloadFolderConfig, final Promise promise) {
-        mRNCWebViewModuleImpl.resumeDownloadingFileById(downloadId, downloadFolderConfig, promise);
+    @Override
+    public void resumeDownloadingFileById(double downloadId, String downloadFolderConfig, final Promise promise) {
+        mRNCWebViewModuleImpl.resumeDownloadingFileById((int) downloadId, downloadFolderConfig, promise);
     }
 
     /**

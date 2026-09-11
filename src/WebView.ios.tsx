@@ -373,14 +373,15 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
         style={webViewStyles}
         hasOnFileDownload={!!onFileDownload}
         ref={webViewRef}
-        // @ts-expect-error old arch only
         source={sourceResolved}
         // #region Lunascape
         initPageVisibilityValue={initPageVisibilityValue}
         onGetFavicon={onGetFavicon}
         onCaptureScreen={onCaptureScreen}
         onShouldCreateNewWindow={onShouldCreateNewWindow}
+        // @ts-ignore - Lunascape custom prop, type differs between old/new arch
         onNavigationStateChange={updateNavigationState}
+        // @ts-ignore - Lunascape custom prop, type differs between old/new arch
         onChangeContentType={onChangeContentType}
         // #endregion Lunascape
         {...nativeConfig?.props}

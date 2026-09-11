@@ -395,8 +395,7 @@ const WebViewComponent = forwardRef<
         hasOnOpenWindowEvent={onOpenWindowProp !== undefined}
         onShouldStartLoadWithRequest={onShouldStartLoadWithRequest}
         ref={webViewRef}
-        // TODO: find a better way to type this.
-        // @ts-expect-error source is old arch
+        // @ts-ignore - source prop handled differently in old/new arch
         source={sourceResolved}
         newSource={newSource}
         style={webViewStyles}
@@ -416,6 +415,7 @@ const WebViewComponent = forwardRef<
         injectedJavaScriptObject={JSON.stringify(injectedJavaScriptObject)}
         // #region Lunascape
         onShouldCreateNewWindow={onCreateNewWindow}
+        // @ts-ignore - Lunascape custom prop, type differs between old/new arch
         onNavigationStateChange={updateNavigationState}
         onGetFavicon={onGetFavicon}
         onReceiveWebViewStatus={onReceiveWebViewStatus}

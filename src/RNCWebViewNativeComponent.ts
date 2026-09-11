@@ -309,6 +309,46 @@ export interface NativeProps extends ViewProps {
   //  * @default false
   //  */
   // initNightModeValue?: boolean;
+
+  // #region Lunascape props
+  /**
+   * Adblock rule list for AdblockEngine
+   */
+  adblockRuleList?: ReadonlyArray<string>;
+  /**
+   * Adblock allow list for whitelisted domains
+   */
+  adblockAllowList?: ReadonlyArray<string>;
+  /**
+   * Domain-specific user agent extensions
+   */
+  additionalUserAgent?: ReadonlyArray<
+    Readonly<{ domain: string; extendedUserAgent: string }>
+  >;
+  /**
+   * Download folder and button customization
+   */
+  downloadConfig?: Readonly<{
+    downloadFolder?: string;
+    downloadButton?: string;
+    downloadCancelButton?: string;
+  }>;
+  /**
+   * Open links in same webview instead of new window
+   */
+  openNewWindowInWebView?: boolean;
+
+  // Lunascape events
+  onShouldCreateNewWindow?: DirectEventHandler<WebViewNavigationEvent>;
+  onNavigationStateChange?: DirectEventHandler<WebViewNavigationEvent>;
+  onGetFavicon?: DirectEventHandler<WebViewMessageEvent>;
+  onCaptureScreen?: DirectEventHandler<WebViewMessageEvent>;
+  onWebViewClosed?: DirectEventHandler<WebViewNativeEvent>;
+  onUpdateHistory?: DirectEventHandler<WebViewMessageEvent>;
+  onReceiveWebViewStatus?: DirectEventHandler<WebViewNativeProgressEvent>;
+  onChangeContentType?: DirectEventHandler<WebViewMessageEvent>;
+  onVideoFullScreen?: DirectEventHandler<WebViewNativeEvent>;
+  // #endregion Lunascape
 }
 
 export interface NativeCommands {
