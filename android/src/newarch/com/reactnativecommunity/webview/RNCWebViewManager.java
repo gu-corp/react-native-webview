@@ -511,6 +511,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper>
   }
 
   @Override
+  public void setPageVisibility(RNCWebViewWrapper view, boolean visible) {
+      view.getWebView().setPageVisibility(visible);
+  }
+
+  @Override
   public void clearCache(RNCWebViewWrapper view, boolean includeDiskFiles) {
       view.getWebView().clearCache(includeDiskFiles);
   }
