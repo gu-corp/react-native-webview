@@ -833,16 +833,6 @@ export interface IOSWebViewProps extends WebViewSharedProps {
   scrollToTop?: boolean;
   adjustOffset?: object;
 
-  /**
-   * Overrides the underlying WKWebView's `overrideUserInterfaceStyle` so that web
-   * content resolves `prefers-color-scheme` from the host app's theme rather than the
-   * device Dark Mode setting.
-   *
-   * Mirrors iOS `UIUserInterfaceStyle`: 0 = unspecified (follow OS), 1 = light, 2 = dark.
-   * @platform ios
-   * @default 0
-   */
-  overrideUserInterfaceStyleValue?: number;
 }
 
 export interface MacOSWebViewProps extends WebViewSharedProps {
@@ -1248,6 +1238,23 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
 }
 
 export interface WebViewSharedProps extends ViewProps {
+  /**
+   * Makes web content resolve `prefers-color-scheme` from the host app's own theme
+   * rather than the device Dark Mode setting.
+   *
+   * On iOS this sets the WKWebView's `overrideUserInterfaceStyle`. On Android it
+   * overrides the night-mode qualifier of the configuration Chromium reads
+   * `android.R.attr.isLightTheme` from.
+   *
+   * Android applies a change to WebViews created afterwards: Chromium resolves the
+   * appearance while a WebView starts up and then caches it, so a tab already showing
+   * a page keeps the scheme it loaded with until it is recreated. iOS applies at any time.
+   *
+   * Follows iOS `UIUserInterfaceStyle`: 0 = unspecified (follow OS), 1 = light, 2 = dark.
+   * @default 0
+   */
+  overrideUserInterfaceStyleValue?: number;
+
   /**
    * Loads static html or a uri (with optional headers) in the WebView.
    */

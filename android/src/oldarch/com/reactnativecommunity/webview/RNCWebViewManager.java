@@ -114,6 +114,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         mRNCWebViewManagerImpl.setDownloadingMessage(value);
     }
 
+    @ReactProp(name = "overrideUserInterfaceStyleValue")
+    public void setOverrideUserInterfaceStyleValue(RNCWebViewWrapper view, int value) {
+        mRNCWebViewManagerImpl.setOverrideUserInterfaceStyleValue(view, value);
+    }
+
     @ReactProp(name = "forceDarkOn")
     public void setForceDarkOn(RNCWebViewWrapper view, boolean value) {
         mRNCWebViewManagerImpl.setForceDarkOn(view, value);
