@@ -283,6 +283,7 @@ RCT_EXPORT_VIEW_PROPERTY(adblockAllowList, NSArray<NSString>)
 // TODO: disable night mode for now because it is unnecessary
 // RCT_EXPORT_VIEW_PROPERTY(initNightModeValue, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(scrollToTop, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(overrideUserInterfaceStyleValue, NSInteger)
 RCT_EXPORT_VIEW_PROPERTY(openNewWindowInWebView, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(adjustOffset, CGPoint)
 

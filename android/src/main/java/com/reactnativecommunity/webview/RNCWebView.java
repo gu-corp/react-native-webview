@@ -96,9 +96,15 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
      * Activity Context is required for creation of dialogs internally by WebView
      * Reactive Native needed for access to ReactNative internal system functionality
      */
+    private final ThemedReactContext mThemedReactContext;
+
     public RNCWebView(ThemedReactContext reactContext) {
-        super(reactContext);
-        mMessagingJSModule = ((ThemedReactContext) this.getContext()).getReactApplicationContext().getJSModule(RNCWebViewMessagingModule.class);
+        // Give the WebView a context of its own so `overrideUserInterfaceStyleValue` can
+        // override the night-mode qualifier Chromium reads, without disturbing the
+        // configuration React Native shares with the rest of the view tree.
+        super(new RNCWebViewThemeContext(reactContext));
+        mThemedReactContext = reactContext;
+        mMessagingJSModule = reactContext.getReactApplicationContext().getJSModule(RNCWebViewMessagingModule.class);
         progressChangedFilter = new ProgressChangedFilter();
         setFindListener(findListener);
     }
@@ -449,7 +455,8 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     }
 
   public ThemedReactContext getThemedReactContext() {
-    return (ThemedReactContext) this.getContext();
+    // Not a cast of getContext(): that is the RNCWebViewThemeContext wrapping it.
+    return mThemedReactContext;
   }
 
   public ReactApplicationContext getReactApplicationContext() {

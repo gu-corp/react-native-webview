@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview
 
 import android.app.DownloadManager
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
@@ -727,6 +728,34 @@ class RNCWebViewManagerImpl {
 
     fun setDownloadingMessage(value: String?) {
         mDownloadingMessage = value
+    }
+
+    /**
+     * Makes web content resolve `prefers-color-scheme` from the host app's own appearance
+     * rather than the device Dark Mode setting, by overriding the night-mode qualifier of
+     * the configuration the WebView reads.
+     *
+     * `WebSettingsCompat.setForceDark` cannot be used for this: it is a no-op once the app
+     * targets SDK 33 or above.
+     *
+     * Chromium resolves the appearance while the WebView starts up and then caches it,
+     * refreshing only when the OS itself reports a configuration change -- nothing a host
+     * can call reaches it in between. A change therefore applies to WebViews created from
+     * here on; one already showing a page keeps the scheme it loaded with until it is
+     * recreated. `Unspecified` drops the override so the WebView follows the OS again.
+     *
+     * 0 = unspecified (follow the OS), 1 = light, 2 = dark -- matching iOS
+     * `UIUserInterfaceStyle`. See the `overrideUserInterfaceStyleValue` prop.
+     */
+    fun setOverrideUserInterfaceStyleValue(viewWrapper: RNCWebViewWrapper, value: Int) {
+        val context = viewWrapper.webView.context as? RNCWebViewThemeContext ?: return
+        context.setNightMode(
+            when (value) {
+                1 -> Configuration.UI_MODE_NIGHT_NO
+                2 -> Configuration.UI_MODE_NIGHT_YES
+                else -> 0
+            }
+        )
     }
 
     fun setForceDarkOn(viewWrapper: RNCWebViewWrapper, enabled: Boolean) {
