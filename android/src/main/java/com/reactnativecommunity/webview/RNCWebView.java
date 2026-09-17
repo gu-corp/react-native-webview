@@ -316,12 +316,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
         // Lunascape custom
         if (getSettings().getJavaScriptEnabled()) {
-            // TODO: disable Night mode for now because it is unnecessary
             // Inject night mode script
-            // String jsNightMode = loadNightModeScriptFile();
-            // if (jsNightMode != null) {
-            //     this.evaluateJavascriptWithFallback(jsNightMode);
-            // }
+            String jsNightMode = loadNightModeScriptFile();
+            if (jsNightMode != null) {
+                this.evaluateJavascriptWithFallback(jsNightMode);
+            }
 
             // Inject js for Youtube
             if (isYoutube) {
@@ -333,7 +332,6 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
                 String jsYoutubePictureInPictureSupport = loadYoutubePictureInPictureSupportScriptFile();
                 if (jsYoutubePictureInPictureSupport != null) {
                     this.evaluateJavascriptWithFallback(jsYoutubePictureInPictureSupport);
-                }
             }
         }
     }
@@ -516,8 +514,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     protected String activeUrl;
     protected String DOWNLOAD_FOLDER = "";
 
-    // TODO: disable night mode for now because it is unnecessary
-    // private boolean initNightModeValue = false;
+    private boolean initNightModeValue = false;
     
     // this is a static variable to store the new window instance then we can keep it alive until the new window is added to the parent view
     private static RNCWebView newWindow;
@@ -588,10 +585,9 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         sendContentSizeChangeEvents = parentView.sendContentSizeChangeEvents;
     }
 
-    // TODO: disable night mode for now because it is unnecessary
-    // public void setInitNightModeValue(boolean value) {
-    //     this.initNightModeValue = value;
-    // }
+    public void setInitNightModeValue(boolean value) {
+        this.initNightModeValue = value;
+    }
 
     public void requestWebViewStatus() {
       if (mRNCWebViewClient != null) {
@@ -642,24 +638,22 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         return jsString;
     }
 
-
-    // // TODO: disable Night mode for now because it is unnecessary
-    // public String loadNightModeScriptFile() {
-    //     String jsString = null;
-    //     try {
-    //         InputStream fileInputStream;
-    //         fileInputStream = this.getContext().getAssets().open("NightModeScript.js");
-    //         byte[] readBytes = new byte[fileInputStream.available()];
-    //         fileInputStream.read(readBytes);
-    //         jsString = new String(readBytes);
-    //         jsString = jsString.replace("$<night_mode_init_value>", initNightModeValue ? "true" : "false" );
-    //     } catch (FileNotFoundException e) {
-    //         e.printStackTrace();
-    //     } catch (IOException e) {
-    //         e.printStackTrace();
-    //     }
-    //     return jsString;
-    // }
+    public String loadNightModeScriptFile() {
+        String jsString = null;
+        try {
+            InputStream fileInputStream;
+            fileInputStream = this.getContext().getAssets().open("NightModeScript.js");
+            byte[] readBytes = new byte[fileInputStream.available()];
+            fileInputStream.read(readBytes);
+            jsString = new String(readBytes);
+            jsString = jsString.replace("$<night_mode_init_value>", initNightModeValue ? "true" : "false" );
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return jsString;
+    }
 
     public String loadYoutubeBackgroundPlaybackScriptFile() {
         String jsString = null;
@@ -791,14 +785,13 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         webView.getSettings().setTextZoom((int) size);
     }
 
-    // TODO: disable night mode for now because it is unnecessary
-    // public void setEnableNightMode(String enable) {
-    //     if (mRNCWebViewClient != null) {
-    //       mRNCWebViewClient.mEnableNightMode = Boolean.parseBoolean(enable);
-    //     }
-    //     String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
-    //     this.loadUrl("javascript:" + jsNightMode);
-    // }
+    public void setEnableNightMode(String enable) {
+        if (mRNCWebViewClient != null) {
+          mRNCWebViewClient.mEnableNightMode = Boolean.parseBoolean(enable);
+        }
+        String jsNightMode = "window.NightMode.setEnabled(" + enable + ");";
+        this.loadUrl("javascript:" + jsNightMode);
+    }
 
     public void proceedUnsafeSite(String url) {
         if (mRNCWebViewClient != null) {
