@@ -166,8 +166,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockRuleList;
 @property (nonatomic, assign) BOOL adblockDebuggingEnabled;
 @property (nonatomic, copy) NSArray<NSString *> * _Nullable adblockAllowList;
-// TODO: disable night mode for now because it is unnecessary
-// @property (nonatomic, assign) BOOL initNightModeValue;
+@property (nonatomic, assign) BOOL initNightModeValue;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
@@ -185,8 +184,7 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 - (void)findPrevious;
 - (void)removeAllHighlights;
 - (void)setFontSize:(nonnull NSNumber *)size;
-// TODO: disable night mode for now because it is unnecessary
-// - (void)setEnableNightMode:(nonnull NSString *)enable;
+- (void)setEnableNightMode:(nonnull NSString *)enable;
 - (void)proceedUnsafeSite:(nullable NSString*)url;
 
 
