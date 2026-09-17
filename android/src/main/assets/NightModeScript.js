@@ -124,8 +124,12 @@ Object.defineProperty(window.NightMode, "setEnabled", {
     observer.disconnect();
 
     // Remove the "invert" CSS class name from all elements
-    // it was previously applied to.
-    invertedBackgroundImageElements.forEach(removeInvertFilterFromElement);
+    // it was previously applied to. The list is null when Night Mode was never
+    // turned on for this document -- the host calls setEnabled(false) after every
+    // page load, so this runs far more often than it is actually needed.
+    if (invertedBackgroundImageElements) {
+      invertedBackgroundImageElements.forEach(removeInvertFilterFromElement);
+    }
 
     // Remove the NightMode CSS from the document.
     var styleElementParentNode = styleElement.parentNode;
