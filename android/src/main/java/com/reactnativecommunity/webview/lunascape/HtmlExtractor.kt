@@ -1,7 +1,5 @@
 package com.reactnativecommunity.webview.lunascape
 
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.Response
 import org.jsoup.parser.Parser
 import java.io.BufferedReader
@@ -59,18 +57,18 @@ class HtmlExtractor {
             return charset
         }
 
-        fun findHtmlCharsetFromRequest(httpClient: OkHttpClient?, request: Request?): String? {
-            var charset: String? = null
-            if (httpClient == null || request == null) return null
+        /**
+         * Find the charset declared in the HTML of a response that is already open, by reading
+         * ahead in its body. The body itself is left untouched for the WebView.
+         */
+        fun findHtmlCharsetFromResponse(response: Response?): String? {
+            if (response == null) return null
 
+            var charset: String? = null
             try {
-                val response: Response = httpClient.newCall(request).execute()
-                response.body?.let { body ->
-                    val inputStream = body.byteStream()
-                    charset = readCharset(inputStream)
-                    inputStream.close()
-                }
-                response.close()
+                val inputStream = response.peekBody(LunascapeUtils.HTML_SNIFF_BYTES).byteStream()
+                charset = readCharset(inputStream)
+                inputStream.close()
             } catch (e: Exception) {
                 e.printStackTrace()
             }

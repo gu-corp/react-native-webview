@@ -87,11 +87,7 @@ public class RNCWebViewClient extends WebViewClient {
 
     public RNCWebViewClient(ReactContext reactContext) {
         mReactContext = reactContext;
-        httpClient = new okhttp3.OkHttpClient.Builder()
-          .followRedirects(false)
-          .followSslRedirects(false)
-          .cookieJar(new RNCWebViewCookieJar())
-          .build();
+        httpClient = getSharedHttpClient();
     }
 
     public void setIgnoreErrFailedForThisURL(@Nullable String url) {
@@ -319,6 +315,8 @@ public class RNCWebViewClient extends WebViewClient {
             Response response = httpClient.newCall(req).execute();
 
             if (!LunascapeUtils.Companion.responseRequiresJSInjection(response)) {
+                // The WebView loads this one itself, so give the connection back.
+                response.close();
                 return null;
             }
 
@@ -334,7 +332,7 @@ public class RNCWebViewClient extends WebViewClient {
 
             if (httpResponseCharset == null) {
                 // if the response is HTML file and if the charset is not already set in the response => try to find it in the HTML headers (meta tag - charset)
-                String charsetHtml = HtmlExtractor.Companion.findHtmlCharsetFromRequest(httpClient, req);
+                String charsetHtml = HtmlExtractor.Companion.findHtmlCharsetFromResponse(response);
                 if (charsetHtml != null && !encoding.equalsIgnoreCase(charsetHtml)) {
                   encoding = charsetHtml;
                 }
@@ -551,6 +549,20 @@ public class RNCWebViewClient extends WebViewClient {
     protected int mLoadingProgress = 0;
     protected boolean mEnableNightMode = false;
     protected boolean mAllowUnsafeSite = false;
+
+    // One client for every WebView, so that tabs share the connection pool and the dispatcher threads.
+    private static OkHttpClient sharedHttpClient;
+
+    private static synchronized OkHttpClient getSharedHttpClient() {
+        if (sharedHttpClient == null) {
+            sharedHttpClient = new okhttp3.OkHttpClient.Builder()
+              .followRedirects(false)
+              .followSslRedirects(false)
+              .cookieJar(new RNCWebViewCookieJar())
+              .build();
+        }
+        return sharedHttpClient;
+    }
 
     private final OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;
