@@ -23,6 +23,9 @@ class LunascapeUtils {
         const val MIME_UNKNOWN = "application/octet-stream"
         const val HTML_MIME_TYPE = "text/html"
         const val BYTES_IN_MEGABYTE: Long = 1000000
+        // How much of the main document is read ahead to decide on injection and to find the charset.
+        const val HTML_SNIFF_BYTES: Long = 16 * 1024
+        private val HTML_TAG_PATTERN: Pattern = Pattern.compile("<[a-z]+[\\S\\s]*?>")
 
         fun responseRequiresJSInjection(response: Response): Boolean {
             if (response.isRedirect) {
@@ -36,8 +39,10 @@ class LunascapeUtils {
 
             if (contentTypeIsHtml && responseCodeIsInjectible && response.body != null) {
                 return try {
-                    val responseBody = response.peekBody(BYTES_IN_MEGABYTE).string()
-                    responseBody.matches("[\\S\\s]*<[a-z]+[\\S\\s]*>[\\S\\s]*".toRegex())
+                    // peekBody() waits until that many bytes have arrived, and nothing reaches
+                    // the WebView before it returns, so look at the start of the document only.
+                    val responseBody = response.peekBody(HTML_SNIFF_BYTES).string()
+                    HTML_TAG_PATTERN.matcher(responseBody).find()
                 } catch (e: IOException) {
                     e.printStackTrace()
                     false

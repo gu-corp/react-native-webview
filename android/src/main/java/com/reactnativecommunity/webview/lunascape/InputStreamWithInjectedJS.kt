@@ -2,6 +2,7 @@ package com.reactnativecommunity.webview.lunascape
 
 import android.util.Log
 import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets.UTF_8
@@ -27,7 +28,7 @@ class InputStreamWithInjectedJS: InputStream {
     private val lowercaseD = 100
     private val closingTag = 62
 
-    private val contentBuffer = StringBuffer()
+    private val contentBuffer = StringBuilder(8)
 
     constructor(inputStream: InputStream, javascript: String?, charset: Charset) {
         if (javascript == null) {
@@ -70,6 +71,10 @@ class InputStreamWithInjectedJS: InputStream {
 
         if (!headWasFound) {
             val nextByte: Int = pageIS.read()
+            // Only the last five characters are ever compared, so keep just those.
+            if (contentBuffer.length >= 5) {
+                contentBuffer.deleteCharAt(0)
+            }
             contentBuffer.append(nextByte.toChar())
             val bufferLength = contentBuffer.length
             if (nextByte == lowercaseD && bufferLength >= 5) {
@@ -82,6 +87,52 @@ class InputStreamWithInjectedJS: InputStream {
         }
 
         return pageIS.read()
+    }
+
+    /**
+     * InputStream's default bulk read calls read() once per byte, so a whole HTML document would
+     * go through the state machine above byte by byte. Only the part up to the injected script
+     * needs that; everything after it is handed over in blocks.
+     */
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (off < 0 || len < 0 || len > b.size - off) {
+            throw IndexOutOfBoundsException()
+        }
+        if (len == 0) {
+            return 0
+        }
+        if (scriptWasInjected || !hasJS) {
+            return pageIS.read(b, off, len)
+        }
+
+        var count = 0
+        while (count < len && !scriptWasInjected) {
+            val nextByte = try {
+                read()
+            } catch (e: IOException) {
+                if (count == 0) throw e
+                return count
+            }
+            if (nextByte == -1) {
+                return if (count == 0) -1 else count
+            }
+            b[off + count] = nextByte.toByte()
+            count++
+        }
+        return count
+    }
+
+    override fun available(): Int {
+        return if (scriptWasInjected || !hasJS) pageIS.available() else 0
+    }
+
+    // Without this the response body stays open when the WebView abandons a load half way.
+    override fun close() {
+        try {
+            scriptIS?.close()
+        } finally {
+            pageIS.close()
+        }
     }
 
     private fun getCharset(charsetName: String?): Charset {
