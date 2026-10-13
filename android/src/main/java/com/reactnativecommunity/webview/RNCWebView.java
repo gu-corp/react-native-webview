@@ -827,6 +827,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
             // receives the "visible" event while the renderer is active.
             onResume();
             setVisibility(View.VISIBLE);
+        } else if (!mKeepMediaPlaybackWhenHidden) {
+            // The user turned "keep playing in the background" off: hide at once,
+            // media included (onPause() stops it).
+            setVisibility(View.INVISIBLE);
+            onPause();
         } else {
             // Background media playback (YouTube audio, Picture in Picture) is a
             // core product feature, and both the "hidden" event and onPause()
@@ -850,6 +855,27 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     // Tracks the last requested page visibility so the async media-state check
     // can detect that the tab became active again before it resolved.
     private boolean mPageVisible = true;
+
+    // The app's "keep playing in the background" setting (prop keepMediaPlaybackWhenHidden).
+    private boolean mKeepMediaPlaybackWhenHidden = true;
+
+    public void setKeepMediaPlaybackWhenHidden(boolean keep) {
+        mKeepMediaPlaybackWhenHidden = keep;
+    }
+
+    /**
+     * Pauses every main-frame audio/video of the page (the app calls it when it goes to the
+     * background with "keep playing in the background" off). Mirrors iOS pauseAllMediaPlayback.
+     */
+    public void pauseAllMediaPlayback() {
+        evaluateJavascript(PAUSE_ALL_MEDIA_SCRIPT, null);
+    }
+
+    private static final String PAUSE_ALL_MEDIA_SCRIPT =
+        "(function(){" +
+        "var media=document.querySelectorAll('video,audio');" +
+        "for(var i=0;i<media.length;i++){try{media[i].pause();}catch(e){}}" +
+        "})()";
 
     // Main-frame check only: media inside cross-origin iframes is not visible to
     // this script, which matches the main YouTube playback use case.

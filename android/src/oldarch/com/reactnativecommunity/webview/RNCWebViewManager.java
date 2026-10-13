@@ -139,6 +139,11 @@ public class RNCWebViewManager extends ViewGroupManager<RNCWebViewWrapper> {
         mRNCWebViewManagerImpl.setInitPageVisibilityValue(view, value);
     }
 
+    @ReactProp(name = "keepMediaPlaybackWhenHidden", defaultBoolean = true)
+    public void setKeepMediaPlaybackWhenHidden(RNCWebViewWrapper view, boolean value) {
+        mRNCWebViewManagerImpl.setKeepMediaPlaybackWhenHidden(view, value);
+    }
+
     @ReactProp(name = "injectedJavaScript")
     public void setInjectedJavaScript(RNCWebViewWrapper view, @Nullable String value) {
         mRNCWebViewManagerImpl.setInjectedJavaScript(view, value);

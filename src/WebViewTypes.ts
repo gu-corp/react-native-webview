@@ -28,7 +28,8 @@ type WebViewCommands =
   | 'setFontSize'
   // | 'setEnableNightMode'
   | 'proceedUnsafeSite'
-  | 'setPageVisibility';
+  | 'setPageVisibility'
+  | 'pauseAllMediaPlayback';
 
 type AndroidWebViewCommands = 'clearHistory' | 'clearFormData';
 
@@ -45,6 +46,7 @@ interface RNCWebViewUIManager<Commands extends string> extends UIManagerStatic {
   // setEnableNightMode: (viewTag: number, enable: string) => void;
   proceedUnsafeSite: (viewTag: number, url: string) => void;
   setPageVisibility: (viewTag: number, visible: boolean) => void;
+  pauseAllMediaPlayback: (viewTag: number) => void;
 }
 
 export type RNCWebViewUIManagerAndroid = RNCWebViewUIManager<
@@ -460,6 +462,15 @@ export interface IOSWebViewProps extends WebViewSharedProps {
    * @default true
    */
   initPageVisibilityValue?: boolean;
+
+  /**
+   * Lunascape: keep a page that is playing audio or video attached (and playing) when it is
+   * hidden with setPageVisibility(false). When `false`, hiding the page pauses its media and
+   * detaches it at once. The app's "keep playing in the background" setting.
+   * @platform ios, android
+   * @default true
+   */
+  keepMediaPlaybackWhenHidden?: boolean;
 
   /**
    * Boolean value that determines whether the web view bounces
@@ -1022,6 +1033,15 @@ export interface AndroidWebViewProps extends WebViewSharedProps {
    * @default true
    */
   initPageVisibilityValue?: boolean;
+
+  /**
+   * Lunascape: keep a page that is playing audio or video attached (and playing) when it is
+   * hidden with setPageVisibility(false). When `false`, hiding the page pauses its media and
+   * detaches it at once. The app's "keep playing in the background" setting.
+   * @platform ios, android
+   * @default true
+   */
+  keepMediaPlaybackWhenHidden?: boolean;
 
   /**
    * Function that is invoked when the `WebView` process crashes or is killed by the OS.

@@ -116,6 +116,7 @@ const WebViewComponent = forwardRef<
       openNewWindowInWebView,
       incognito = false,
       initPageVisibilityValue = true,
+      keepMediaPlaybackWhenHidden = true,
       // for testing ids
       accessible,
       accessibilityLabel,
@@ -246,6 +247,10 @@ const WebViewComponent = forwardRef<
         setPageVisibility: (visible: boolean) => {
           webViewRef.current &&
             Commands.setPageVisibility(webViewRef.current, visible);
+        },
+        pauseAllMediaPlayback: () => {
+          webViewRef.current &&
+            Commands.pauseAllMediaPlayback(webViewRef.current);
         },
         webViewRef: webViewRef.current,
         // #endregion Lunascape
@@ -431,6 +436,7 @@ const WebViewComponent = forwardRef<
         openNewWindowInWebView={openNewWindowInWebView}
         incognito={incognito}
         initPageVisibilityValue={initPageVisibilityValue}
+        keepMediaPlaybackWhenHidden={keepMediaPlaybackWhenHidden}
         // for testing ids
         accessible={accessible}
         accessibilityLabel={accessibilityLabel}

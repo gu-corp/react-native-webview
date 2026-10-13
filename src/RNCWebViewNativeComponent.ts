@@ -302,6 +302,12 @@ export interface NativeProps extends ViewProps {
    * helping reduce CPU/RAM usage when many webviews live on a single screen.
    */
   initPageVisibilityValue?: boolean;
+  /**
+   * Lunascape: when false, hiding the page (setPageVisibility false) pauses its media and
+   * detaches it at once instead of keeping a playing page attached.
+   * @default true
+   */
+  keepMediaPlaybackWhenHidden?: WithDefault<boolean, true>;
   // TODO: disable night mode for now because it is unnecessary
   // /***
   //  * initial value of night mode
@@ -382,6 +388,9 @@ export interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     visible: boolean
   ) => void;
+  pauseAllMediaPlayback: (
+    viewRef: React.ElementRef<HostComponent<NativeProps>>
+  ) => void;
 }
 
 export const Commands = codegenNativeCommands<NativeCommands>({
@@ -411,6 +420,7 @@ export const Commands = codegenNativeCommands<NativeCommands>({
     'proceedUnsafeSite',
     'evaluateJavaScript',
     'setPageVisibility',
+    'pauseAllMediaPlayback',
   ],
 });
 

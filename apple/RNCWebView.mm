@@ -317,6 +317,7 @@ auto stringToOnLoadingFinishNavigationTypeEnum(std::string value) {
     // Lunascape
     REMAP_WEBVIEW_PROP(adblockDebuggingEnabled)
     REMAP_WEBVIEW_PROP(initPageVisibilityValue)
+    REMAP_WEBVIEW_PROP(keepMediaPlaybackWhenHidden)
     
 #if defined(__IPHONE_OS_VERSION_MAX_ALLOWED) && __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 /* __IPHONE_13_0 */
     REMAP_WEBVIEW_PROP(automaticallyAdjustContentInsets)
@@ -537,6 +538,10 @@ Class<RCTComponentViewProtocol> RNCWebViewCls(void)
 
 - (void)setPageVisibility:(BOOL)visible {
     [_view setPageVisibility:visible];
+}
+
+- (void)pauseAllMediaPlayback {
+    [_view pauseAllMediaPlayback];
 }
 
 - (void)clearFormData {

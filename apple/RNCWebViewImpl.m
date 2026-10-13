@@ -229,6 +229,7 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     _bounces = YES;
     _initPageVisibilityValue = YES;
     _pageVisible = YES;
+    _keepMediaPlaybackWhenHidden = YES;
     _scrollEnabled = YES;
     _showsHorizontalScrollIndicator = YES;
     _showsVerticalScrollIndicator = YES;
@@ -2627,6 +2628,17 @@ didFinishNavigation:(WKNavigation *)navigation
     }];
 }
 
+- (void)pauseAllMediaPlayback {
+    if (_webView == nil) {
+        return;
+    }
+    if (@available(iOS 15.0, macOS 12.0, *)) {
+        [_webView pauseAllMediaPlaybackWithCompletionHandler:nil];
+    } else if (@available(iOS 14.5, macOS 11.3, *)) {
+        [_webView suspendAllMediaPlayback:nil];
+    }
+}
+
 - (void)setPageVisibility:(BOOL)visible {
     _pageVisible = visible;
     if(visible == TRUE) {
@@ -2634,6 +2646,13 @@ didFinishNavigation:(WKNavigation *)navigation
       if (_webView != nil && _webView.superview != self) {
           [self addSubview:_webView];
       }
+      return;
+    }
+    // Lunascape: "keep playing in the background" is off, so a hidden page stops its media
+    // and is detached at once (no playback check).
+    if (!_keepMediaPlaybackWhenHidden) {
+      [self pauseAllMediaPlayback];
+      [_webView removeFromSuperview];
       return;
     }
 #if !TARGET_OS_OSX

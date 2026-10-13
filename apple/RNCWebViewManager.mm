@@ -89,6 +89,7 @@ RCT_EXPORT_VIEW_PROPERTY(hideKeyboardAccessoryView, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(allowsBackForwardNavigationGestures, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(incognito, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(initPageVisibilityValue, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(keepMediaPlaybackWhenHidden, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(pagingEnabled, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(applicationNameForUserAgent, NSString)
 RCT_EXPORT_VIEW_PROPERTY(cacheEnabled, BOOL)
@@ -420,6 +421,17 @@ RCT_EXPORT_METHOD(printContent:(nonnull NSNumber *)reactTag) {
             RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
         } else {
             [(RNCWebViewImpl *)view printContent];
+        }
+    }];
+}
+
+RCT_EXPORT_METHOD(pauseAllMediaPlayback:(nonnull NSNumber *)reactTag) {
+    [self.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, RNCView *> *viewRegistry) {
+        RNCView *view = viewRegistry[reactTag];
+        if (![view isKindOfClass:[RNCWebViewImpl class]]) {
+            RCTLogError(@"Invalid view returned from registry, expecting RNCWebView, got: %@", view);
+        } else {
+            [(RNCWebViewImpl *)view pauseAllMediaPlayback];
         }
     }];
 }

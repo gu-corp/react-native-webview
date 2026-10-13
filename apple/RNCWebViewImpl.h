@@ -170,6 +170,9 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 // @property (nonatomic, assign) BOOL initNightModeValue;
 @property (nonatomic, assign) BOOL scrollToTop;
 @property (nonatomic, assign) BOOL initPageVisibilityValue;
+// Lunascape: when NO, setPageVisibility:NO pauses playing media and hides the page right away
+// (the user turned "keep playing in the background" off). Default YES.
+@property (nonatomic, assign) BOOL keepMediaPlaybackWhenHidden;
 @property (nonatomic, assign) BOOL openNewWindowInWebView;
 @property (nonatomic, assign) CGPoint adjustOffset;
 @property (nonatomic, copy) NSArray<NSDictionary *> * _Nullable additionalUserAgent;
@@ -190,6 +193,8 @@ shouldCreateNewWindow:(NSMutableDictionary<NSString *, id>* _Nonnull)request wit
 // - (void)setEnableNightMode:(nonnull NSString *)enable;
 - (void)proceedUnsafeSite:(nullable NSString*)url;
 - (void)setPageVisibility:(BOOL)visible;
+// Lunascape: pause every <audio>/<video> of the page (iOS 15+; suspend on 14.5).
+- (void)pauseAllMediaPlayback;
 
 
 @property (nonatomic, copy) RCTDirectEventBlock onWebViewClosed;

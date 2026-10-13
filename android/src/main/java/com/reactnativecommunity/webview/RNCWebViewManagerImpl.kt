@@ -409,6 +409,7 @@ class RNCWebViewManagerImpl {
     // val COMMAND_SET_ENABLE_NIGHT_MODE = 18 // should update value
     val COMMAND_PROCEED_UNSAFE_SITE = 18
     val COMMAND_SET_PAGE_VISIBILITY = 19
+    val COMMAND_PAUSE_ALL_MEDIA_PLAYBACK = 20
     // endregion
 
     fun getCommandsMap(): Map<String, Int>? {
@@ -436,6 +437,7 @@ class RNCWebViewManagerImpl {
         // .put("setEnableNightMode", COMMAND_SET_ENABLE_NIGHT_MODE) // disable night mode for now because it is unnecessary
         .put("proceedUnsafeSite", COMMAND_PROCEED_UNSAFE_SITE)
         .put("setPageVisibility", COMMAND_SET_PAGE_VISIBILITY)
+        .put("pauseAllMediaPlayback", COMMAND_PAUSE_ALL_MEDIA_PLAYBACK)
         .build()
     }
 
@@ -494,6 +496,7 @@ class RNCWebViewManagerImpl {
         // "setEnableNightMode" -> webView.setEnableNightMode(args.getString(0)) 
         "proceedUnsafeSite" -> webView.proceedUnsafeSite(args.getString(0))
         "setPageVisibility" -> webView.setPageVisibility(args.getBoolean(0))
+        "pauseAllMediaPlayback" -> webView.pauseAllMediaPlayback()
       }
     }
 
@@ -634,6 +637,10 @@ class RNCWebViewManagerImpl {
             view.visibility = View.INVISIBLE
             view.onPause()
         }
+    }
+
+    fun setKeepMediaPlaybackWhenHidden(viewWrapper: RNCWebViewWrapper, keep: Boolean) {
+        viewWrapper.webView.setKeepMediaPlaybackWhenHidden(keep)
     }
 
     fun setInjectedJavaScript(viewWrapper: RNCWebViewWrapper, injectedJavaScript: String?) {

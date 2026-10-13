@@ -232,6 +232,10 @@ const WebViewComponent = forwardRef<{}, IOSWebViewProps>(
           webViewRef.current &&
             Commands.setPageVisibility(webViewRef.current, visible);
         },
+        pauseAllMediaPlayback: () => {
+          webViewRef.current &&
+            Commands.pauseAllMediaPlayback(webViewRef.current);
+        },
         webViewRef: webViewRef.current,
       }),
       [setViewState, webViewRef]
