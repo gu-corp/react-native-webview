@@ -234,10 +234,19 @@ class RNCWebViewManagerImpl {
         webView: RNCWebView,
     ) {
         val activity = webView.themedReactContext.currentActivity
+        // A client replaced while its video is in fullscreen would leave the video's view on
+        // screen, the WebView hidden and the orientation it set: the new client knows nothing
+        // of them, so its onHideCustomView does nothing. Put the video away first.
+        (webView.webChromeClient as? RNCWebChromeClient)?.onHideCustomView()
         if (mAllowsFullscreenVideo && activity != null) {
-            val initialRequestedOrientation = activity.requestedOrientation
             val webChromeClient: RNCWebChromeClient =
                 object : RNCWebChromeClient(webView) {
+                    // The orientation to go back to, read when a video goes fullscreen. Read when
+                    // the client was made, it would be another video's landscape for a client
+                    // made during that video's fullscreen, and an old lock after the app
+                    // changed it.
+                    private var orientationBeforeFullscreen = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
                     override fun getDefaultVideoPoster(): Bitmap? {
                         return Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888)
                     }
@@ -255,6 +264,7 @@ class RNCWebViewManagerImpl {
                         mVideoView = view
                         mCustomViewCallback = callback
                         mVideoView.setId(R.id.focus_video_in_webview_fullscreen);
+                        orientationBeforeFullscreen = activity.requestedOrientation
                         activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                         mVideoView.systemUiVisibility = FULLSCREEN_SYSTEM_UI_VISIBILITY
                         activity.window.setFlags(
@@ -304,7 +314,7 @@ class RNCWebViewManagerImpl {
                         mCustomViewCallback.onCustomViewHidden()
                         mVideoView = null
                         mCustomViewCallback = null
-                        activity.requestedOrientation = initialRequestedOrientation
+                        activity.requestedOrientation = orientationBeforeFullscreen
                         mWebView.themedReactContext.removeLifecycleEventListener(this)
                     }
                 }
@@ -312,9 +322,7 @@ class RNCWebViewManagerImpl {
             webChromeClient.setHasOnOpenWindowEvent(mHasOnOpenWindowEvent);
             webView.webChromeClient = webChromeClient
         } else {
-            var webChromeClient = webView.webChromeClient as RNCWebChromeClient?
-            webChromeClient?.onHideCustomView()
-            webChromeClient = object : RNCWebChromeClient(webView) {
+            val webChromeClient = object : RNCWebChromeClient(webView) {
                 override fun getDefaultVideoPoster(): Bitmap? {
                     return Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888)
                 }
