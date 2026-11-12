@@ -437,6 +437,7 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
 
     @Override
     public void destroy() {
+        stopKeepingVisibleForMedia();
         if (mWebChromeClient != null) {
             mWebChromeClient.onHideCustomView();
         }
@@ -822,6 +823,11 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
      */
     public void setPageVisibility(boolean visible) {
         mPageVisible = visible;
+        if (!visible && mKeptVisibleForMedia) {
+            // The tab was hidden while the app is away: stop keeping it playing.
+            stopKeepingVisibleForMedia();
+            super.onWindowVisibilityChanged(mWindowVisibility);
+        }
         if (visible) {
             // Resume processing first, then mark the view visible so the page
             // receives the "visible" event while the renderer is active.
@@ -862,6 +868,119 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public void setKeepMediaPlaybackWhenHidden(boolean keep) {
         mKeepMediaPlaybackWhenHidden = keep;
     }
+
+    // ---------------------------------------------------------------------------------------
+    // Background playback when the whole app leaves the screen (Lunascape #5545).
+    //
+    // When the Activity stops, the WebView gets onWindowVisibilityChanged(GONE) and Chromium
+    // marks the page hidden. On Android, Chromium then pauses any video that has sound
+    // (background media suspend) - whatever the page's JavaScript does - so YouTube stopped as
+    // soon as the user went Home or locked the screen. Only Picture in Picture kept playing,
+    // because the window stays visible there.
+    //
+    // With "keep playing in the background" on, the visible tab's WebView keeps reporting
+    // VISIBLE to Chromium while audible media plays. The app is told through
+    // BackgroundMediaListener so it can hold a media-playback foreground service (without one,
+    // Android freezes or kills the process soon after it leaves the screen). Once the media
+    // stops (checked every MEDIA_POLL_MS), or with the setting off, the real visibility is
+    // applied as before.
+    // ---------------------------------------------------------------------------------------
+
+    /** Told when the first WebView starts, and the last one stops, playing while the app is away. */
+    public interface BackgroundMediaListener {
+        void onBackgroundMediaPlaybackChanged(boolean playing);
+    }
+
+    @Nullable
+    private static BackgroundMediaListener sBackgroundMediaListener;
+    private static final java.util.Set<RNCWebView> sKeptForMedia = new java.util.HashSet<>();
+
+    public static void setBackgroundMediaListener(@Nullable BackgroundMediaListener listener) {
+        sBackgroundMediaListener = listener;
+    }
+
+    private static final long MEDIA_POLL_MS = 15000;
+
+    // The window visibility the system last reported (VISIBLE, INVISIBLE or GONE).
+    private int mWindowVisibility = View.VISIBLE;
+    // True while this WebView reports VISIBLE to Chromium although its window is hidden.
+    private boolean mKeptVisibleForMedia = false;
+
+    private final Runnable mMediaPoll = this::checkMediaWhileKeptVisible;
+
+    @Override
+    protected void onWindowVisibilityChanged(int visibility) {
+        mWindowVisibility = visibility;
+        if (visibility == View.VISIBLE) {
+            stopKeepingVisibleForMedia();
+            super.onWindowVisibilityChanged(visibility);
+            return;
+        }
+        if (!mKeepMediaPlaybackWhenHidden || !mPageVisible || getVisibility() != View.VISIBLE) {
+            stopKeepingVisibleForMedia();
+            super.onWindowVisibilityChanged(visibility);
+            return;
+        }
+        // Stay visible for Chromium until the asynchronous check below has answered: hiding first
+        // would already pause the video.
+        mKeptVisibleForMedia = true;
+        checkMediaWhileKeptVisible();
+    }
+
+    private void checkMediaWhileKeptVisible() {
+        removeCallbacks(mMediaPoll);
+        if (!mKeptVisibleForMedia) {
+            return;
+        }
+        evaluateJavascript(IS_AUDIBLE_MEDIA_PLAYING_SCRIPT, value -> {
+            // The window came back, or the tab was hidden, while the check ran.
+            if (!mKeptVisibleForMedia || mWindowVisibility == View.VISIBLE) {
+                return;
+            }
+            if ("true".equals(value) && mKeepMediaPlaybackWhenHidden && mPageVisible) {
+                setKeptForMedia(true);
+                postDelayed(mMediaPoll, MEDIA_POLL_MS);
+            } else {
+                // Nothing to keep playing: hide the page for real, as without this feature.
+                stopKeepingVisibleForMedia();
+                super.onWindowVisibilityChanged(mWindowVisibility);
+            }
+        });
+    }
+
+    private void stopKeepingVisibleForMedia() {
+        removeCallbacks(mMediaPoll);
+        mKeptVisibleForMedia = false;
+        setKeptForMedia(false);
+    }
+
+    private void setKeptForMedia(boolean kept) {
+        boolean wasPlaying = !sKeptForMedia.isEmpty();
+        if (kept) {
+            sKeptForMedia.add(this);
+        } else {
+            sKeptForMedia.remove(this);
+        }
+        boolean playing = !sKeptForMedia.isEmpty();
+        if (playing != wasPlaying && sBackgroundMediaListener != null) {
+            try {
+                sBackgroundMediaListener.onBackgroundMediaPlaybackChanged(playing);
+            } catch (RuntimeException e) {
+                Log.w("RNCWebView", "BackgroundMediaListener failed", e);
+            }
+        }
+    }
+
+    // Like IS_MEDIA_PLAYING_SCRIPT, but muted media (autoplaying previews) does not count: there
+    // is nothing to hear, so it is no reason to keep the page running in the background.
+    private static final String IS_AUDIBLE_MEDIA_PLAYING_SCRIPT =
+        "(function(){" +
+        "var media=document.querySelectorAll('video,audio');" +
+        "for(var i=0;i<media.length;i++){var m=media[i];" +
+        "if(!m.paused&&!m.ended&&m.readyState>2&&!m.muted&&m.volume>0){return true;}" +
+        "}" +
+        "return false;" +
+        "})()";
 
     /**
      * Pauses every main-frame audio/video of the page (the app calls it when it goes to the
