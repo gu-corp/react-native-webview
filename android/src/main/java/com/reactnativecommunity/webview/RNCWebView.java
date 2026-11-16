@@ -307,6 +307,14 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
         }
     }
 
+    public void injectYouTubeAdblock() {
+        if (!getSettings().getJavaScriptEnabled()) {
+            return;
+        }
+        String youtubeAdblockJs = loadYouTubeAdblockFile();
+        if (youtubeAdblockJs != null) this.evaluateJavascriptWithFallback(youtubeAdblockJs);
+    }
+
     public void callInjectedJavaScriptBeforeContentLoaded(Boolean isYoutube) {
         if (getSettings().getJavaScriptEnabled() &&
                 injectedJSBeforeContentLoaded != null &&

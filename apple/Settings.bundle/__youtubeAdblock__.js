@@ -1,160 +1,157 @@
+// Lunascape YouTube ad blocking (updated 2026-11, gu-corp/lunascape-mobile#5578).
+//
+// YouTube sends its ads inside the player data (adPlacements / adSlots / playerAds), in the page
+// (ytInitialPlayerResponse), in JSON.parse results and in the /youtubei/v1/* fetch/XHR responses
+// (player, next, get_watch, reel_watch_sequence for Shorts). This removes them at every step,
+// following the same approach as the current uBlock Origin YouTube filters (json-prune,
+// json-prune-fetch-response / -xhr-response, set-constant), plus a fallback that skips an ad that
+// still starts playing (server-side inserted ads). Runs once per page; injected at page start
+// and again when the page has loaded.
+(function () {
+  if (window.__lsYoutubeAdblock) return;
+  window.__lsYoutubeAdblock = true;
 
-// PruneJS
-(function() {
-  const prunePaths = ['playerResponse.adPlacements', 'playerResponse.playerAds', 'adPlacements', 'playerAds', 'playerResponse.adSlots', 'adSlots'];
-  const findOwner = function(root, path) {
-    let owner = root;
-    let chain = path;
-    while(true) {
-      if (owner instanceof Object === false) { return; }
-      const pos = chain.indexOf('.');
-      if (pos === -1) {
-        return owner.hasOwnProperty(chain)? [owner, chain]: undefined;
-      }
-      const prop = chain.slice(0, pos);
-      if (owner.hasOwnProperty(prop) === false) { return; }
-      owner = owner[prop];
-      chain = chain.slice(pos + 1);
+  var AD_KEYS = ['adPlacements', 'adSlots', 'playerAds'];
+
+  // --- Remove the ad fields from an object (player response or a wrapper around one). ---------
+  function pruneAds(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    var targets = [obj, obj.playerResponse];
+    if (Array.isArray(obj)) {
+      for (var i = 0; i < obj.length; i++) targets.push(obj[i], obj[i] && obj[i].playerResponse);
     }
-  };
-  
-  JSON.parse = new Proxy(JSON.parse, {
-    apply: function() {
-      const r = Reflect.apply(...arguments);
-      for (const path of prunePaths) {
-        const details = findOwner(r, path);
-        if (details !== undefined) {
-          delete details[0][details[1]];
-        }
+    try {
+      var pre = obj.endpoint && obj.endpoint.watchEndpoint && obj.endpoint.watchEndpoint.unserializedPrefetchData;
+      if (pre) targets.push(pre.playerResponse);
+    } catch (e) {}
+    for (var t = 0; t < targets.length; t++) {
+      var o = targets[t];
+      if (!o || typeof o !== 'object') continue;
+      for (var k = 0; k < AD_KEYS.length; k++) {
+        if (Object.prototype.hasOwnProperty.call(o, AD_KEYS[k])) delete o[AD_KEYS[k]];
       }
+    }
+    // Shorts: drop the entries that are ads.
+    var lists = [obj.entries, obj.reelWatchSequenceResponse && obj.reelWatchSequenceResponse.entries];
+    for (var l = 0; l < lists.length; l++) {
+      var list = lists[l];
+      if (!Array.isArray(list)) continue;
+      for (var j = list.length - 1; j >= 0; j--) {
+        try {
+          if (list[j].command.reelWatchEndpoint.adClientParams.isAd) list.splice(j, 1);
+        } catch (e) {}
+      }
+    }
+    return obj;
+  }
+
+  // --- JSON.parse ----------------------------------------------------------------------------
+  var nativeParse = JSON.parse;
+  JSON.parse = new Proxy(nativeParse, {
+    apply: function (target, thisArg, args) {
+      var r = Reflect.apply(target, thisArg, args);
+      try { pruneAds(r); } catch (e) {}
       return r;
     },
   });
-})();
 
-/// SetJS
-(function() {
-  const setJS = function(chain, cValue) {
-    const thisScript = document.currentScript;
-    if (cValue === 'undefined') {
-      cValue = undefined;
-    } else if (cValue === 'false') {
-      cValue = false;
-    } else if (cValue === 'true') {
-      cValue = true;
-    } else if (cValue === 'null') {
-      cValue = null;
-    } else if (cValue === 'noopFunc') {
-      cValue = function(){};
-    } else if (cValue === 'trueFunc') {
-      cValue = function(){ return true; };
-    } else if (cValue === 'falseFunc') {
-      cValue = function(){ return false; };
-    } else if (/^\d+$/.test(cValue)) {
-      cValue = parseFloat(cValue);
-      if (isNaN(cValue)) { return; }
-      if (Math.abs(cValue) > 0x7FFF) { return; }
-    } else if (cValue === "''") {
-      cValue = '';
-    } else {
-      return;
-    }
-      
-    let aborted = false;
-    const mustAbort = function(v) {
-      if (aborted) { return true; }
-      aborted =
-        (v !== undefined && v !== null) &&
-        (cValue !== undefined && cValue !== null) &&
-        (typeof v !== typeof cValue);
-      return aborted;
-    };
-      
-    // https://github.com/uBlockOrigin/uBlock-issues/issues/156
-    //   Support multiple trappers for the same property.
-    const trapProp = function(owner, prop, handler) {
-      if (handler.init(owner[prop]) === false) { return; }
-      const odesc = Object.getOwnPropertyDescriptor(owner, prop);
-      let prevGetter, prevSetter;
-      if (odesc instanceof Object) {
-        if (odesc.get instanceof Function) {
-          prevGetter = odesc.get;
-        }
-        if (odesc.set instanceof Function) {
-          prevSetter = odesc.set;
-        }
-      }
-      
-      Object.defineProperty(owner, prop, {
-        configurable: true,
-        get() {
-          if (prevGetter !== undefined) {
-            prevGetter();
-          }
-          return handler.getter();
-        },
-        set(a) {
-          if (prevSetter !== undefined) {
-            prevSetter(a);
-          }
-          handler.setter(a);
-        }
-      });
-    };
-      
-      const trapChain = function(owner, chain) {
-        const pos = chain.indexOf('.');
-        if (pos === -1) {
-          trapProp(owner, chain, {
-            v: undefined,
-            init: function(v) {
-              if (mustAbort(v)) { return false; }
-              this.v = v;
-              return true;
-            },
-            getter: function() {
-              return document.currentScript === thisScript
-                  ? this.v
-                  : cValue;
-            },
-            setter: function(a) {
-              if (mustAbort(a) === false) { return; }
-              cValue = a;
-            }
-          });
-          return;
-        }
-        
-        const prop = chain.slice(0, pos);
-        const v = owner[prop];
-        chain = chain.slice(pos + 1);
-        if (v instanceof Object || typeof v === 'object' && v !== null) {
-          trapChain(v, chain);
-          return;
-        }
-        
-        trapProp(owner, prop, {
-          v: undefined,
-          init: function(v) {
-            this.v = v;
-            return true;
-          },
-          getter: function() {
-            return this.v;
-          },
-          setter: function(a) {
-            this.v = a;
-            if (a instanceof Object) {
-              trapChain(a, chain);
-            }
-          }
+  // --- Responses of the YouTube API (fetch and XHR) --------------------------------------------
+  var API = /\/youtubei\/v1\/(player|next|get_watch|reel\/reel_watch_sequence|reel_watch_sequence|browse)|\/playlist\?|[?&]pbj=1/;
+
+  // Rename the ad keys in the raw JSON text: the player then finds no ads. Cheap and also works
+  // for responses that are parsed by code we do not see.
+  function cleanText(text) {
+    if (typeof text !== 'string' || text.indexOf('"ad') === -1 && text.indexOf('"playerAds"') === -1) return text;
+    return text
+      .replace(/"adPlacements"/g, '"no_ads_p"')
+      .replace(/"adSlots"/g, '"no_ads_s"')
+      .replace(/"playerAds"/g, '"no_ads_a"');
+  }
+
+  if (window.fetch) {
+    var nativeFetch = window.fetch;
+    window.fetch = new Proxy(nativeFetch, {
+      apply: function (target, thisArg, args) {
+        var p = Reflect.apply(target, thisArg, args);
+        var url = '';
+        try { url = typeof args[0] === 'string' ? args[0] : (args[0] && args[0].url) || ''; } catch (e) {}
+        if (!API.test(url)) return p;
+        return p.then(function (res) {
+          if (!res || !res.ok) return res;
+          return res.clone().text().then(function (text) {
+            var cleaned = cleanText(text);
+            if (cleaned === text) return res;
+            var out = new Response(cleaned, { status: res.status, statusText: res.statusText, headers: res.headers });
+            try {
+              Object.defineProperty(out, 'url', { value: res.url });
+              Object.defineProperty(out, 'type', { value: res.type });
+            } catch (e) {}
+            return out;
+          }).catch(function () { return res; });
         });
-      };
-      
-      trapChain(window, chain);
+      },
+    });
+  }
+
+  var xhrProto = XMLHttpRequest.prototype;
+  var nativeOpen = xhrProto.open;
+  xhrProto.open = function (method, url) {
+    try { this.__lsYtUrl = String(url); } catch (e) {}
+    return nativeOpen.apply(this, arguments);
   };
-  
-  setJS('ytInitialPlayerResponse.adPlacements', 'undefined');
-  setJS('playerResponse.adPlacements', 'undefined');
-  setJS('playerResponse.adSlots', 'undefined');
+  ['responseText', 'response'].forEach(function (prop) {
+    var desc = Object.getOwnPropertyDescriptor(xhrProto, prop);
+    if (!desc || !desc.get) return;
+    Object.defineProperty(xhrProto, prop, {
+      configurable: true,
+      get: function () {
+        var v = desc.get.call(this);
+        if (this.readyState !== 4 || !this.__lsYtUrl || !API.test(this.__lsYtUrl)) return v;
+        if (typeof v === 'string') return cleanText(v);
+        if (v && typeof v === 'object' && !(v instanceof ArrayBuffer) && !(v instanceof Blob)) {
+          try { pruneAds(v); } catch (e) {}
+        }
+        return v;
+      },
+    });
+  });
+
+  // --- The player response written into the page ----------------------------------------------
+  ['ytInitialPlayerResponse', 'playerResponse'].forEach(function (name) {
+    var value = window[name];
+    if (value) pruneAds(value);
+    try {
+      Object.defineProperty(window, name, {
+        configurable: true,
+        get: function () { return value; },
+        set: function (v) { value = pruneAds(v); },
+      });
+    } catch (e) {}
+  });
+
+  // --- Fallback: an ad that still plays is skipped, ad boxes are hidden -----------------------
+  var style = document.createElement('style');
+  style.textContent = [
+    'ytm-promoted-sparkles-web-renderer', 'ytm-promoted-video-renderer', 'ytm-companion-ad-renderer',
+    'ad-slot-renderer', 'ytm-ad-slot-renderer', 'ytd-ad-slot-renderer', 'ytd-promoted-sparkles-web-renderer',
+    'ytd-in-feed-ad-layout-renderer', 'ytd-banner-promo-renderer', 'ytm-statement-banner-renderer',
+    '.ytp-ad-overlay-container', '.ytp-ad-message-container', 'ytm-promoted-sparkles-text-search-renderer',
+    'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-ads"]',
+  ].join(',') + '{display:none !important}';
+  (document.head || document.documentElement).appendChild(style);
+
+  function skipAd() {
+    try {
+      var player = document.querySelector('.ad-showing, .ad-interrupting');
+      if (!player) return;
+      var video = player.querySelector('video');
+      if (video && isFinite(video.duration) && video.duration > 0 && video.currentTime < video.duration - 0.1) {
+        video.currentTime = video.duration;
+      }
+      var skip = document.querySelector('.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button, button.ytp-ad-skip-button-container');
+      if (skip) skip.click();
+    } catch (e) {}
+  }
+  setInterval(skipAd, 500);
 })();
+//# sourceURL=Lunascape_mobile_youtubeAdblock.js

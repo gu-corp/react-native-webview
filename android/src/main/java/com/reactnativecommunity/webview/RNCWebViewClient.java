@@ -158,6 +158,12 @@ public class RNCWebViewClient extends WebViewClient {
       RNCWebView reactWebView = (RNCWebView) webView;
       Boolean isYoutube = checkYoutubeDomain(url);
       reactWebView.callInjectedJavaScriptBeforeContentLoaded(isYoutube);
+      // YouTube ad blocking as early as possible: the player data is read while the page loads,
+      // so waiting for onPageFinished let the first video's ads through (#5578). The script runs
+      // once per page, so the onPageFinished call stays as a fallback.
+      if (getEnableYoutubeVideoAdblocker(url)) {
+        reactWebView.injectYouTubeAdblock();
+      }
     }
 
     public boolean _shouldOverrideUrlLoading(WebView view, String url, boolean isMainFrame) {
@@ -612,16 +618,19 @@ public class RNCWebViewClient extends WebViewClient {
             if(adblockEngines != null && checkYoutubeDomain(urlString)) {
                 BlockerResult blockerResult;
                 URL url = new URL(urlString);
+                // mainUrl is not set yet when this runs from onPageStarted of the first load.
+                String tabHost = mainUrl != null ? mainUrl.getHost() : url.getHost();
+                enable = true;
                 for (Engine engine : adblockEngines) {
                     synchronized (engine) {
-                        blockerResult = engine.match(url.toString(), url.getHost(), mainUrl.getHost(), false, "");
+                        blockerResult = engine.match(url.toString(), url.getHost(), tabHost, false, "document");
                         if (blockerResult.exception) {
+                            // YouTube is on the user's allowlist.
                             enable = false;
                             break;
                         }
                     }
                 }
-                enable = true;
             }
         } catch (Exception e) {
             e.printStackTrace();
