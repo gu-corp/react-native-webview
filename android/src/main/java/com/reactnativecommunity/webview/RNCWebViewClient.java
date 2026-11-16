@@ -43,6 +43,7 @@ import com.reactnativecommunity.webview.events.TopLoadingFinishEvent;
 import com.reactnativecommunity.webview.events.TopLoadingStartEvent;
 import com.reactnativecommunity.webview.events.TopRenderProcessGoneEvent;
 import com.reactnativecommunity.webview.events.TopShouldStartLoadWithRequestEvent;
+import com.reactnativecommunity.webview.lunascape.AdblockRequestInfo;
 import com.reactnativecommunity.webview.lunascape.HtmlExtractor;
 import com.reactnativecommunity.webview.lunascape.InputStreamWithInjectedJS;
 import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
@@ -242,18 +243,17 @@ public class RNCWebViewClient extends WebViewClient {
 
             if (adblockEngines != null && !this.isMainDocumentException) {
                 BlockerResult blockerResult;
+                // Real party and type, so $third-party / $script / $image / $xhr rules match (#5578).
+                String resourceType = AdblockRequestInfo.resourceType(request);
+                boolean thirdParty = !request.isForMainFrame()
+                    && AdblockRequestInfo.isThirdParty(url, mainUrl);
 
                 boolean matched = false;
                 boolean exception = false;
                 for (Engine engine : adblockEngines) {
                     synchronized (engine) {
-                        if (request.isForMainFrame()) {
-                            blockerResult = engine.match(url.toString(), url.getHost(),
-                              mainUrl.getHost(), false, "document");
-                        } else {
-                            blockerResult = engine.match(url.toString(), url.getHost(),
-                              mainUrl.getHost(), false, "");
-                        }
+                        blockerResult = engine.match(url.toString(), url.getHost(),
+                          mainUrl.getHost(), thirdParty, resourceType);
 
                         matched |= blockerResult.matched;
                         if (blockerResult.important) {
@@ -277,11 +277,7 @@ public class RNCWebViewClient extends WebViewClient {
                             Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
                         }
 
-                        return new WebResourceResponse(
-                          "text/plain",
-                          "utf-8",
-                          new ByteArrayInputStream("".getBytes())
-                        );
+                        return AdblockRequestInfo.blockedResponse(resourceType);
                     }
                 }
             }
