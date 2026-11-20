@@ -38,6 +38,7 @@ import com.facebook.react.module.annotations.ReactModule;
 import com.facebook.react.modules.core.PermissionAwareActivity;
 import com.facebook.react.modules.core.PermissionListener;
 import com.brave.adblock.Engine;
+import com.reactnativecommunity.webview.lunascape.AdblockEngineLoader;
 import com.reactnativecommunity.webview.lunascape.LunascapeUtils;
 import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequest;
 import com.reactnativecommunity.webview.lunascape.downloaddatabase.DownloadRequestDBHelper;
@@ -602,51 +603,23 @@ public class RNCWebViewModuleImpl implements ActivityEventListener {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                InputStream is = null;
-                BufferedReader br = null;
-
                 try {
-                    is = mContext.getAssets().open(assetPath);
-                    br = new BufferedReader(new InputStreamReader(is));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-
-                    while ((line = br.readLine()) != null) {
-                        sb.append(line);
-                        sb.append("\n");
-                    }
-
+                    Engine engine = AdblockEngineLoader.fromAsset(mContext, assetPath);
                     synchronized(engines) {
-                        engines.put(name, new Engine(sb.toString()));
+                        engines.put(name, engine);
                     }
-
                     promise.resolve(null);
                 } catch (Exception e) {
                     promise.reject(e);
-                } finally {
-                    if (br != null) {
-                        try {
-                            br.close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (is != null) {
-                        try {
-                            is.close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
                 }
             }
         }).start();
     }
 
     public void addAdblockRules(String name, String rules, final Promise promise) {
+        Engine engine = AdblockEngineLoader.fromRules(mContext, rules);
         synchronized(engines) {
-            engines.put(name, new Engine(rules));
+            engines.put(name, engine);
         }
 
         promise.resolve(null);
