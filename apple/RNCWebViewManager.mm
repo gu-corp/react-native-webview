@@ -313,6 +313,61 @@ RCT_REMAP_METHOD(addContentRuleList,
     });
 }
 
+// Makes the compiled rule list `name` available, compiling it from the JSON file at `filePath` only when
+// WebKit's store does not have it yet. WebKit keeps compiled lists across launches, so with a name that
+// changes with the list's content (Lunascape: "blocklist-<md5>") the large list is compiled once per app
+// update instead of on every launch, and the 12 MB file is not read at all on later launches. Other
+// lists whose identifier starts with `prefix` (older versions of the same list) are removed.
+// Resolves YES when it compiled, NO when the stored list was used.
+RCT_REMAP_METHOD(ensureContentRuleList,
+                 ensureContentRuleList:(nonnull NSString *)name
+                 filePath:(nonnull NSString *)filePath
+                 prefix:(nonnull NSString *)prefix
+                 resolver:(RCTPromiseResolveBlock)resolve
+                 rejecter:(RCTPromiseRejectBlock)reject)
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        WKContentRuleListStore *store = WKContentRuleListStore.defaultStore;
+        void (^finish)(BOOL) = ^(BOOL compiled) {
+            [store getAvailableContentRuleListIdentifiers:^(NSArray<NSString *> *identifiers) {
+                for (NSString *identifier in identifiers) {
+                    if ([identifier hasPrefix:prefix] && ![identifier isEqualToString:name]) {
+                        [store removeContentRuleListForIdentifier:identifier completionHandler:^(NSError *error) {}];
+                    }
+                }
+            }];
+            [EngineHandler loadEasylistAndBlocklistWithCompletionHandler: ^{
+                resolve(@(compiled));
+            }];
+        };
+        [store lookUpContentRuleListForIdentifier:name completionHandler:^(WKContentRuleList *stored, NSError *lookUpError) {
+            if (stored) {
+                finish(NO);
+                return;
+            }
+            dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+                NSError *readError = nil;
+                NSString *json = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:&readError];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (json == nil) {
+                        reject(RCTErrorUnspecified, @"cannot read the content rule list file", readError);
+                        return;
+                    }
+                    [store compileContentRuleListForIdentifier:name
+                                        encodedContentRuleList:json
+                                             completionHandler:^(WKContentRuleList *compiled, NSError *compileError) {
+                        if (compileError) {
+                            reject(RCTErrorUnspecified, nil, compileError);
+                        } else {
+                            finish(YES);
+                        }
+                    }];
+                });
+            });
+        }];
+    });
+}
+
 RCT_REMAP_METHOD(getContentRuleListNames,
                  getContentRuleListNamesWithResolver:(RCTPromiseResolveBlock)resolve
                  rejecter:(RCTPromiseRejectBlock)reject)
