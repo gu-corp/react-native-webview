@@ -247,7 +247,11 @@ public class RNCWebViewClient extends WebViewClient {
               mainUrl = url;
             }
 
-            if (adblockEngines != null && !this.isMainDocumentException) {
+            // A main-frame request is always checked: it decides isMainDocumentException for the new
+            // page. Skipping it while the flag was set kept the flag forever, so one allowlisted page
+            // (or an EasyList $document exception such as an ad click URL) turned ad blocking off for
+            // the rest of the tab's life.
+            if (adblockEngines != null && (request.isForMainFrame() || !this.isMainDocumentException)) {
                 BlockerResult blockerResult;
                 // Real party and type, so $third-party / $script / $image / $xhr rules match (#5578).
                 String resourceType = AdblockRequestInfo.resourceType(request);
@@ -273,18 +277,17 @@ public class RNCWebViewClient extends WebViewClient {
                     }
                 }
 
-                if (request.isForMainFrame() && exception) {
-                    this.isMainDocumentException = true;
-                } else {
-                    if (matched && !exception) {
+                if (request.isForMainFrame()) {
+                    this.isMainDocumentException = exception;
+                }
+                if (matched && !exception) {
 
-                        if (adblockDebuggingEnabled) {
-                            String sourceUrlString = mainUrl.toString();
-                            Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
-                        }
-
-                        return AdblockRequestInfo.blockedResponse(resourceType);
+                    if (adblockDebuggingEnabled) {
+                        String sourceUrlString = mainUrl.toString();
+                        Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
                     }
+
+                    return AdblockRequestInfo.blockedResponse(resourceType);
                 }
             }
 
@@ -568,7 +571,8 @@ public class RNCWebViewClient extends WebViewClient {
 
     private final OkHttpClient httpClient;
     private ArrayList<Engine> adblockEngines;
-    private boolean isMainDocumentException;
+    // Written and read on WebView's network threads.
+    private volatile boolean isMainDocumentException;
     private String currentPageUrl = null;
     private String currentPageTitle = null;
 
