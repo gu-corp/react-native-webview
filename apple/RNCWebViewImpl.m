@@ -1703,11 +1703,12 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
                  * you need insert code that run after onShouldStartLoadWithRequest in this callback
                  */
                 // Lunascape logic
-                [self applyAdblockLogic:webView navigationAction:navigationAction];
-                [self injectYoutubePictureInPictureJS:webView request:request];
-                
-                // Allow all navigation by default
-                decisionHandler(WKNavigationActionPolicyAllow);
+                [self applyAdblockLogic:webView navigationAction:navigationAction completion:^{
+                    [self injectYoutubePictureInPictureJS:webView request:request];
+                    
+                    // Allow all navigation by default
+                    decisionHandler(WKNavigationActionPolicyAllow);
+                }];
                 
             });
 
@@ -1746,11 +1747,12 @@ RCTAutoInsetsProtocol, WKScriptMessageHandlerWithReply>
     }
 
     // Lunascape logic
-    [self applyAdblockLogic:webView navigationAction:navigationAction];
-    [self injectYoutubePictureInPictureJS:webView request:request];
-    
-    // Allow all navigation by default
-    decisionHandler(WKNavigationActionPolicyAllow);
+    [self applyAdblockLogic:webView navigationAction:navigationAction completion:^{
+        [self injectYoutubePictureInPictureJS:webView request:request];
+        
+        // Allow all navigation by default
+        decisionHandler(WKNavigationActionPolicyAllow);
+    }];
     
 }
 
@@ -2512,8 +2514,11 @@ didFinishNavigation:(WKNavigation *)navigation
     }
 }
 
+// Calls `completion` when the navigation may go on: on pages with ad blocking, after the page's element
+// hiding and scriptlets are installed (#5580).
 -(void)applyAdblockLogic:(WKWebView *)webView
         navigationAction:(WKNavigationAction *)navigationAction
+              completion:(void (^)(void))completion
 {
     if (@available(iOS 11.0, *)) {
         BOOL isAllowWebsite = false;
@@ -2545,9 +2550,14 @@ didFinishNavigation:(WKNavigation *)navigation
             // add requestBlockingScript
             if(tabAdblock != nil) {
               [tabAdblock handleAdblockScriptWithWebView:_webView decidePolicyFor:navigationAction enableRequestBlocking:YES];
+              [tabAdblock prepareCosmeticFiltersWithWebView:_webView navigationAction:navigationAction completionHandler:completion];
+              return;
             }
         } else {
             [webView.configuration.userContentController removeAllContentRuleLists];
+            if(tabAdblock != nil) {
+                [tabAdblock removeCosmeticFilters];
+            }
             
             bool isExistedRequestBlockingScript = false;
             if(tabAdblock != nil) {
@@ -2563,6 +2573,7 @@ didFinishNavigation:(WKNavigation *)navigation
             }
         }
     }
+    completion();
 }
 
 - (bool)isYoutubeWebsite:(NSString *)domain
