@@ -449,6 +449,7 @@ public class RNCWebChromeClient extends WebChromeClient implements LifecycleEven
         RNCWebView newView = RNCWebView.createNewWindow(reactContext);
         newView.addJavascriptInterface(newView.createRNCNativeWebViewBridge(newView), RNCWebView.NATIVE_SCRIPT_INTERFACE);
         newView.addJavascriptInterface(newView.createRNCWebViewBridge(newView), RNCWebView.FAVICON_INTERFACE);
+        newView.installAdblockCosmeticFilters();
         return newView;
     }
 

@@ -73,6 +73,7 @@ class RNCWebViewManagerImpl {
           RNCWebView.NATIVE_SCRIPT_INTERFACE)
         rncWebView.addJavascriptInterface(rncWebView.createRNCWebViewBridge(rncWebView),
           RNCWebView.FAVICON_INTERFACE)
+        rncWebView.installAdblockCosmeticFilters()
         return rncWebView
     }
 
