@@ -260,13 +260,20 @@ public class RNCWebViewClient extends WebViewClient {
 
                 boolean matched = false;
                 boolean exception = false;
+                String redirect = null;
                 for (Engine engine : adblockEngines) {
                     synchronized (engine) {
                         blockerResult = engine.match(url.toString(), url.getHost(),
                           mainUrl.getHost(), thirdParty, resourceType);
 
                         matched |= blockerResult.matched;
+                        if (redirect == null) {
+                            redirect = blockerResult.redirect;
+                        }
                         if (blockerResult.important) {
+                            // Only this engine's answer counts: its own $redirect (as in
+                            // `$important,redirect=1x1.gif`), not one from an earlier engine.
+                            redirect = blockerResult.redirect;
                             break;
                         }
 
@@ -287,7 +294,9 @@ public class RNCWebViewClient extends WebViewClient {
                         Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
                     }
 
-                    return AdblockRequestInfo.blockedResponse(resourceType);
+                    // $redirect: serve the engine's stand-in (an empty script, a 1x1 image, ...).
+                    WebResourceResponse redirected = AdblockRequestInfo.redirectResponse(redirect);
+                    return redirected != null ? redirected : AdblockRequestInfo.blockedResponse(resourceType);
                 }
             }
 
