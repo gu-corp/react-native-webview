@@ -14,6 +14,8 @@ public class EngineHandler: NSObject {
     
     private var requestBlockingContentHelper: RequestBlockingContentScriptHandler?
     
+    private var cosmeticFiltersHandler: CosmeticFiltersScriptHandler?
+    
     private var currentPageData: PageData?
     
     
@@ -79,6 +81,24 @@ public class EngineHandler: NSObject {
         }
         
         return true
+    }
+    
+    /// Installs the element hiding and scriptlets for the page `navigationAction` loads, then
+    /// calls `completionHandler`. Call it before allowing the navigation.
+    @MainActor
+    @objc
+    public func prepareCosmeticFilters(webView: WKWebView, navigationAction: WKNavigationAction, completionHandler: @escaping () -> Void) {
+        if cosmeticFiltersHandler == nil {
+            cosmeticFiltersHandler = CosmeticFiltersScriptHandler(webView: webView)
+        }
+        cosmeticFiltersHandler!.prepare(for: navigationAction, completion: completionHandler)
+    }
+    
+    /// Removes the element hiding and scriptlets, for pages where ad blocking is off.
+    @MainActor
+    @objc
+    public func removeCosmeticFilters() {
+        cosmeticFiltersHandler?.remove()
     }
     
     @objc

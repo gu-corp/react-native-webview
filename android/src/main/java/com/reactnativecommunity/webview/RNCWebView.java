@@ -47,6 +47,7 @@ import com.reactnativecommunity.webview.events.TopCaptureScreenEvent;
 import com.reactnativecommunity.webview.events.TopCustomMenuSelectionEvent;
 import com.reactnativecommunity.webview.events.TopGetFaviconEvent;
 import com.reactnativecommunity.webview.events.TopMessageEvent;
+import com.reactnativecommunity.webview.lunascape.AdblockCosmeticFilters;
 import com.reactnativecommunity.webview.lunascape.RNCNativeWebViewBridge;
 import com.reactnativecommunity.webview.events.TopRequestWebViewStatusEvent;
 
@@ -257,6 +258,14 @@ public class RNCWebView extends WebView implements LifecycleEventListener {
     public @Nullable
     RNCWebViewClient getRNCWebViewClient() {
         return mRNCWebViewClient;
+    }
+
+    /** Element hiding and scriptlets from the adblock engines of this tab (#5580). */
+    public void installAdblockCosmeticFilters() {
+        AdblockCosmeticFilters.INSTANCE.install(this, () -> {
+            RNCWebViewClient client = mRNCWebViewClient;
+            return client != null ? client.getCosmeticAdblockEngines() : null;
+        });
     }
 
     public boolean getMessagingEnabled() {

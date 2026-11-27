@@ -1,6 +1,7 @@
 package com.reactnativecommunity.webview.lunascape;
 
 import android.net.Uri;
+import android.util.Base64;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 
@@ -145,6 +146,35 @@ public final class AdblockRequestInfo {
             return new WebResourceResponse("text/css", "utf-8", new ByteArrayInputStream(new byte[0]));
         }
         return new WebResourceResponse("text/plain", "utf-8", new ByteArrayInputStream(new byte[0]));
+    }
+
+    /**
+     * The answer for a {@code $redirect} rule. {@code redirect} is the engine's
+     * {@code data:<mime>;base64,<content>} URL; null if it is not in that form.
+     */
+    @Nullable
+    public static WebResourceResponse redirectResponse(@Nullable String redirect) {
+        if (redirect == null || !redirect.startsWith("data:")) {
+            return null;
+        }
+        int comma = redirect.indexOf(',');
+        if (comma < 0) {
+            return null;
+        }
+        String meta = redirect.substring("data:".length(), comma);
+        if (!meta.endsWith(";base64")) {
+            return null;
+        }
+        String mime = meta.substring(0, meta.length() - ";base64".length());
+        byte[] body;
+        try {
+            body = Base64.decode(redirect.substring(comma + 1), Base64.DEFAULT);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        boolean text = mime.startsWith("text/") || mime.contains("javascript") || mime.contains("json");
+        return new WebResourceResponse(mime.isEmpty() ? "application/octet-stream" : mime,
+            text ? "utf-8" : null, new ByteArrayInputStream(body));
     }
 
     @Nullable

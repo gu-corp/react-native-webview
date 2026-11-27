@@ -260,13 +260,20 @@ public class RNCWebViewClient extends WebViewClient {
 
                 boolean matched = false;
                 boolean exception = false;
+                String redirect = null;
                 for (Engine engine : adblockEngines) {
                     synchronized (engine) {
                         blockerResult = engine.match(url.toString(), url.getHost(),
                           mainUrl.getHost(), thirdParty, resourceType);
 
                         matched |= blockerResult.matched;
+                        if (redirect == null) {
+                            redirect = blockerResult.redirect;
+                        }
                         if (blockerResult.important) {
+                            // Only this engine's answer counts: its own $redirect (as in
+                            // `$important,redirect=1x1.gif`), not one from an earlier engine.
+                            redirect = blockerResult.redirect;
                             break;
                         }
 
@@ -287,7 +294,9 @@ public class RNCWebViewClient extends WebViewClient {
                         Log.i("Adblock", "-- Adblock Log -- \n Adblock blocks the request" + "\n url = " + urlStr + "\n source = " + sourceUrlString);
                     }
 
-                    return AdblockRequestInfo.blockedResponse(resourceType);
+                    // $redirect: serve the engine's stand-in (an empty script, a 1x1 image, ...).
+                    WebResourceResponse redirected = AdblockRequestInfo.redirectResponse(redirect);
+                    return redirected != null ? redirected : AdblockRequestInfo.blockedResponse(resourceType);
                 }
             }
 
@@ -570,7 +579,7 @@ public class RNCWebViewClient extends WebViewClient {
     }
 
     private final OkHttpClient httpClient;
-    private ArrayList<Engine> adblockEngines;
+    private volatile ArrayList<Engine> adblockEngines;
     // Written and read on WebView's network threads.
     private volatile boolean isMainDocumentException;
     private String currentPageUrl = null;
@@ -592,6 +601,25 @@ public class RNCWebViewClient extends WebViewClient {
         return adblockEngines;
     }
 
+    /**
+     * The engines for element hiding and scriptlets on the current page, or null when ad blocking is
+     * off for it: off for the tab, or an exception rule matched the page itself (the user's
+     * allowlist, or a $document exception) (#5580).
+     */
+    public @Nullable ArrayList<Engine> getCosmeticAdblockEngines() {
+        ArrayList<Engine> engines = adblockEngines;
+        if (engines == null || isMainDocumentException) {
+            return null;
+        }
+        ArrayList<Engine> registered = new ArrayList<>(engines.size());
+        for (Engine engine : engines) {
+            if (engine != null) {
+                registered.add(engine);
+            }
+        }
+        return registered;
+    }
+
     protected void cloneAdblockRules(RNCWebViewClient parentClient) {
         if (parentClient.getAdblockRules() != null) {
             try {
@@ -605,12 +633,15 @@ public class RNCWebViewClient extends WebViewClient {
     public void setAdblockRuleList(ReadableArray rules) {
         RNCWebViewModule rncWebViewModule = RNCWebViewModule.getRNCWebViewModule(mReactContext);
         if (rules != null) {
-            adblockEngines = new ArrayList<Engine>();
+            // Built first and then published whole: the element hiding bridge reads the list on
+            // WebView's JavaBridge thread (#5580).
+            ArrayList<Engine> engines = new ArrayList<Engine>();
             for (int i = 0; i < rules.size(); i++) {
-                adblockEngines.add(
+                engines.add(
                     rncWebViewModule.getAdblockEngine(rules.getString(i))
                 );
             }
+            adblockEngines = engines;
         } else {
             adblockEngines = null;
         }
